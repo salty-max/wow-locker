@@ -1,0 +1,137 @@
+import type { AccountCharacter, AccountImport, Flavour, Region } from "@wow-locker/shared";
+import { FLAVOURS, REGIONS } from "@wow-locker/shared";
+import { and, eq, inArray } from "drizzle-orm";
+import { db } from "@/db";
+import { characters } from "@/db/schema";
+import { accountProfile, api, authorizeUrl, BnetError, exchangeCode, userInfo } from "@/lib/bnet";
+import { classKeyOf, factionOf } from "@/lib/classic";
+import { log } from "@/lib/log";
+import { listRealms } from "@/lib/realms";
+
+/**
+ * "Log in with Battle.net" → import the account's characters.
+ *
+ * Deliberately stateless about the user: the access token is used once, right
+ * in the callback, to read the account's character list, then dropped. Nothing
+ * about the Battle.net account is stored; the list waits in memory under a
+ * random key for a few minutes so the web app can show the import screen.
+ */
+
+const TTL_MS = 10 * 60_000;
+const pendingStates = new Map<string, { region: Region; at: number }>();
+const imports = new Map<string, { data: AccountImport; at: number }>();
+
+function sweep() {
+  const now = Date.now();
+  for (const [k, v] of pendingStates) if (now - v.at > TTL_MS) pendingStates.delete(k);
+  for (const [k, v] of imports) if (now - v.at > TTL_MS) imports.delete(k);
+}
+
+const randomKey = () => Buffer.from(crypto.getRandomValues(new Uint8Array(24))).toString("base64url");
+
+/** Where Blizzard sends the user back. Must be registered on develop.battle.net. */
+export function redirectUri(): string {
+  const origin = (process.env.APP_ORIGIN ?? "http://localhost:5174").replace(/\/$/, "");
+  return `${origin}/api/auth/callback`;
+}
+
+export function appOrigin(): string {
+  return (process.env.APP_ORIGIN ?? "http://localhost:5174").replace(/\/$/, "");
+}
+
+export function startLogin(region: Region): string {
+  if (!REGIONS.includes(region)) throw new Error("bad region");
+  sweep();
+  const state = randomKey();
+  pendingStates.set(state, { region, at: Date.now() });
+  return authorizeUrl(redirectUri(), state);
+}
+
+/** Handle Blizzard's redirect. Returns the import key, or throws. */
+export async function finishLogin(code: string, state: string): Promise<string> {
+  sweep();
+  const pending = pendingStates.get(state);
+  if (!pending) throw new Error("unknown or expired login state");
+  pendingStates.delete(state); // one use
+  const token = await exchangeCode(code, redirectUri());
+  const [{ battletag }, realms] = await Promise.all([userInfo(token).catch(() => ({ battletag: undefined })), listRealms(pending.region)]);
+  const category = new Map(realms.map((r) => [`${r.flavour}:${r.slug}`, r.category]));
+
+  const found: Omit<AccountCharacter, "trackedId" | "isGhost" | "isSelfFound">[] = [];
+  const unavailable: Flavour[] = [];
+  for (const flavour of FLAVOURS) {
+    try {
+      const profile = await accountProfile(flavour, pending.region, token);
+      for (const acc of profile.wow_accounts ?? []) {
+        for (const c of acc.characters ?? []) {
+          found.push({
+            region: pending.region,
+            flavour,
+            realmSlug: c.realm.slug,
+            realmName: c.realm.name,
+            realmCategory: category.get(`${flavour}:${c.realm.slug}`) ?? "",
+            name: c.name,
+            level: c.level,
+            className: c.playable_class.name,
+            classKey: classKeyOf(c.playable_class.id),
+            faction: factionOf(c.faction.type),
+          });
+        }
+      }
+    } catch (err) {
+      // A flavour the account never played answers 404; anything else is a gap.
+      if (!(err instanceof BnetError && err.status === 404)) unavailable.push(flavour);
+      log.info("account.flavour", { flavour, status: err instanceof BnetError ? err.status : String(err) });
+    }
+  }
+
+  const tracked = await trackedIds(pending.region, found);
+  const data: AccountImport = {
+    region: pending.region,
+    battletag: battletag ?? null,
+    characters: found
+      .map((c) => ({ ...c, isGhost: null, isSelfFound: null, trackedId: tracked.get(key(c)) ?? null }))
+      .sort((a, b) => b.level - a.level || a.name.localeCompare(b.name)),
+    unavailable,
+    checking: found.length > 0,
+  };
+  const k = randomKey();
+  imports.set(k, { data, at: Date.now() });
+  // The account list has no dead/alive flag: read each profile in the
+  // background (1 request each) while the import screen is already showing.
+  void checkStatuses(data).catch((err) => log.warn("account.check.failed", { err: String(err) }));
+  log.info("account.imported", { region: pending.region, characters: data.characters.length, unavailable });
+  return k;
+}
+
+async function checkStatuses(data: AccountImport): Promise<void> {
+  // Highest levels first: the ones the user is most likely to pick.
+  for (const c of data.characters) {
+    try {
+      const p = await api.summary(c.flavour, c.region, c.realmSlug, c.name);
+      c.isGhost = p.is_ghost === true;
+      c.isSelfFound = p.is_self_found === true;
+    } catch {
+      /* unknown: left null */
+    }
+  }
+  data.checking = false;
+}
+
+export function getImport(k: string): AccountImport | null {
+  sweep();
+  return imports.get(k)?.data ?? null;
+}
+
+const key = (c: { flavour: Flavour; realmSlug: string; name: string }) => `${c.flavour}:${c.realmSlug}:${c.name.toLowerCase()}`;
+
+async function trackedIds(region: Region, list: { flavour: Flavour; realmSlug: string; name: string }[]) {
+  const map = new Map<string, number>();
+  if (!list.length) return map;
+  const rows = await db
+    .select({ id: characters.id, flavour: characters.flavour, realmSlug: characters.realmSlug, nameKey: characters.nameKey })
+    .from(characters)
+    .where(and(eq(characters.region, region), inArray(characters.nameKey, list.map((c) => c.name.toLowerCase()))));
+  for (const r of rows) map.set(`${r.flavour}:${r.realmSlug}:${r.nameKey}`, r.id);
+  return map;
+}
