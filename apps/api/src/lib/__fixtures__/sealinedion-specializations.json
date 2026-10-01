@@ -1,0 +1,65 @@
+{
+ "_links": {
+  "self": {
+   "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/specializations?namespace=profile-classic1x-eu"
+  }
+ },
+ "character": {
+  "key": {
+   "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion?namespace=profile-classic1x-eu"
+  },
+  "name": "Sealinedion",
+  "id": 88269365,
+  "realm": {
+   "key": {
+    "href": "https://eu.api.blizzard.com/data/wow/realm/6113?namespace=dynamic-classic1x-eu"
+   },
+   "name": "Soulseeker",
+   "id": 6113,
+   "slug": "soulseeker"
+  }
+ },
+ "specialization_groups": [
+  {
+   "is_active": true,
+   "specializations": [
+    {
+     "talents": [
+      {
+       "talent": {
+        "id": 1449
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Divine Intellect",
+         "id": 20261
+        },
+        "description": "Increases your total Intellect by 10%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1432
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Spiritual Focus",
+         "id": 20206
+        },
+        "description": "Gives your Flash of Light and Holy Light spells a 28% chance to not lose casting time when you take damage.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 2
+      }
+     ],
+     "specialization_name": "Holy",
+     "spent_points": 7
+    }
+   ]
+  }
+ ]
+}

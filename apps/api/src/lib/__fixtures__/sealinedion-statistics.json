@@ -1,0 +1,122 @@
+{
+ "_links": {
+  "self": {
+   "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/statistics?namespace=profile-classic1x-eu"
+  }
+ },
+ "health": 452,
+ "power": 639,
+ "power_type": {
+  "key": {
+   "href": "https://eu.api.blizzard.com/data/wow/power-type/0?namespace=static-1.15.9_68185-classic1x-eu"
+  },
+  "name": "Mana",
+  "id": 0
+ },
+ "strength": {
+  "base": 41,
+  "effective": 46
+ },
+ "agility": {
+  "base": 25,
+  "effective": 25
+ },
+ "intellect": {
+  "base": 29,
+  "effective": 39
+ },
+ "stamina": {
+  "base": 41,
+  "effective": 48
+ },
+ "melee_crit": {
+  "rating_bonus": 0,
+  "value": 3.8874998,
+  "rating_normalized": 0
+ },
+ "attack_power": 123,
+ "main_hand_damage_min": 49.235718,
+ "main_hand_damage_max": 61.235718,
+ "main_hand_speed": 3.1,
+ "main_hand_dps": 17.817974,
+ "off_hand_damage_min": 9.357144,
+ "off_hand_damage_max": 9.357144,
+ "off_hand_speed": 2,
+ "off_hand_dps": 4.678572,
+ "spell_power": 0,
+ "spell_penetration": 0,
+ "spell_crit": {
+  "rating_bonus": 0,
+  "value": 5.3291,
+  "rating_normalized": 0
+ },
+ "mana_regen": 41,
+ "mana_regen_combat": 41,
+ "armor": {
+  "base": 616,
+  "effective": 776
+ },
+ "dodge": {
+  "rating_bonus": 0,
+  "value": 3.8474998,
+  "rating_normalized": 0
+ },
+ "parry": {
+  "rating_bonus": 0,
+  "value": 4.6800003,
+  "rating_normalized": 0
+ },
+ "block": {
+  "rating_bonus": 0,
+  "value": 4.6800003,
+  "rating_normalized": 0
+ },
+ "ranged_crit": {
+  "rating_bonus": 0,
+  "value": 0.9274999,
+  "rating_normalized": 0
+ },
+ "character": {
+  "key": {
+   "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion?namespace=profile-classic1x-eu"
+  },
+  "name": "Sealinedion",
+  "id": 88269365,
+  "realm": {
+   "key": {
+    "href": "https://eu.api.blizzard.com/data/wow/realm/6113?namespace=dynamic-classic1x-eu"
+   },
+   "name": "Soulseeker",
+   "id": 6113,
+   "slug": "soulseeker"
+  }
+ },
+ "spirit": {
+  "base": 31,
+  "effective": 33
+ },
+ "defense": {
+  "base": 77,
+  "effective": 77
+ },
+ "fire_resistance": {
+  "base": 0,
+  "effective": 0
+ },
+ "holy_resistance": {
+  "base": 0,
+  "effective": 0
+ },
+ "shadow_resistance": {
+  "base": 0,
+  "effective": 0
+ },
+ "nature_resistance": {
+  "base": 0,
+  "effective": 0
+ },
+ "arcane_resistance": {
+  "base": 0,
+  "effective": 0
+ }
+}

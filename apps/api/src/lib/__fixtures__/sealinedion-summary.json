@@ -1,0 +1,70 @@
+{
+ "_links": {
+  "self": {
+   "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion?namespace=profile-classic1x-eu"
+  }
+ },
+ "id": 88269365,
+ "name": "Sealinedion",
+ "gender": {
+  "type": "FEMALE",
+  "name": "Female"
+ },
+ "faction": {
+  "type": "ALLIANCE",
+  "name": "Alliance"
+ },
+ "race": {
+  "key": {
+   "href": "https://eu.api.blizzard.com/data/wow/playable-race/3?namespace=static-1.15.9_68185-classic1x-eu"
+  },
+  "name": "Dwarf",
+  "id": 3
+ },
+ "character_class": {
+  "key": {
+   "href": "https://eu.api.blizzard.com/data/wow/playable-class/2?namespace=static-1.15.9_68185-classic1x-eu"
+  },
+  "name": "Paladin",
+  "id": 2
+ },
+ "realm": {
+  "key": {
+   "href": "https://eu.api.blizzard.com/data/wow/realm/6113?namespace=dynamic-classic1x-eu"
+  },
+  "name": "Soulseeker",
+  "id": 6113,
+  "slug": "soulseeker"
+ },
+ "level": 17,
+ "experience": 675,
+ "titles": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/titles?namespace=profile-classic1x-eu"
+ },
+ "pvp_summary": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/pvp-summary?namespace=profile-classic1x-eu"
+ },
+ "media": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/character-media?namespace=profile-classic1x-eu"
+ },
+ "last_login_timestamp": 1790557549000,
+ "average_item_level": 7,
+ "equipped_item_level": 7,
+ "specializations": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/specializations?namespace=profile-classic1x-eu"
+ },
+ "statistics": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/statistics?namespace=profile-classic1x-eu"
+ },
+ "equipment": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/equipment?namespace=profile-classic1x-eu"
+ },
+ "appearance": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/appearance?namespace=profile-classic1x-eu"
+ },
+ "reputations": {
+  "href": "https://eu.api.blizzard.com/profile/wow/character/soulseeker/sealinedion/reputations?namespace=profile-classic1x-eu"
+ },
+ "is_ghost": false,
+ "is_self_found": true
+}

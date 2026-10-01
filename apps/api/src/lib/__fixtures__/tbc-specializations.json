@@ -1,0 +1,687 @@
+{
+ "character": {
+  "name": "Testpaladin",
+  "id": 1,
+  "realm": {
+   "key": {
+    "href": "https://eu.api.blizzard.com/data/wow/realm/6412?namespace=dynamic-classicann-eu"
+   },
+   "name": "Spineshatter",
+   "id": 6412,
+   "slug": "spineshatter"
+  }
+ },
+ "specialization_groups": [
+  {
+   "is_active": false,
+   "specializations": [
+    {
+     "talents": [
+      {
+       "talent": {
+        "id": 1450
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Divine Strength",
+         "id": 20266
+        },
+        "description": "Increases your total Strength by 10%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      }
+     ],
+     "specialization_name": "Holy",
+     "spent_points": 5
+    },
+    {
+     "talents": [
+      {
+       "talent": {
+        "id": 1421
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Redoubt",
+         "id": 20137
+        },
+        "description": "Damaging melee and ranged attacks against you have a 10% chance to increase your chance to block by 30%.  Lasts 10 sec or 5 blocks.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1630
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Precision",
+         "id": 20193
+        },
+        "description": "Increases your chance to hit with melee weapons and spells by 3%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1425
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Guardian's Favor",
+         "id": 20175
+        },
+        "description": "Reduces the cooldown of your Blessing of Protection by 120 sec and increases the duration of your Blessing of Freedom by 4 sec.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1442
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Blessing of Kings",
+         "id": 20217
+        },
+        "description": "Places a Blessing on the friendly target, increasing total stats by 10% for 10 min.  Players may only have one Blessing on them per Paladin at any one time.",
+        "cast_time": "Instant cast",
+        "power_cost": "177 Mana",
+        "range": "30 yd range"
+       },
+       "talent_rank": 1
+      }
+     ],
+     "specialization_name": "Protection",
+     "spent_points": 11
+    },
+    {
+     "talents": [
+      {
+       "talent": {
+        "id": 1407
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Benediction",
+         "id": 20105
+        },
+        "description": "Reduces the mana cost of your Judgement and Seal spells by 15%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1631
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Improved Judgement",
+         "id": 25957
+        },
+        "description": "Decreases the cooldown of your Judgement spell by 2 sec.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1464
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Improved Seal of the Crusader",
+         "id": 20337
+        },
+        "description": "In addition to the normal effect, your Judgement of the Crusader spell will also increase the critical strike chance of all attacks made against that target by an additional 3%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1411
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Conviction",
+         "id": 20121
+        },
+        "description": "Increases your chance to get a critical strike with melee weapons by 5%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1481
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Seal of Command",
+         "id": 20375
+        },
+        "description": "Gives the Paladin a chance to deal additional Holy damage equal to 70% of normal weapon damage.  Only one Seal can be active on the Paladin at any one time.  Lasts 30 sec.\r\n\r\nUnleashing this Seal's energy will judge an enemy, instantly causing 84 to 89 Holy damage, 168 to 177 if the target is stunned or incapacitated.",
+        "cast_time": "Instant cast",
+        "power_cost": "55 Mana"
+       },
+       "talent_rank": 1
+      },
+      {
+       "talent": {
+        "id": 1634
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Pursuit of Justice",
+         "id": 44414
+        },
+        "description": "Reduces the chance you'll be hit by spells by 3% and increases movement and mounted movement speed by 15%.  This does not stack with other movement speed increasing effects.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1755
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Crusade",
+         "id": 31867
+        },
+        "description": "Increases all damage caused against Humanoids, Demons, Undead and Elementals by 2%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1409
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Sanctity Aura",
+         "id": 20218
+        },
+        "description": "Increases Holy damage done by party members within 30 yards by 10%.  Players may only have one Aura on them per Paladin at any one time.",
+        "cast_time": "Instant",
+        "power_cost": null
+       },
+       "talent_rank": 1
+      },
+      {
+       "talent": {
+        "id": 1410
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Two-Handed Weapon Specialization",
+         "id": 20113
+        },
+        "description": "Increases the damage you deal with two-handed melee weapons by 6%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1756
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Improved Sanctity Aura",
+         "id": 31870
+        },
+        "description": "The amount of damage caused by targets affected by Sanctity Aura is increased by 2%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1402
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Vengeance",
+         "id": 20059
+        },
+        "description": "Gives you a 5% bonus to Physical and Holy damage you deal for 30 sec after dealing a critical strike from a weapon swing, spell, or ability.  This effect stacks up to 3 times.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1758
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Sanctified Judgement",
+         "id": 31878
+        },
+        "description": "Gives your Judgement spell a 100% chance to return 80% of the mana cost of the judged seal.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1441
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Repentance",
+         "id": 20066
+        },
+        "description": "Puts the enemy target in a state of meditation, incapacitating them for up to 6 sec.  Any damage caused will awaken the target.  Only works against Humanoids.",
+        "cast_time": "Instant cast",
+        "power_cost": "60 Mana",
+        "range": "20 yd range",
+        "cooldown": "1 min cooldown"
+       },
+       "talent_rank": 1
+      },
+      {
+       "talent": {
+        "id": 1761
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Sanctified Seals",
+         "id": 35397
+        },
+        "description": "Increases your chance to critically hit with all spells and melee attacks by 3% and reduces the chance your Seals will be dispelled by 100%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1759
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Fanaticism",
+         "id": 31883
+        },
+        "description": "Increases the critical strike chance of all Judgements capable of a critical hit by 15% and reduces threat caused by all actions by 30% except when under the effects of Righteous Fury.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1823
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Crusader Strike",
+         "id": 35395
+        },
+        "description": "An instant strike that causes 110% weapon damage and refreshes all Judgements on the target.",
+        "cast_time": "Instant cast",
+        "power_cost": "236 Mana",
+        "range": "Melee Range",
+        "cooldown": "6 sec cooldown"
+       },
+       "talent_rank": 1
+      }
+     ],
+     "specialization_name": "Retribution",
+     "spent_points": 45
+    }
+   ]
+  },
+  {
+   "is_active": true,
+   "specializations": [
+    {
+     "talents": [
+      {
+       "talent": {
+        "id": 1421
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Redoubt",
+         "id": 20137
+        },
+        "description": "Damaging melee and ranged attacks against you have a 10% chance to increase your chance to block by 30%.  Lasts 10 sec or 5 blocks.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1630
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Precision",
+         "id": 20193
+        },
+        "description": "Increases your chance to hit with melee weapons and spells by 3%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1425
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Guardian's Favor",
+         "id": 20175
+        },
+        "description": "Reduces the cooldown of your Blessing of Protection by 120 sec and increases the duration of your Blessing of Freedom by 4 sec.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1442
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Blessing of Kings",
+         "id": 20217
+        },
+        "description": "Places a Blessing on the friendly target, increasing total stats by 10% for 10 min.  Players may only have one Blessing on them per Paladin at any one time.",
+        "cast_time": "Instant cast",
+        "power_cost": "177 Mana",
+        "range": "30 yd range"
+       },
+       "talent_rank": 1
+      },
+      {
+       "talent": {
+        "id": 1501
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Improved Righteous Fury",
+         "id": 20470
+        },
+        "description": "While Righteous Fury is active, all damage taken is reduced by 6% and increases the amount of threat generated by your Righteous Fury spell by 50%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1629
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Anticipation",
+         "id": 20096
+        },
+        "description": "Increases your Defense skill by 4.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 1
+      },
+      {
+       "talent": {
+        "id": 1748
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Stoicism",
+         "id": 31845
+        },
+        "description": "Increases your resistance to Stun effects by an additional 10% and reduces the chance your spells will be dispelled by an additional 30%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1521
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Improved Hammer of Justice",
+         "id": 20489
+        },
+        "description": "Decreases the cooldown of your Hammer of Justice spell by 15 sec.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1426
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Reckoning",
+         "id": 20182
+        },
+        "description": "Gives you a 10% chance after being hit by any damaging attack that the next 4 weapon swings within 8 sec will generate an additional attack.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1750
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Sacred Duty",
+         "id": 31849
+        },
+        "description": "Increases your total Stamina by 6%, reduces the cooldown of your Divine Shield spell by 60 sec and reduces the attack speed penalty by 100%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 2
+      }
+     ],
+     "specialization_name": "Protection",
+     "spent_points": 27
+    },
+    {
+     "talents": [
+      {
+       "talent": {
+        "id": 1407
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Benediction",
+         "id": 20105
+        },
+        "description": "Reduces the mana cost of your Judgement and Seal spells by 15%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1631
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Improved Judgement",
+         "id": 25957
+        },
+        "description": "Decreases the cooldown of your Judgement spell by 2 sec.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1403
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Deflection",
+         "id": 20062
+        },
+        "description": "Increases your Parry chance by 3%.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1411
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Conviction",
+         "id": 20121
+        },
+        "description": "Increases your chance to get a critical strike with melee weapons by 5%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1633
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Vindication",
+         "id": 26021
+        },
+        "description": "Gives the Paladin's damaging melee attacks a chance to reduce the target's attributes by 15% for 15 sec.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1481
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Seal of Command",
+         "id": 20375
+        },
+        "description": "Gives the Paladin a chance to deal additional Holy damage equal to 70% of normal weapon damage.  Only one Seal can be active on the Paladin at any one time.  Lasts 30 sec.\r\n\r\nUnleashing this Seal's energy will judge an enemy, instantly causing 84 to 89 Holy damage, 168 to 177 if the target is stunned or incapacitated.",
+        "cast_time": "Instant cast",
+        "power_cost": "55 Mana"
+       },
+       "talent_rank": 1
+      },
+      {
+       "talent": {
+        "id": 1634
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Pursuit of Justice",
+         "id": 44414
+        },
+        "description": "Reduces the chance you'll be hit by spells by 3% and increases movement and mounted movement speed by 15%.  This does not stack with other movement speed increasing effects.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1409
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Sanctity Aura",
+         "id": 20218
+        },
+        "description": "Increases Holy damage done by party members within 30 yards by 10%.  Players may only have one Aura on them per Paladin at any one time.",
+        "cast_time": "Instant",
+        "power_cost": null
+       },
+       "talent_rank": 1
+      },
+      {
+       "talent": {
+        "id": 1410
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Two-Handed Weapon Specialization",
+         "id": 20113
+        },
+        "description": "Increases the damage you deal with two-handed melee weapons by 6%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 3
+      },
+      {
+       "talent": {
+        "id": 1402
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Vengeance",
+         "id": 20059
+        },
+        "description": "Gives you a 5% bonus to Physical and Holy damage you deal for 30 sec after dealing a critical strike from a weapon swing, spell, or ability.  This effect stacks up to 3 times.",
+        "cast_time": "Passive"
+       },
+       "talent_rank": 5
+      },
+      {
+       "talent": {
+        "id": 1761
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Sanctified Seals",
+         "id": 35396
+        },
+        "description": "Increases your chance to critically hit with all spells and melee attacks by 2% and reduces the chance your Seals will be dispelled by 66%.",
+        "cast_time": "Passive",
+        "power_cost": null
+       },
+       "talent_rank": 2
+      },
+      {
+       "talent": {
+        "id": 1441
+       },
+       "spell_tooltip": {
+        "spell": {
+         "name": "Repentance",
+         "id": 20066
+        },
+        "description": "Puts the enemy target in a state of meditation, incapacitating them for up to 6 sec.  Any damage caused will awaken the target.  Only works against Humanoids.",
+        "cast_time": "Instant cast",
+        "power_cost": "60 Mana",
+        "range": "20 yd range",
+        "cooldown": "1 min cooldown"
+       },
+       "talent_rank": 1
+      }
+     ],
+     "specialization_name": "Retribution",
+     "spent_points": 34
+    }
+   ]
+  }
+ ]
+}
