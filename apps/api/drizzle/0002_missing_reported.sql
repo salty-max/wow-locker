@@ -1,0 +1,1 @@
+ALTER TABLE "characters" ADD COLUMN "missing_reported_at" timestamp with time zone;
