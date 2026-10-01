@@ -1,0 +1,362 @@
+@import "tailwindcss";
+
+/*
+ * wow-locker — base tokens (night-stone surfaces, parchment text, gold), class
+ * and item-quality colours, and below them the Classic (1.x) UI kit: frames,
+ * title plates, red buttons, slots, checkboxes. All drawn in CSS — no game
+ * textures.
+ */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+
+  --color-night: #0b0d12;
+  --color-stone: #12151c;
+  --color-stone-2: #181c25;
+  --color-stone-3: #222735;
+  --color-edge: #2b3140;
+  --color-edge-gold: #5a4a2a;
+
+  --color-parchment: #ece3cf;
+  --color-ink-dim: #a39b88;
+  --color-ink-faint: #6f6a5e;
+
+  --color-gold: #f8b700;
+  --color-gold-soft: #d9a441;
+  --color-blue: #33b5ff; /* blue-post names */
+  --color-blue-dev: #6fd3ff;
+
+  /* item qualities */
+  --color-q-poor: #9d9d9d;
+  --color-q-uncommon: #1eff00;
+  --color-q-rare: #0070dd;
+  --color-q-epic: #a335ee;
+  --color-q-legendary: #ff8000;
+  --color-q-artifact: #e6cc80;
+  --color-q-danger: #ff4040;
+  --color-q-heirloom: #00ccff;
+
+  /* games */
+  --color-g-retail: #f8b700;
+  --color-g-classic: #c79c6e;
+  --color-g-forever: #3fd9a5;
+}
+
+@layer base {
+  html {
+    background: var(--color-night);
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-night text-parchment font-sans antialiased;
+    min-height: 100dvh;
+    background-image:
+      radial-gradient(ellipse 120% 60% at 50% -10%, rgb(51 181 255 / 0.07), transparent 60%),
+      radial-gradient(ellipse 80% 50% at 50% 110%, rgb(248 183 0 / 0.04), transparent 60%);
+    background-attachment: fixed;
+  }
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold-soft);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: rgb(248 183 0 / 0.3);
+  }
+}
+
+@layer components {
+  /* Framed panel with a faint gilded top edge, like an in-game window. */
+  .panel {
+    @apply rounded-xl border border-edge bg-stone/90;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.03),
+      0 1px 0 rgb(0 0 0 / 0.4);
+  }
+  .panel-gold {
+    @apply rounded-xl border border-edge-gold bg-stone/90;
+    box-shadow:
+      inset 0 1px 0 rgb(248 183 0 / 0.12),
+      0 0 0 1px rgb(0 0 0 / 0.5);
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-edge bg-stone-2 px-3 py-1.5 text-sm text-ink-dim transition-colors select-none;
+  }
+  .chip[aria-pressed="true"] {
+    @apply border-gold-soft/70 bg-gold/10 text-parchment;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-edge bg-stone-2 px-3 py-2 text-sm text-parchment transition-colors hover:border-gold-soft/60 hover:bg-stone-3 disabled:opacity-50;
+  }
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gold/60 bg-gradient-to-b from-[#3a2c0c] to-[#211806] px-3 py-2 text-sm font-semibold text-gold transition-colors hover:border-gold disabled:opacity-50;
+  }
+  .icon-btn {
+    @apply inline-flex size-10 items-center justify-center rounded-lg text-ink-dim transition-colors hover:bg-stone-2 hover:text-parchment;
+  }
+  .title-display {
+    @apply font-display tracking-wide;
+  }
+  .gold-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(248 183 0 / 0.45), transparent);
+  }
+}
+
+/* Official class colours. */
+.cc {
+  font-weight: 600;
+}
+.cc[data-c="deathknight"] { color: #c41e3a; }
+.cc[data-c="demonhunter"] { color: #a330c9; }
+.cc[data-c="druid"] { color: #ff7c0a; }
+.cc[data-c="evoker"] { color: #33937f; }
+.cc[data-c="hunter"] { color: #aad372; }
+.cc[data-c="mage"] { color: #3fc7eb; }
+.cc[data-c="monk"] { color: #00ff98; }
+.cc[data-c="paladin"] { color: #f48cba; }
+.cc[data-c="priest"] { color: #ffffff; }
+.cc[data-c="rogue"] { color: #fff468; }
+.cc[data-c="shaman"] { color: #0070dd; }
+.cc[data-c="warlock"] { color: #8788ee; }
+.cc[data-c="warrior"] { color: #c69b6d; }
+/* The darkest two need a lift to stay legible on night-stone. */
+.cc[data-c="shaman"],
+.cc[data-c="deathknight"] {
+  text-shadow: 0 0 1px rgb(255 255 255 / 0.25);
+}
+
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Item qualities. */
+.q[data-q="poor"] { color: var(--color-q-poor); }
+.q[data-q="common"] { color: #ffffff; }
+.q[data-q="uncommon"] { color: var(--color-q-uncommon); }
+.q[data-q="rare"] { color: #3b8cff; } /* 0070dd, lifted for the dark background */
+.q[data-q="epic"] { color: #b866ff; }
+.q[data-q="legendary"] { color: var(--color-q-legendary); }
+.q[data-q="artifact"],
+.q[data-q="heirloom"] { color: var(--color-q-artifact); }
+.qb[data-q="poor"] { border-color: var(--color-q-poor); }
+.qb[data-q="common"] { border-color: #8a8a8a; }
+.qb[data-q="uncommon"] { border-color: var(--color-q-uncommon); }
+.qb[data-q="rare"] { border-color: #3b8cff; }
+.qb[data-q="epic"] { border-color: #b866ff; }
+.qb[data-q="legendary"] { border-color: var(--color-q-legendary); }
+.qb[data-q="artifact"],
+.qb[data-q="heirloom"] { border-color: var(--color-q-artifact); }
+
+/* The fallen (Hardcore): desaturated, with a cold grey frame. */
+.fallen img {
+  filter: grayscale(1) brightness(0.75);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * Classic (1.x) UI kit — drawn in CSS to evoke the game's frames; no game
+ * textures. Gold text is the game's NORMAL_FONT_COLOR (#ffd100).
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --wow-gold: #ffd100;
+  --wow-grey: #9d9d9d;
+  --wow-silver-bevel: linear-gradient(160deg, #e6e6e6 0%, #8f8f8f 20%, #3c3c3c 46%, #a3a3a3 70%, #474747 100%);
+  --wow-gold-bevel: linear-gradient(160deg, #fff1b8 0%, #d9a72b 22%, #6b4a0e 48%, #caa035 72%, #5b3d09 100%);
+}
+
+@layer components {
+  /* Dialog frame: dark stone inside a uniform bevelled metal edge — light on
+     the top/left, shadowed on the bottom/right — with a black outline. */
+  .wow-frame,
+  .wow-frame-gold {
+    position: relative;
+    z-index: 2;
+    border: 5px solid;
+    border-color: #7b7b80 #3d3d42 #34343a #6a6a70;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #131318, #07070b);
+    box-shadow:
+      0 0 0 1px #000,
+      inset 0 0 0 1px #000,
+      inset 0 0 0 2px rgb(255 255 255 / 0.04),
+      0 10px 24px rgb(0 0 0 / 0.6);
+  }
+  .wow-frame-gold {
+    border-color: #c9a24a #6b4a12 #5a3d0b #b08a35;
+    background: linear-gradient(180deg, #17120b, #08060a);
+  }
+
+  /* The title plate sitting on a frame's top edge. */
+  .wow-title {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 1;
+    max-width: calc(100% - 3rem);
+    transform: translate(-50%, -55%);
+    padding: 0.2rem 1.25rem 0.25rem;
+    border: 2px solid transparent;
+    border-radius: 5px;
+    background:
+      linear-gradient(180deg, #2c1d0b, #120b04) padding-box,
+      var(--wow-gold-bevel) border-box;
+    box-shadow: 0 0 0 1px #000, 0 3px 8px rgb(0 0 0 / 0.6);
+    color: var(--wow-gold);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px #000;
+  }
+
+  /* The classic red button. */
+  .wow-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.42rem 1.05rem;
+    border: 1px solid #000;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #c8231a 0%, #921009 48%, #5d0604 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      inset 0 0 0 1px #c49a3c,
+      0 1px 2px rgb(0 0 0 / 0.8);
+    color: var(--wow-gold);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-shadow: 0 1px 1px #000;
+    cursor: pointer;
+    transition: filter 0.12s;
+  }
+  .wow-btn:hover {
+    filter: brightness(1.18);
+  }
+  .wow-btn:active {
+    transform: translateY(1px);
+    background: linear-gradient(180deg, #7d0b06, #a5140c);
+  }
+  .wow-btn:disabled {
+    filter: grayscale(1) brightness(0.7);
+    cursor: default;
+    transform: none;
+  }
+  /* Same shape, dark stone: secondary actions. */
+  .wow-btn-dark {
+    background: linear-gradient(180deg, #4a4a52 0%, #26262c 50%, #141418 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      inset 0 0 0 1px #6f6f78,
+      0 1px 2px rgb(0 0 0 / 0.8);
+  }
+  .wow-btn-dark:active {
+    background: linear-gradient(180deg, #141418, #2c2c32);
+  }
+  .wow-btn-sm {
+    padding: 0.25rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  /* Paper-doll item slot: an inset square. */
+  .wow-slot {
+    position: relative;
+    display: block;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border: 2px solid;
+    border-color: #1a1a1a #5c5c5c #5c5c5c #1a1a1a;
+    border-radius: 4px;
+    background: radial-gradient(circle at 50% 40%, #1d1d22, #08080a);
+    box-shadow: 0 0 0 1px #000;
+  }
+  .wow-slot > img {
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+  }
+
+  /* Dark inset input. */
+  .wow-input {
+    height: 2.4rem;
+    width: 100%;
+    border: 1px solid #5c5c5c;
+    border-radius: 3px;
+    background: #050507;
+    box-shadow: inset 0 1px 4px rgb(0 0 0 / 0.9);
+    padding: 0 0.7rem;
+    color: #fff;
+    font-size: 0.9rem;
+  }
+  .wow-input:focus {
+    outline: none;
+    border-color: #c49a3c;
+  }
+  .wow-input::placeholder {
+    color: #6b6b6b;
+  }
+
+  /* The game's checkbox: a bevelled square, a gold tick when checked. */
+  .wow-check {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    border: 2px solid;
+    border-color: #1a1a1a #6a6a6a #6a6a6a #1a1a1a;
+    border-radius: 3px;
+    background: #0a0a0c center / 16px 16px no-repeat;
+    box-shadow: 0 0 0 1px #000;
+    cursor: pointer;
+  }
+  .wow-check:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 8.5 6 12.5 14 3' fill='none' stroke='%23ffd100' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  .wow-check:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  /* A selectable row (character select list): a gold glow when selected. */
+  .wow-row {
+    border-radius: 4px;
+    transition: background 0.12s;
+  }
+  .wow-row:hover {
+    background: rgb(255 255 255 / 0.04);
+  }
+  .wow-row[aria-selected="true"] {
+    background: linear-gradient(90deg, rgb(255 209 0 / 0.22), rgb(255 209 0 / 0.04) 70%, transparent);
+    box-shadow: inset 2px 0 0 var(--wow-gold);
+  }
+
+  /* Section header inside a frame: gold text between two rules. */
+  .wow-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--wow-gold);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-shadow: 0 1px 1px #000;
+  }
+  .wow-header::before,
+  .wow-header::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #8a7330, transparent);
+  }
+}
