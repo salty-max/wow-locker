@@ -1,0 +1,68 @@
+# wow-locker
+
+WoW Classic character tracker PWA (Hardcore-friendly): roster per device,
+gear / talents / stats / XP / alive-or-fallen, change timeline, push. Built on
+the Farseer template (same monorepo, stack, push code, theme).
+
+## Monorepo (Turborepo + Bun workspaces)
+
+- `apps/api` — Hono on Bun. `src/lib/bnet.ts` (Battle.net client: token cache,
+  shared pacer, retries), `realms.ts` (realm search per flavour, cached 24 h),
+  `normalize.ts` (raw profile → our shapes), `diff.ts` (snapshot → events,
+  pure), `tracker.ts` (add / refresh / refreshDue / notifyPending),
+  `push.ts` + `webpush.ts` + `notify.ts`. `src/scheduler.ts`: tick every 2 min,
+  each character ≤ every 10 min (1 request when its last login didn't move),
+  fallen / missing ones daily, dormant after 30 days unopened.
+- `apps/web` — React 19 + Vite + Tailwind v4 + TanStack Router/Query. Routes in
+  `src/router.tsx`: `/` locker, `/character/$id`, `/settings`. The roster is
+  per device (`lib/roster.ts`, localStorage); Hardcore realm labels in `lib/wow.ts`.
+- `packages/shared` (`@wow-locker/shared`) — wire contract. Source of truth.
+
+## Talent trees (static data)
+
+The Battle.net API has NO talent data for Classic (every talent/tree/spell
+endpoint 404s in classic1x/classicann). `apps/web/scripts/talents.ts`
+(`bun run --filter @wow-locker/web talents`) builds `apps/web/src/data/talents/{flavour}.json`
+from the game's DB2 tables exported by wago.tools (Talent, TalentTab,
+SpellName, SpellMisc, ManifestInterfaceData). Talent ids match the profile's
+`talent.id`. Commit the output; re-run after patches. MoP Classic (talent rows)
+is not generated and keeps the points-per-tree view. Icons:
+`render.worldofwarcraft.com/{flavour}-{region}/icons/56/{icon}.jpg`.
+
+## Addon (`addon/WowLocker`)
+
+Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:
+11509, 20506`). Writes `WowLockerDB` (SavedVariables, per character GUID:
+`events` + `state`) — addons have no network access; a Go companion app will
+upload the file. Simulate a session with `luajit addon/test/sim.lua`.
+
+## Battle.net API facts (verified live, see spike/FINDINGS.md)
+
+- Namespaces: `classic1x` (Era, Hardcore incl. Anniversary HC = Soulseeker, SoD),
+  `classicann` (TBC Anniversary), `classic` (MoP Classic). No Forever namespace.
+- Profile summary has `is_ghost` (Hardcore death), `is_self_found`, `experience`.
+- Classic: /achievements (Era), /professions, /titles → 404.
+- Auction house: only MoP Classic answers; `classic1x` + `classicann` → 404.
+
+## Commands
+
+```bash
+bun run dev | typecheck | lint | test | build
+bun run db            # local Postgres :5434 (docker, container wow-locker-pg)
+bun run db:generate   # migration from apps/api/src/db/schema.ts
+bun run db:migrate
+```
+
+Dev ports are api 3001 / web 5174 so Farseer (3000/5173) can run alongside.
+
+## Conventions
+
+- Conventional Commits, lowercase subjects; no AI co-author trailers.
+- No hardcoded UI text: `apps/web/src/lib/i18n.ts` (`fr` typed on `en`); push
+  copy rendered server-side per device language in `apps/api/src/lib/notify.ts`.
+
+## ⚠️ Secrets
+
+`apps/api/.env.local` (gitignored): Battle.net client id/secret (client
+"wow-locker" on develop.battle.net), VAPID keypair, CRON_SECRET. Never commit
+or print them.
