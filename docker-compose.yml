@@ -1,0 +1,37 @@
+# Prod-like local run: the monolith image + Postgres.
+#
+#   docker compose up --build
+#
+# For day-to-day dev prefer `bun run db` (Postgres only) + `bun run dev` (HMR).
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wowlocker
+      POSTGRES_PASSWORD: wowlocker
+      POSTGRES_DB: wowlocker
+    volumes:
+      - wowlocker_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wowlocker -d wowlocker"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://wowlocker:wowlocker@db:5432/wowlocker
+      PORT: "3000"
+    # VAPID_* / CRON_SECRET come from apps/api/.env.local.
+    env_file:
+      - apps/api/.env.local
+    ports:
+      - "3000:3000"
+
+volumes:
+  wowlocker_pg:
