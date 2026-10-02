@@ -73,17 +73,27 @@ local function location()
   end
 end
 
-local function snapshot()
+-- Refresh the state. By PLAYER_LOGOUT the client has already cleared XP and
+-- money (they read 0), so the final snapshot (`final`) keeps the last good
+-- values and only refreshes time and location; a 0 max XP is never trusted.
+local function snapshot(final)
   local s = me.state
+  s.updatedAt = time()
+  if final then
+    if GetRealZoneText() ~= "" then location() end
+    return
+  end
   s.level = UnitLevel("player")
-  s.xp = UnitXP("player")
-  s.xpMax = UnitXPMax("player")
-  s.rested = GetXPExhaustion() or 0
+  local xpMax = UnitXPMax("player")
+  if xpMax and xpMax > 0 then
+    s.xp = UnitXP("player")
+    s.xpMax = xpMax
+    s.rested = GetXPExhaustion() or 0
+  end
   s.money = GetMoney()
   s.guild = GetGuildInfo("player")
   s.hardcore = C_GameRules and C_GameRules.IsHardcoreActive and C_GameRules.IsHardcoreActive() or nil
   location()
-  s.updatedAt = time()
 end
 
 -- /played without spamming the chat: hide the default chat frames' handler for
@@ -200,14 +210,15 @@ f:SetScript("OnEvent", function(_, event, ...)
     me.state.playedTotal, me.state.playedLevel = total, thisLevel
     C_Timer.After(0, restoreChatPlayed)
 
-  elseif event == "PLAYER_MONEY" or event == "PLAYER_XP_UPDATE" or event == "UPDATE_EXHAUSTION" then
+  elseif event == "PLAYER_MONEY" or event == "PLAYER_XP_UPDATE" or event == "UPDATE_EXHAUSTION"
+    or event == "PLAYER_ENTERING_WORLD" then
     snapshot()
 
   elseif event == "ZONE_CHANGED_NEW_AREA" then
     location()
 
   elseif event == "PLAYER_LOGOUT" then
-    snapshot()
+    snapshot(true)
     record({ type = "logout", level = me.state.level })
   end
 end)
@@ -215,7 +226,7 @@ end)
 for _, e in ipairs({
   "PLAYER_LOGIN", "PLAYER_LOGOUT", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_LEVEL_UP", "CHARACTER_POINTS_CHANGED",
   "PLAYER_GUILD_UPDATE", "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_DEAD", "TIME_PLAYED_MSG", "PLAYER_MONEY",
-  "PLAYER_XP_UPDATE", "UPDATE_EXHAUSTION", "ZONE_CHANGED_NEW_AREA",
+  "PLAYER_XP_UPDATE", "UPDATE_EXHAUSTION", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD",
 }) do
   f:RegisterEvent(e)
 end

@@ -35,6 +35,11 @@ Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:
 11509, 20506`). Writes `WowLockerDB` (SavedVariables, per character GUID:
 `events` + `state`) — addons have no network access; a Go companion app will
 upload the file. Simulate a session with `luajit addon/test/sim.lua`.
+Verified on a real session (2026-10-02): the GUID `Player-<realmId>-<hex>`
+decodes to the Battle.net API character id (`0x03D658B8` = 64379064 = Namzie)
+and `<realmId>` is the API realm id (6113 = Soulseeker) — match uploads on
+that, not on names. By PLAYER_LOGOUT the client reads XP/money as 0: the
+final snapshot must not re-read them.
 
 ## Battle.net API facts (verified live, see spike/FINDINGS.md)
 

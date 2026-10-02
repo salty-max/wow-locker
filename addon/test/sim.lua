@@ -65,6 +65,8 @@ fire("COMBAT_LOG_EVENT_UNFILTERED")
 clock = clock + 5
 fire("PLAYER_DEAD")
 state.money = 99999; fire("PLAYER_MONEY")
+-- As in the real client: by PLAYER_LOGOUT, XP and money already read 0.
+state.xp, state.xpMax, state.rested, state.money = 0, 0, nil, 0
 fire("PLAYER_LOGOUT")
 
 local me = WowLockerDB.characters["Player-5233-03D9B7D8"]
@@ -86,3 +88,5 @@ local s = me.state
 io.write(("state: level %d xp %d/%d rested %d money %d played %d/%d zone %s/%s at %s,%s guild %s hardcore %s\n"):format(
   s.level, s.xp, s.xpMax, s.rested, s.money, s.playedTotal, s.playedLevel, s.zone, s.subZone, s.x, s.y, tostring(s.guild), tostring(s.hardcore)))
 io.write(("played requested %d times (login, level up, death)\n"):format(playedAsked))
+assert(s.xpMax == 27300 and s.money == 99999 and s.rested == 4000, "logout must keep the last good XP / money / rested")
+io.write("logout kept the last good XP, rested and money ✓\n")
