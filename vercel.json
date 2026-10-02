@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "HUSKY=0 bun install --frozen-lockfile",
+  "buildCommand": "bash scripts/vercel-build.sh"
+}

@@ -66,6 +66,18 @@ Settings page on 127.0.0.1:47615 (also the single-instance lock), every API
 call needs the config's key in `X-Locker-Key` + a matching Host header.
 Release: `WOWLOCKER_SERVER=https://… companion/scripts/build.sh`.
 
+## Hosting (Vercel Pro + Supabase, see DEPLOY.md)
+
+No long-lived process in prod: `scripts/vercel-build.sh` bundles the API
+(`apps/api/src/vercel.ts`) into one Node function (Build Output API), the PWA
+goes to the CDN. The scheduler is `runTick()` (`lib/tick.ts`): in process on
+the Bun server, `/api/admin/tick` (CRON_SECRET) from Vercel Cron (declared in the build's
+config.json);
+a DB lease prevents overlap, a 45 s budget fits the 60 s function limit.
+Never keep request-spanning state in memory: use `lib/ephemeral.ts`
+(Postgres, TTL'd, swept by the tick). Background work after a response goes
+through `waitUntil` (@vercel/functions; a no-op elsewhere).
+
 ## Battle.net API facts (verified live, see spike/FINDINGS.md)
 
 - Namespaces: `classic1x` (Era, Hardcore incl. Anniversary HC = Soulseeker, SoD),

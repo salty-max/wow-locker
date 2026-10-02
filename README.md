@@ -79,3 +79,6 @@ bun run dev            # api :3001 + web :5174
 ```
 
 Checks: `bun run typecheck && bun run lint && bun run test && bun run build`.
+
+Hosting: Vercel Pro (with Vercel Cron) + a free Supabase project — see
+[DEPLOY.md](DEPLOY.md).

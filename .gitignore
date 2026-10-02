@@ -36,3 +36,6 @@ dev-dist
 .pgdata/
 .pgdata/
 spike/out/
+
+# vercel build output
+.vercel
