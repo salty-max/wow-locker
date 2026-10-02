@@ -12,7 +12,7 @@ export function BnetLogin({ compact = false }: { compact?: boolean }) {
   return (
     <div className={cn("flex flex-col items-center gap-2", compact && "items-stretch")}>
       <div className={cn("flex w-full gap-2", !compact && "max-w-xs")}>
-        <div className="flex rounded-lg border border-edge bg-stone-2 p-0.5" role="radiogroup">
+        <div className="flex gap-1" role="radiogroup">
           {REGIONS.map((r) => (
             <button
               key={r}
@@ -20,16 +20,13 @@ export function BnetLogin({ compact = false }: { compact?: boolean }) {
               role="radio"
               aria-checked={region === r}
               onClick={() => setRegion(r)}
-              className={cn("rounded-md px-2.5 text-xs uppercase", region === r ? "bg-stone-3 font-semibold text-gold" : "text-ink-faint")}
+              className={cn("wow-btn wow-btn-sm px-2.5 uppercase", region === r ? "wow-btn-bnet" : "wow-btn-dark text-ink-faint")}
             >
               {r}
             </button>
           ))}
         </div>
-        <a
-          href={api.loginUrl(region)}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#148eff] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3aa0ff]"
-        >
+        <a href={api.loginUrl(region)} className="wow-btn wow-btn-bnet flex-1">
           <LogIn className="size-4" /> {t.bnet.login}
         </a>
       </div>

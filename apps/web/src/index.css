@@ -263,6 +263,18 @@
   .wow-btn-dark:active {
     background: linear-gradient(180deg, #141418, #2c2c32);
   }
+  /* Same shape, Battle.net blue with a steel edge: the Battle.net login. */
+  .wow-btn-bnet {
+    background: linear-gradient(180deg, #2a86e8 0%, #0f55b4 48%, #072f6e 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      inset 0 0 0 1px #8fb4d9,
+      0 1px 2px rgb(0 0 0 / 0.8);
+    color: #eef6ff;
+  }
+  .wow-btn-bnet:active {
+    background: linear-gradient(180deg, #072f6e, #0f55b4);
+  }
   .wow-btn-sm {
     padding: 0.25rem 0.7rem;
     font-size: 0.78rem;

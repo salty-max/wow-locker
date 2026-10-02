@@ -32,19 +32,18 @@ export function AccountMenu() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={cn(
-          "inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold transition-colors",
-          acc ? "border border-[#148eff]/50 bg-[#148eff]/10 text-[#7cc4ff] hover:bg-[#148eff]/20" : "bg-[#148eff] text-white hover:bg-[#3aa0ff]",
-        )}
+        className={cn("wow-btn wow-btn-sm gap-1.5", acc ? "wow-btn-dark" : "wow-btn-bnet")}
       >
-        {acc ? <UserRound className="size-4" /> : <LogIn className="size-4" />}
-        <span className="max-w-24 truncate sm:max-w-32">{acc ? (acc.battletag ?? "Battle.net") : t.account.login}</span>
-        {acc && <span className="text-[10px] uppercase opacity-70">{acc.region}</span>}
-        <ChevronDown className="size-3.5 opacity-70" />
+        {acc ? <UserRound className="size-3.5 text-[#7cc4ff]" /> : <LogIn className="size-3.5" />}
+        <span className={cn("max-w-24 truncate sm:max-w-32", acc && "text-[#7cc4ff]")}>
+          {acc ? (acc.battletag ?? "Battle.net") : t.account.login}
+        </span>
+        {acc && <span className="text-[10px] text-ink-faint uppercase">{acc.region}</span>}
+        <ChevronDown className="size-3 opacity-70" />
       </button>
 
       {open && (
-        <div className="wow-frame absolute top-11 right-0 z-40 w-64 p-2">
+        <div className="wow-frame absolute top-10 right-0 z-40 w-64 p-2">
           {acc ? (
             <>
               <p className="px-3 pt-1.5 pb-2 text-xs text-ink-faint">

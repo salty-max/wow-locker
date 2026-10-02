@@ -57,7 +57,7 @@ export function Pair() {
               <a
                 key={r}
                 href={`/api/auth/login?region=${r}&pair=${encodeURIComponent(code)}`}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#148eff] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3aa0ff]"
+                className="wow-btn wow-btn-bnet"
               >
                 <LogIn className="size-4" /> {t.account.loginRegion(r.toUpperCase())}
               </a>
