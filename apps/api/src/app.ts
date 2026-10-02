@@ -1,8 +1,10 @@
 import type { AddCharacterRequest, SubscribeRequest } from "@wow-locker/shared";
 import { NOTIFIABLE_EVENTS, REGIONS, type EventType, type Region } from "@wow-locker/shared";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { appOrigin, finishLogin, getImport, startLogin } from "@/lib/account";
 import { authorizeCron } from "@/lib/auth";
+import { handleUpload, pairingExists, pollPairing, startPairing } from "@/lib/companion";
 import { BnetError } from "@/lib/bnet";
 import { log } from "@/lib/log";
 import { asLang, DEFAULT_LANG } from "@/lib/notify";
@@ -52,7 +54,10 @@ app.get("/api/characters/:id", async (c) => {
 app.get("/api/auth/login", (c) => {
   const region = (c.req.query("region") ?? "eu") as Region;
   if (!REGIONS.includes(region)) return c.json({ error: "bad region" }, 400);
-  return c.redirect(startLogin(region));
+  // ?pair=CODE: this login also pairs a companion app.
+  const pair = c.req.query("pair");
+  if (pair && !pairingExists(pair)) return c.redirect(`${appOrigin()}/pair?code=${encodeURIComponent(pair)}&error=expired`);
+  return c.redirect(startLogin(region, pair || undefined));
 });
 
 app.get("/api/auth/callback", async (c) => {
@@ -61,8 +66,11 @@ app.get("/api/auth/callback", async (c) => {
   // Blizzard sends ?error=access_denied when the user cancels.
   if (!code || !state) return c.redirect(`${appOrigin()}/import?error=${encodeURIComponent(c.req.query("error") ?? "cancelled")}`);
   try {
-    const k = await finishLogin(code, state);
-    return c.redirect(`${appOrigin()}/import?k=${k}`);
+    const { importKey, pairCode, pairExpired } = await finishLogin(code, state);
+    if (pairExpired) return c.redirect(`${appOrigin()}/pair?code=${encodeURIComponent(pairExpired)}&error=expired`);
+    return c.redirect(
+      pairCode ? `${appOrigin()}/pair?code=${encodeURIComponent(pairCode)}&done=1&k=${importKey}` : `${appOrigin()}/import?k=${importKey}`,
+    );
   } catch (err) {
     log.warn("auth.callback.failed", { err: String(err) });
     return c.redirect(`${appOrigin()}/import?error=failed`);
@@ -73,6 +81,33 @@ app.get("/api/auth/import/:k", (c) => {
   const data = getImport(c.req.param("k"));
   return data ? c.json(data) : c.json({ error: "expired" }, 404);
 });
+
+// ── companion app ────────────────────────────────────────────────────────────
+
+app.post("/api/companion/pair/start", (c) => c.json(startPairing(appOrigin())));
+
+app.get("/api/companion/pair/:code", (c) => c.json({ pending: pairingExists(c.req.param("code")) }));
+
+app.post("/api/companion/pair/poll", async (c) => {
+  const b = (await c.req.json().catch(() => null)) as { code?: unknown; pollToken?: unknown } | null;
+  if (typeof b?.code !== "string" || typeof b.pollToken !== "string") return c.json({ error: "bad request" }, 400);
+  return c.json(pollPairing(b.code, b.pollToken));
+});
+
+app.post(
+  "/api/companion/upload",
+  // A whole SavedVariables file: generous, but bounded.
+  bodyLimit({ maxSize: 8 * 1024 * 1024, onError: (c) => c.json({ error: "upload too large" }, 413) }),
+  async (c) => {
+    const auth = c.req.header("authorization") ?? "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+    if (!token) return c.json({ error: "unauthorized" }, 401);
+    const body = await c.req.json().catch(() => null);
+    if (!body) return c.json({ error: "bad request" }, 400);
+    const result = await handleUpload(token, body);
+    return result ? c.json(result) : c.json({ error: "unknown or revoked companion" }, 401);
+  },
+);
 
 // ── push ─────────────────────────────────────────────────────────────────────
 

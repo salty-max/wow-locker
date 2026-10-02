@@ -165,6 +165,7 @@ export async function userInfo(userToken: string): Promise<{ battletag?: string 
 export type RawAccountProfile = {
   wow_accounts?: {
     characters?: {
+      id: number;
       name: string;
       level: number;
       realm: { slug: string; name: string };

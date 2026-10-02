@@ -24,6 +24,12 @@ const SLOW_REFRESH_MS = 24 * 3600_000;
  */
 export const SNAPSHOT_VERSION = 3;
 
+/** Event types the addon records itself (exactly): not diffed for addon users. */
+const ADDON_COVERS = new Set<EventData["type"]>(["level", "gear", "respec", "guild", "death"]);
+
+/** Addon data older than this: assume the addon is gone and diff everything again. */
+const ADDON_STALE_MS = 14 * 86400_000;
+
 /** How long after a login we keep looking for a missing full-body render. */
 const RENDER_WAIT_MS = 3 * 86400_000;
 
@@ -67,7 +73,13 @@ export function toSummary(c: CharacterRow): CharacterSummary {
   };
 }
 
-const toEvent = (e: EventRow): CharacterEvent => ({ id: e.id, characterId: e.characterId, at: e.at.toISOString(), data: e.data });
+const toEvent = (e: EventRow): CharacterEvent => ({
+  id: e.id,
+  characterId: e.characterId,
+  at: e.at.toISOString(),
+  source: e.source,
+  data: e.data,
+});
 
 export async function getCharacters(ids: number[]): Promise<CharacterSummary[]> {
   if (!ids.length) return [];
@@ -86,8 +98,15 @@ export async function getCharacter(id: number): Promise<CharacterDetail | null> 
     .from(characterEvents)
     .where(eq(characterEvents.characterId, id))
     .orderBy(desc(characterEvents.at), desc(characterEvents.id))
-    .limit(100);
-  return { ...toSummary(c), equipment: c.equipment, talents: c.talents, stats: c.stats, events: events.map(toEvent) };
+    .limit(300);
+  return {
+    ...toSummary(c),
+    equipment: c.equipment,
+    talents: c.talents,
+    stats: c.stats,
+    events: events.map(toEvent),
+    addon: c.addon ?? null,
+  };
 }
 
 /** Start tracking a character (or return the existing row). */
@@ -242,8 +261,14 @@ export async function refreshCharacter(c: CharacterRow, { force = false } = {}):
     renderUrl: base.renderUrl ?? c.renderUrl,
   };
 
-  // Events only once we have a previous snapshot to compare with.
-  const events: EventData[] = [...(back ? [back] : []), ...(c.fetchedAt && c.equipment.length + c.level > 0 ? diffSnapshots(c, next) : [])];
+  // Events only once we have a previous snapshot to compare with. For
+  // characters that run the addon, the addon's own (exact, timestamped) events
+  // win: the diff only keeps what the addon can't see.
+  const diffed = c.fetchedAt && c.equipment.length + c.level > 0 ? diffSnapshots(c, next) : [];
+  const events: EventData[] = [
+    ...(back ? [back] : []),
+    ...(c.addon && Date.now() - Date.parse(c.addon.syncedAt) < ADDON_STALE_MS ? diffed.filter((e) => !ADDON_COVERS.has(e.type)) : diffed),
+  ];
 
   const [row] = await db
     .update(characters)

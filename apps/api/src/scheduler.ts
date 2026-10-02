@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { log } from "@/lib/log";
 import { setState } from "@/lib/state";
+import { fireReminders } from "@/lib/companion";
 import { notifyPending, refreshDue } from "@/lib/tracker";
 
 function guarded(name: string, job: () => Promise<unknown>): () => Promise<void> {
@@ -27,6 +28,7 @@ export function startScheduler(): void {
   const tick = guarded("refresh", async () => {
     const r = await refreshDue();
     await notifyPending();
+    await fireReminders(); // mail expiring, fully rested, cooldown ready
     if (r.checked) await setState("lastRefreshAt", new Date().toISOString());
   });
   cron.schedule("*/2 * * * *", tick);

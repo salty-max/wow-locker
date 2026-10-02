@@ -6,6 +6,7 @@ import { characters } from "@/db/schema";
 import { accountProfile, api, authorizeUrl, BnetError, exchangeCode, userInfo } from "@/lib/bnet";
 import { classKeyOf, factionOf } from "@/lib/classic";
 import { log } from "@/lib/log";
+import { completePairing } from "@/lib/companion";
 import { listRealms } from "@/lib/realms";
 
 /**
@@ -18,7 +19,7 @@ import { listRealms } from "@/lib/realms";
  */
 
 const TTL_MS = 10 * 60_000;
-const pendingStates = new Map<string, { region: Region; at: number }>();
+const pendingStates = new Map<string, { region: Region; at: number; pairCode?: string }>();
 const imports = new Map<string, { data: AccountImport; at: number }>();
 
 function sweep() {
@@ -39,16 +40,17 @@ export function appOrigin(): string {
   return (process.env.APP_ORIGIN ?? "http://localhost:5174").replace(/\/$/, "");
 }
 
-export function startLogin(region: Region): string {
+/** `pairCode`: this login also pairs a companion app (see companion.ts). */
+export function startLogin(region: Region, pairCode?: string): string {
   if (!REGIONS.includes(region)) throw new Error("bad region");
   sweep();
   const state = randomKey();
-  pendingStates.set(state, { region, at: Date.now() });
+  pendingStates.set(state, { region, at: Date.now(), pairCode });
   return authorizeUrl(redirectUri(), state);
 }
 
-/** Handle Blizzard's redirect. Returns the import key, or throws. */
-export async function finishLogin(code: string, state: string): Promise<string> {
+/** Handle Blizzard's redirect. Returns where to send the browser, or throws. */
+export async function finishLogin(code: string, state: string): Promise<{ importKey: string; pairCode?: string; pairExpired?: string }> {
   sweep();
   const pending = pendingStates.get(state);
   if (!pending) throw new Error("unknown or expired login state");
@@ -57,7 +59,7 @@ export async function finishLogin(code: string, state: string): Promise<string> 
   const [{ battletag }, realms] = await Promise.all([userInfo(token).catch(() => ({ battletag: undefined })), listRealms(pending.region)]);
   const category = new Map(realms.map((r) => [`${r.flavour}:${r.slug}`, r.category]));
 
-  const found: Omit<AccountCharacter, "trackedId" | "isGhost" | "isSelfFound">[] = [];
+  const found: (Omit<AccountCharacter, "trackedId" | "isGhost" | "isSelfFound"> & { id: number })[] = [];
   const unavailable: Flavour[] = [];
   for (const flavour of FLAVOURS) {
     try {
@@ -65,6 +67,7 @@ export async function finishLogin(code: string, state: string): Promise<string> 
       for (const acc of profile.wow_accounts ?? []) {
         for (const c of acc.characters ?? []) {
           found.push({
+            id: c.id,
             region: pending.region,
             flavour,
             realmSlug: c.realm.slug,
@@ -90,7 +93,7 @@ export async function finishLogin(code: string, state: string): Promise<string> 
     region: pending.region,
     battletag: battletag ?? null,
     characters: found
-      .map((c) => ({ ...c, isGhost: null, isSelfFound: null, trackedId: tracked.get(key(c)) ?? null }))
+      .map(({ id: _id, ...c }) => ({ ...c, isGhost: null, isSelfFound: null, trackedId: tracked.get(key(c)) ?? null }))
       .sort((a, b) => b.level - a.level || a.name.localeCompare(b.name)),
     unavailable,
     checking: found.length > 0,
@@ -101,7 +104,16 @@ export async function finishLogin(code: string, state: string): Promise<string> 
   // background (1 request each) while the import screen is already showing.
   void checkStatuses(data).catch((err) => log.warn("account.check.failed", { err: String(err) }));
   log.info("account.imported", { region: pending.region, characters: data.characters.length, unavailable });
-  return k;
+  let pairCode = pending.pairCode;
+  if (pairCode) {
+    const paired = await completePairing(pairCode, {
+      region: pending.region,
+      battletag: battletag ?? null,
+      owned: found.map((c) => ({ id: c.id, flavour: c.flavour, realmSlug: c.realmSlug, name: c.name })),
+    });
+    if (!paired) pairCode = undefined;
+  }
+  return { importKey: k, pairCode, pairExpired: !!pending.pairCode && !pairCode ? pending.pairCode : undefined };
 }
 
 async function checkStatuses(data: AccountImport): Promise<void> {

@@ -124,15 +124,79 @@ export type Stats = {
   dodge: number;
 };
 
-export type EventType = "tracked" | "level" | "death" | "gear" | "respec" | "guild" | "selfFoundLost" | "missing" | "found";
-export const NOTIFIABLE_EVENTS: EventType[] = ["level", "death", "gear", "respec", "guild", "selfFoundLost", "missing"];
+export type EventType =
+  | "tracked"
+  | "level"
+  | "death"
+  | "gear"
+  | "respec"
+  | "guild"
+  | "selfFoundLost"
+  | "missing"
+  | "found"
+  // from the in-game addon
+  | "session"
+  | "talent"
+  | "quest"
+  | "closeCall"
+  | "dungeon"
+  | "loot"
+  | "skill"
+  | "reputation"
+  // scheduled from addon data, fired while the game is closed
+  | "reminder";
+
+/** Every event type a device can choose to be notified about. */
+export const NOTIFIABLE_EVENTS: EventType[] = [
+  "level",
+  "death",
+  "closeCall",
+  "dungeon",
+  "reminder",
+  "reputation",
+  "guild",
+  "respec",
+  "gear",
+  "quest",
+  "loot",
+  "skill",
+  "selfFoundLost",
+  "missing",
+];
+/** Defaults: what matters, without a push for every quest or green item. */
+export const DEFAULT_NOTIFY_EVENTS: EventType[] = [
+  "level",
+  "death",
+  "closeCall",
+  "dungeon",
+  "reminder",
+  "reputation",
+  "guild",
+  "respec",
+  "selfFoundLost",
+  "missing",
+];
 
 export type GearChange = { slot: string; slotName: string; from: string | null; to: string | null; quality: Quality | null };
 
+export type ReminderKind = "mailExpiring" | "rested" | "cooldown";
+
 export type EventData =
   | { type: "tracked"; level: number }
-  | { type: "level"; from: number; to: number }
-  | { type: "death"; level: number }
+  | { type: "level"; from: number; to: number; /** /played (s) when reached, from the addon */ played?: number }
+  | {
+      type: "death";
+      level: number;
+      // from the addon
+      killer?: string | null;
+      spell?: string | null;
+      environmental?: boolean;
+      zone?: string | null;
+      subZone?: string | null;
+      x?: number | null;
+      y?: number | null;
+      instance?: string | null;
+    }
   | { type: "gear"; changes: GearChange[] }
   | { type: "respec"; from: TalentTree[]; to: TalentTree[] }
   | { type: "guild"; from: string | null; to: string | null }
@@ -140,15 +204,103 @@ export type EventData =
   /** Two checks in a row found no profile: deleted, renamed or transferred. */
   | { type: "missing" }
   /** A missing character answering again. */
-  | { type: "found" };
+  | { type: "found" }
+  // ── addon ──
+  | { type: "session"; action: "login" | "logout"; level: number }
+  | { type: "talent"; trees: TalentTree[] }
+  | { type: "quest"; questId: number; title: string | null; xp: number; money: number }
+  | {
+      type: "closeCall";
+      pct: number;
+      level: number;
+      attacker: string | null;
+      spell: string | null;
+      zone: string | null;
+      subZone: string | null;
+      instance: string | null;
+    }
+  | {
+      type: "dungeon";
+      action: "enter" | "leave";
+      name: string;
+      kind: string;
+      group: string[];
+      duration?: number;
+      deaths?: number;
+      closeCalls?: number;
+    }
+  | { type: "loot"; itemId: number; name: string; quality: Quality; count: number; how: "loot" | "received" | "created" }
+  | { type: "skill"; name: string; section: string | null; rank: number; max: number; learned: boolean }
+  | { type: "reputation"; faction: string; standing: number; label: string | null }
+  // ── scheduled ──
+  | {
+      type: "reminder";
+      kind: ReminderKind;
+      /** mailExpiring: letters / items about to expire; cooldown: the craft's name */
+      detail: string | null;
+      count?: number;
+      onExpiry?: "returned" | "deleted";
+    };
 
-export type CharacterEvent = { id: number; characterId: number; at: string; data: EventData };
+export type EventSource = "api" | "addon" | "scheduled";
+export type CharacterEvent = { id: number; characterId: number; at: string; source: EventSource; data: EventData };
+
+/** What the addon knows that the API doesn't, as of the last upload. */
+export type AddonState = {
+  syncedAt: string; // ISO, last upload
+  updatedAt: string | null; // ISO, last time the addon refreshed it in game
+  xp: number | null;
+  xpMax: number | null;
+  rested: number | null;
+  resting: boolean | null;
+  money: number | null; // copper
+  playedTotal: number | null; // seconds
+  playedLevel: number | null;
+  zone: string | null;
+  subZone: string | null;
+  x: number | null;
+  y: number | null;
+  hardcore: boolean | null;
+  levelPlayed: Record<string, number>; // level → /played when reached
+  questsCompleted: number;
+  skills: { name: string; section: string | null; rank: number; max: number }[];
+  reputations: { name: string; standing: number; value: number; max: number }[];
+  mail: {
+    readAt: string | null;
+    hasNew: boolean;
+    letters: {
+      sender: string | null;
+      subject: string | null;
+      money: number;
+      items: { name: string; itemId: number | null; count: number; quality: number | null }[];
+      expiresAt: string;
+      onExpiry: "returned" | "deleted";
+    }[];
+  } | null;
+  cooldowns: { name: string | null; spellId?: number; itemId?: number; readyAt: string }[];
+  /** Dungeon the character was in at the last upload. */
+  run: { name: string; kind: string; startedAt: string } | null;
+};
 
 export type CharacterDetail = CharacterSummary & {
   equipment: EquippedItem[];
   talents: TalentGroup[];
   stats: Stats | null;
   events: CharacterEvent[];
+  /** Null until the companion has uploaded addon data for this character. */
+  addon: AddonState | null;
+};
+
+// ── companion ────────────────────────────────────────────────────────────────
+
+/** POST /api/companion/pair/start */
+export type PairStart = { code: string; pollToken: string; url: string; expiresIn: number };
+/** POST /api/companion/pair/poll */
+export type PairPoll = { status: "pending" } | { status: "paired"; token: string; battletag: string | null; characters: number } | { status: "expired" };
+/** POST /api/companion/upload — the addon's WowLockerDB, converted from Lua to JSON. */
+export type UploadRequest = { format: number; characters: Record<string, unknown> };
+export type UploadResult = {
+  characters: { guid: string; name: string; status: "synced" | "unknown" | "invalid"; events: number; characterId?: number }[];
 };
 
 export type AddCharacterRequest = { region: Region; flavour: Flavour; realm: string; name: string };
