@@ -290,7 +290,8 @@ export async function refreshCharacter(c: CharacterRow, { force = false } = {}):
 }
 
 /** One poller tick: refresh the characters that are due, oldest first. */
-export async function refreshDue(limit = 60): Promise<{ checked: number }> {
+/** `deadline` (epoch ms): stop starting new refreshes after it (serverless time limit). */
+export async function refreshDue(limit = 60, deadline = Infinity): Promise<{ checked: number }> {
   const now = Date.now();
   const due = await db
     .select()
@@ -313,8 +314,13 @@ export async function refreshDue(limit = 60): Promise<{ checked: number }> {
     )
     .orderBy(asc(characters.fetchedAt))
     .limit(limit);
-  for (const c of due) await refreshCharacter(c);
-  return { checked: due.length };
+  let checked = 0;
+  for (const c of due) {
+    if (Date.now() > deadline) break; // the rest stay due for the next tick
+    await refreshCharacter(c);
+    checked++;
+  }
+  return { checked };
 }
 
 /** Retry pushes that failed everywhere, while they're still news (1 day). */

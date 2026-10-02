@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { appOrigin, finishLogin, getImport, startLogin } from "@/lib/account";
 import { authorizeCron } from "@/lib/auth";
+import { runTick } from "@/lib/tick";
 import { handleUpload, pairingExists, pollPairing, startPairing } from "@/lib/companion";
 import { BnetError } from "@/lib/bnet";
 import { log } from "@/lib/log";
@@ -51,13 +52,13 @@ app.get("/api/characters/:id", async (c) => {
 
 // ── Log in with Battle.net (account import) ─────────────────────────────────
 
-app.get("/api/auth/login", (c) => {
+app.get("/api/auth/login", async (c) => {
   const region = (c.req.query("region") ?? "eu") as Region;
   if (!REGIONS.includes(region)) return c.json({ error: "bad region" }, 400);
   // ?pair=CODE: this login also pairs a companion app.
   const pair = c.req.query("pair");
-  if (pair && !pairingExists(pair)) return c.redirect(`${appOrigin()}/pair?code=${encodeURIComponent(pair)}&error=expired`);
-  return c.redirect(startLogin(region, pair || undefined));
+  if (pair && !(await pairingExists(pair))) return c.redirect(`${appOrigin()}/pair?code=${encodeURIComponent(pair)}&error=expired`);
+  return c.redirect(await startLogin(region, pair || undefined));
 });
 
 app.get("/api/auth/callback", async (c) => {
@@ -77,27 +78,28 @@ app.get("/api/auth/callback", async (c) => {
   }
 });
 
-app.get("/api/auth/import/:k", (c) => {
-  const data = getImport(c.req.param("k"));
+app.get("/api/auth/import/:k", async (c) => {
+  const data = await getImport(c.req.param("k"));
   return data ? c.json(data) : c.json({ error: "expired" }, 404);
 });
 
 // ── companion app ────────────────────────────────────────────────────────────
 
-app.post("/api/companion/pair/start", (c) => c.json(startPairing(appOrigin())));
+app.post("/api/companion/pair/start", async (c) => c.json(await startPairing(appOrigin())));
 
-app.get("/api/companion/pair/:code", (c) => c.json({ pending: pairingExists(c.req.param("code")) }));
+app.get("/api/companion/pair/:code", async (c) => c.json({ pending: await pairingExists(c.req.param("code")) }));
 
 app.post("/api/companion/pair/poll", async (c) => {
   const b = (await c.req.json().catch(() => null)) as { code?: unknown; pollToken?: unknown } | null;
   if (typeof b?.code !== "string" || typeof b.pollToken !== "string") return c.json({ error: "bad request" }, 400);
-  return c.json(pollPairing(b.code, b.pollToken));
+  return c.json(await pollPairing(b.code, b.pollToken));
 });
 
 app.post(
   "/api/companion/upload",
-  // A whole SavedVariables file: generous, but bounded.
-  bodyLimit({ maxSize: 8 * 1024 * 1024, onError: (c) => c.json({ error: "upload too large" }, 413) }),
+  // A whole SavedVariables file, as JSON: ~1 MB for 5000 events. 4 MB keeps
+  // under Vercel's 4.5 MB request limit.
+  bodyLimit({ maxSize: 4 * 1024 * 1024, onError: (c) => c.json({ error: "upload too large" }, 413) }),
   async (c) => {
     const auth = c.req.header("authorization") ?? "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
@@ -148,3 +150,5 @@ app.use("/api/admin/*", async (c, next) => {
   await next();
 });
 app.post("/api/admin/refresh", async (c) => c.json(await refreshDue(200)));
+// The scheduler, for hosts without a long-lived process: call every 2 minutes.
+app.on(["GET", "POST"], "/api/admin/tick", async (c) => c.json(await runTick()));

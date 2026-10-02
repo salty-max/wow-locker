@@ -5,8 +5,10 @@ import { db } from "@/db";
 import { characters } from "@/db/schema";
 import { accountProfile, api, authorizeUrl, BnetError, exchangeCode, userInfo } from "@/lib/bnet";
 import { classKeyOf, factionOf } from "@/lib/classic";
-import { log } from "@/lib/log";
+import { waitUntil } from "@vercel/functions";
 import { completePairing } from "@/lib/companion";
+import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
+import { log } from "@/lib/log";
 import { listRealms } from "@/lib/realms";
 
 /**
@@ -14,19 +16,13 @@ import { listRealms } from "@/lib/realms";
  *
  * Deliberately stateless about the user: the access token is used once, right
  * in the callback, to read the account's character list, then dropped. Nothing
- * about the Battle.net account is stored; the list waits in memory under a
- * random key for a few minutes so the web app can show the import screen.
+ * about the Battle.net account is stored; the list waits a few minutes under a
+ * random key (in the ephemeral table: any server instance can answer) so the
+ * web app can show the import screen.
  */
 
 const TTL_MS = 10 * 60_000;
-const pendingStates = new Map<string, { region: Region; at: number; pairCode?: string }>();
-const imports = new Map<string, { data: AccountImport; at: number }>();
-
-function sweep() {
-  const now = Date.now();
-  for (const [k, v] of pendingStates) if (now - v.at > TTL_MS) pendingStates.delete(k);
-  for (const [k, v] of imports) if (now - v.at > TTL_MS) imports.delete(k);
-}
+type PendingLogin = { region: Region; pairCode?: string };
 
 const randomKey = () => Buffer.from(crypto.getRandomValues(new Uint8Array(24))).toString("base64url");
 
@@ -41,20 +37,17 @@ export function appOrigin(): string {
 }
 
 /** `pairCode`: this login also pairs a companion app (see companion.ts). */
-export function startLogin(region: Region, pairCode?: string): string {
+export async function startLogin(region: Region, pairCode?: string): Promise<string> {
   if (!REGIONS.includes(region)) throw new Error("bad region");
-  sweep();
   const state = randomKey();
-  pendingStates.set(state, { region, at: Date.now(), pairCode });
+  await putTemp("login", state, { region, pairCode } satisfies PendingLogin, TTL_MS);
   return authorizeUrl(redirectUri(), state);
 }
 
 /** Handle Blizzard's redirect. Returns where to send the browser, or throws. */
 export async function finishLogin(code: string, state: string): Promise<{ importKey: string; pairCode?: string; pairExpired?: string }> {
-  sweep();
-  const pending = pendingStates.get(state);
+  const pending = await takeTemp<PendingLogin>("login", state); // one use
   if (!pending) throw new Error("unknown or expired login state");
-  pendingStates.delete(state); // one use
   const token = await exchangeCode(code, redirectUri());
   const [{ battletag }, realms] = await Promise.all([userInfo(token).catch(() => ({ battletag: undefined })), listRealms(pending.region)]);
   const category = new Map(realms.map((r) => [`${r.flavour}:${r.slug}`, r.category]));
@@ -99,10 +92,11 @@ export async function finishLogin(code: string, state: string): Promise<{ import
     checking: found.length > 0,
   };
   const k = randomKey();
-  imports.set(k, { data, at: Date.now() });
+  await putTemp("import", k, data, TTL_MS);
   // The account list has no dead/alive flag: read each profile in the
   // background (1 request each) while the import screen is already showing.
-  void checkStatuses(data).catch((err) => log.warn("account.check.failed", { err: String(err) }));
+  // waitUntil keeps a serverless function alive until it's done.
+  waitUntil(checkStatuses(k, data).catch((err) => log.warn("account.check.failed", { err: String(err) })));
   log.info("account.imported", { region: pending.region, characters: data.characters.length, unavailable });
   let pairCode = pending.pairCode;
   if (pairCode) {
@@ -116,8 +110,10 @@ export async function finishLogin(code: string, state: string): Promise<{ import
   return { importKey: k, pairCode, pairExpired: !!pending.pairCode && !pairCode ? pending.pairCode : undefined };
 }
 
-async function checkStatuses(data: AccountImport): Promise<void> {
+/** Progress is saved every few characters, so the import screen fills in live. */
+async function checkStatuses(k: string, data: AccountImport): Promise<void> {
   // Highest levels first: the ones the user is most likely to pick.
+  let lastSave = Date.now();
   for (const c of data.characters) {
     try {
       const p = await api.summary(c.flavour, c.region, c.realmSlug, c.name);
@@ -126,13 +122,17 @@ async function checkStatuses(data: AccountImport): Promise<void> {
     } catch {
       /* unknown: left null */
     }
+    if (Date.now() - lastSave > 1500) {
+      if (!(await setTemp("import", k, data))) return; // expired: nobody's looking
+      lastSave = Date.now();
+    }
   }
   data.checking = false;
+  await setTemp("import", k, data);
 }
 
-export function getImport(k: string): AccountImport | null {
-  sweep();
-  return imports.get(k)?.data ?? null;
+export async function getImport(k: string): Promise<AccountImport | null> {
+  return getTemp<AccountImport>("import", k);
 }
 
 const key = (c: { flavour: Flavour; realmSlug: string; name: string }) => `${c.flavour}:${c.realmSlug}:${c.name.toLowerCase()}`;

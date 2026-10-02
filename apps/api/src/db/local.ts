@@ -12,7 +12,14 @@ export function databaseUrl(): string {
 /** Open a connection and register it as the app's db. Returns the raw client
  *  so scripts can `await sql.end()` and let the process exit. */
 export function initDb(url = databaseUrl()): ReturnType<typeof postgres> {
-  const sql = postgres(url, { onnotice: () => {} });
+  const serverless = !!process.env.VERCEL;
+  const sql = postgres(url, {
+    onnotice: () => {},
+    // Supabase's transaction pooler (port 6543) can't keep prepared statements.
+    prepare: !/:6543\//.test(url),
+    // A serverless instance needs few connections and must let them go fast.
+    ...(serverless ? { max: 3, idle_timeout: 20, connect_timeout: 10 } : {}),
+  });
   setDb(drizzle(sql, { schema }) as unknown as DB);
   return sql;
 }

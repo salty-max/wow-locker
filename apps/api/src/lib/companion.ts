@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
 import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/lib/addon";
+import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { deliverEvent } from "@/lib/push";
 import { addCharacter } from "@/lib/tracker";
@@ -23,12 +24,13 @@ const PAIR_TTL_MS = 10 * 60_000;
 // No 0/O or 1/I: the code may be read off one screen and typed on another.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+// In the ephemeral table (any server instance can answer the poll). The raw
+// upload token sits there only between the login and the companion's next
+// poll (seconds; 10 min at most), then the row is deleted.
 type Pending = {
-  pollToken: string;
-  at: number;
-  result?: { token: string; battletag: string | null; characters: number };
+  pollTokenHash: string;
+  result: { token: string; battletag: string | null; characters: number } | null;
 };
-const pairings = new Map<string, Pending>();
 
 const random = (bytes: number) => Buffer.from(crypto.getRandomValues(new Uint8Array(bytes))).toString("base64url");
 
@@ -37,24 +39,17 @@ async function sha256(s: string): Promise<string> {
   return Buffer.from(h).toString("hex");
 }
 
-function sweep() {
-  const now = Date.now();
-  for (const [k, v] of pairings) if (now - v.at > PAIR_TTL_MS) pairings.delete(k);
-}
-
-export function startPairing(origin: string): PairStart {
-  sweep();
+export async function startPairing(origin: string): Promise<PairStart> {
   const pick = crypto.getRandomValues(new Uint8Array(8));
   const raw = Array.from(pick, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
   const code = `${raw.slice(0, 4)}-${raw.slice(4)}`;
   const pollToken = random(24);
-  pairings.set(code, { pollToken, at: Date.now() });
+  await putTemp("pair", code, { pollTokenHash: await sha256(pollToken), result: null } satisfies Pending, PAIR_TTL_MS);
   return { code, pollToken, url: `${origin}/pair?code=${code}`, expiresIn: PAIR_TTL_MS / 1000 };
 }
 
-export function pairingExists(code: string): boolean {
-  sweep();
-  return pairings.has(code);
+export async function pairingExists(code: string): Promise<boolean> {
+  return (await getTemp<Pending>("pair", code)) != null;
 }
 
 /** Called from the Battle.net callback: the login proved which characters are the user's. */
@@ -62,8 +57,8 @@ export async function completePairing(
   code: string,
   account: { region: Region; battletag: string | null; owned: { id: number; flavour: Flavour; realmSlug: string; name: string }[] },
 ): Promise<boolean> {
-  const p = pairings.get(code);
-  if (!p) return false;
+  const p = await getTemp<Pending>("pair", code);
+  if (!p || p.result) return false;
   const token = random(32);
   await db.insert(companionLinks).values({
     tokenHash: await sha256(token),
@@ -73,18 +68,18 @@ export async function completePairing(
     owned: account.owned,
   });
   // Exposed to the poll only once the link exists.
-  p.result = { token, battletag: account.battletag, characters: account.owned.length };
+  if (!(await setTemp("pair", code, { ...p, result: { token, battletag: account.battletag, characters: account.owned.length } }))) return false;
   log.info("companion.paired", { battletag: account.battletag, characters: account.owned.length });
   return true;
 }
 
-export function pollPairing(code: string, pollToken: string): PairPoll {
-  sweep();
-  const p = pairings.get(code);
-  if (!p || p.pollToken !== pollToken) return { status: "expired" };
+export async function pollPairing(code: string, pollToken: string): Promise<PairPoll> {
+  const p = await getTemp<Pending>("pair", code);
+  if (!p || p.pollTokenHash !== (await sha256(pollToken))) return { status: "expired" };
   if (!p.result) return { status: "pending" };
-  pairings.delete(code); // the token is handed over exactly once
-  return { status: "paired", ...p.result };
+  // The token is handed over exactly once: whoever deletes the row gets it.
+  const taken = await takeTemp<Pending>("pair", code);
+  return taken?.result ? { status: "paired", ...taken.result } : { status: "expired" };
 }
 
 export async function linkFor(token: string) {

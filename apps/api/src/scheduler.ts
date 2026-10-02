@@ -1,37 +1,22 @@
 import cron from "node-cron";
 import { log } from "@/lib/log";
-import { setState } from "@/lib/state";
-import { fireReminders } from "@/lib/companion";
-import { notifyPending, refreshDue } from "@/lib/tracker";
-
-function guarded(name: string, job: () => Promise<unknown>): () => Promise<void> {
-  let running = false;
-  return async () => {
-    if (running) return;
-    running = true;
-    try {
-      await job();
-    } catch (err) {
-      log.error(`${name}.crash`, { err: String(err) });
-    } finally {
-      running = false;
-    }
-  };
-}
+import { runTick } from "@/lib/tick";
 
 /**
- * In-process scheduler: every 2 minutes, refresh the characters that are due
- * (each one at most every 10 min; 1 request when nothing changed), then retry
- * any push that failed.
+ * In-process scheduler for the Bun server (local dev, Docker): one tick every
+ * 2 minutes. On Vercel there's no long-lived process: an external cron calls
+ * /api/admin/tick instead (see DEPLOY.md). Both run the same runTick().
  */
 export function startScheduler(): void {
-  const tick = guarded("refresh", async () => {
-    const r = await refreshDue();
-    await notifyPending();
-    await fireReminders(); // mail expiring, fully rested, cooldown ready
-    if (r.checked) await setState("lastRefreshAt", new Date().toISOString());
-  });
+  const tick = async () => {
+    try {
+      // No serverless time limit here: let a tick finish what's due.
+      await runTick(Infinity);
+    } catch (err) {
+      log.error("tick.crash", { err: String(err) });
+    }
+  };
   cron.schedule("*/2 * * * *", tick);
-  log.info("scheduler.started", { refresh: "every 2 min (each character ≤ every 10 min)" });
+  log.info("scheduler.started", { tick: "every 2 min (each character ≤ every 10 min)" });
   void tick();
 }

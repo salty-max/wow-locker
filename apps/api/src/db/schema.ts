@@ -5,6 +5,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -132,6 +133,22 @@ export const reminders = pgTable(
     sentAt: timestamp("sent_at", { withTimezone: true }),
   },
   (t) => [uniqueIndex("reminders_key").on(t.characterId, t.kind, t.key), index("reminders_due").on(t.sentAt, t.fireAt)],
+);
+
+/**
+ * Short-lived state shared by every server instance (on Vercel each request
+ * can land on a different one): Battle.net login states, account imports,
+ * companion pairings, the scheduler's lease. Rows past `expiresAt` are dead.
+ */
+export const ephemeral = pgTable(
+  "ephemeral",
+  {
+    kind: text("kind").notNull(),
+    key: text("key").notNull(),
+    data: jsonb("data").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.kind, t.key] }), index("ephemeral_expiry").on(t.expiresAt)],
 );
 
 /** Item icon URLs never change: fetched once per item and flavour. */
