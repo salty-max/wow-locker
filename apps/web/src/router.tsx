@@ -1,5 +1,6 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
+import { Addon } from "@/routes/Addon";
 import { Character } from "@/routes/Character";
 import { Import } from "@/routes/Import";
 import { Pair } from "@/routes/Pair";
@@ -29,9 +30,10 @@ const pairRoute = createRoute({
   }),
   component: Pair,
 });
+const addonRoute = createRoute({ getParentRoute: () => rootRoute, path: "/addon", component: Addon });
 const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: Settings });
 
-const routeTree = rootRoute.addChildren([lockerRoute, characterRoute, importRoute, pairRoute, settingsRoute]);
+const routeTree = rootRoute.addChildren([lockerRoute, characterRoute, importRoute, pairRoute, addonRoute, settingsRoute]);
 
 export const router = createRouter({ routeTree, scrollRestoration: true, defaultPreload: "intent" });
 

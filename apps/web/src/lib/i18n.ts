@@ -4,7 +4,96 @@ import { useSettings } from "@/lib/settings";
 /** Every visible string. `fr` is typed on the exact shape of `en`. */
 const en = {
   app: { tagline: "WoW Classic characters" },
-  nav: { locker: "Locker", settings: "Settings" },
+  nav: { locker: "Locker", addon: "Addon", settings: "Settings" },
+  addon: {
+    title: "Get started",
+    intro:
+      "The Battle.net API only sees a character as it was at its last logout. The WowLocker addon records what happens while you play, and the wow-locker companion app uploads it here a few seconds after you log out or /reload.",
+    features: [
+      "Every gear swap, level-up and talent point, timestamped",
+      "Hardcore deaths and close calls: killer, zone, coordinates",
+      "Quests, dungeon runs, notable loot, skills and reputation",
+      "Rested XP, gold, /played and where you are",
+      "Reminders while the game is closed: mail about to expire, fully rested, crafting cooldown ready",
+    ],
+    withoutAddon:
+      "Without the addon, wow-locker still tracks level, gear, talents and Hardcore status from Battle.net, updated when you log out.",
+    downloads: "Downloads",
+    onComputer: "Install these on the computer you play on.",
+    kindAddon: "Addon",
+    kindCompanion: "Companion",
+    yourSystem: "Your system",
+    addonDetail: "Classic Era, Hardcore, Season of Discovery and TBC Anniversary.",
+    windowsDetail: "Windows 10 or 11. Lives in the system tray.",
+    windowsArm: "Companion for Windows on ARM",
+    macDetail: "macOS 11 or later, Apple silicon and Intel. Lives in the menu bar.",
+    downloadZip: "Download .zip",
+    downloadExe: "Download .exe",
+    openSource: "Both are open source.",
+    allReleases: "All releases and source code",
+    setup: "Setup",
+    steps: [
+      {
+        title: "Install the addon",
+        body: [
+          "Unzip it into the game's AddOns folder, e.g. `World of Warcraft/_anniversary_/Interface/AddOns` (or `_classic_era_`), so that you get `AddOns/WowLocker/WowLocker.toc`.",
+          "On the character select screen, open AddOns and make sure WowLocker is enabled.",
+        ],
+      },
+      {
+        title: "Install the companion",
+        body: [
+          "Windows: run the .exe. It isn't signed yet, so SmartScreen may warn you: More info → Run anyway. Its icon appears in the tray (the ^ arrow next to the clock).",
+          "macOS: unzip, move wow-locker to Applications, then right-click it → Open the first time (it isn't notarized yet). Its icon appears in the menu bar.",
+        ],
+      },
+      {
+        title: "Link it with Battle.net",
+        body: [
+          "The companion opens its settings page: click Link with Battle.net and log in on wow-locker.app. The login only proves which characters are yours: the companion can upload data for those, and nothing else.",
+          "It finds your World of Warcraft folder by itself; if not, add it in the companion's settings, where you can also choose accounts and characters and launch it at login.",
+        ],
+      },
+      {
+        title: "Play",
+        body: [
+          "The game saves the addon's data when you log out or type `/reload`; the companion uploads it seconds later. Type `/wowlocker` in game to see what has been recorded.",
+          "Characters that aren't in your locker yet are added on their first upload.",
+        ],
+      },
+      {
+        title: "Get notified",
+        body: [
+          "In Settings, turn on notifications on your phone or computer and pick the events you care about: deaths, level-ups, close calls, dungeon runs, expiring mail…",
+        ],
+      },
+    ],
+    toLocker: "Open my locker",
+    toNotifications: "Notification settings",
+    faq: "Questions",
+    questions: [
+      {
+        q: "Is it allowed?",
+        a: "The addon only reads what the game shows you through the standard addon API and writes it to its saved variables, like any other addon. It automates nothing. The companion only reads that one file.",
+      },
+      {
+        q: "What gets sent, and where?",
+        a: "Only the WowLocker data (the events and state listed above), only to wow-locker.app, only for characters on your Battle.net account. Your Battle.net password never goes through wow-locker, and the companion keeps an upload token, nothing else.",
+      },
+      {
+        q: "Does the game need to be running for notifications?",
+        a: "No. Reminders (mail about to expire, fully rested, cooldown ready) are computed from your last upload and sent while the game is closed.",
+      },
+      {
+        q: "Several accounts or computers?",
+        a: "Link the companion on each computer. In its settings you can pick which WoW accounts and characters it uploads.",
+      },
+      {
+        q: "Something isn't syncing",
+        a: "Open the companion's settings from its icon: each character shows its last upload, and errors are listed there. The game only writes the file on logout or `/reload`.",
+      },
+    ],
+  },
   locker: {
     title: "Characters",
     empty: "No characters yet. Add one to start tracking their level, gear, talents and Hardcore fate.",
@@ -90,6 +179,8 @@ const en = {
     talents: "Talents",
     stats: "Stats",
     timeline: "Timeline",
+    addonHint: "Only what Battle.net saw at logout so far. Every gear swap, death and quest, live:",
+    addonLink: "get the addon",
     noGear: "Nothing equipped.",
     noTalents: "No talent points spent yet.",
     talentHint: "Hover or tap a talent for details.",
@@ -235,7 +326,96 @@ export type Messages = typeof en;
 
 const fr: Messages = {
   app: { tagline: "Personnages WoW Classic" },
-  nav: { locker: "Casier", settings: "Réglages" },
+  nav: { locker: "Casier", addon: "Addon", settings: "Réglages" },
+  addon: {
+    title: "Bien démarrer",
+    intro:
+      "L'API Battle.net ne voit un personnage que tel qu'il était à sa dernière déconnexion. L'addon WowLocker enregistre ce qui se passe pendant que vous jouez, et l'application compagnon wow-locker l'envoie ici quelques secondes après une déconnexion ou un /reload.",
+    features: [
+      "Chaque changement d'équipement, niveau et point de talent, horodaté",
+      "Morts et frôlements de mort en Hardcore : tueur, zone, coordonnées",
+      "Quêtes, donjons, butin notable, métiers et réputations",
+      "XP de repos, or, /played et position",
+      "Rappels jeu fermé : courrier sur le point d'expirer, repos complet, recharge d'artisanat prête",
+    ],
+    withoutAddon:
+      "Sans l'addon, wow-locker suit quand même le niveau, l'équipement, les talents et le statut Hardcore via Battle.net, mis à jour à la déconnexion.",
+    downloads: "Téléchargements",
+    onComputer: "À installer sur l'ordinateur où vous jouez.",
+    kindAddon: "Addon",
+    kindCompanion: "Compagnon",
+    yourSystem: "Votre système",
+    addonDetail: "Classic Era, Hardcore, Saison de la Découverte et TBC Anniversary.",
+    windowsDetail: "Windows 10 ou 11. Se loge dans la zone de notification.",
+    windowsArm: "Compagnon pour Windows sur ARM",
+    macDetail: "macOS 11 ou plus récent, puces Apple et Intel. Se loge dans la barre des menus.",
+    downloadZip: "Télécharger le .zip",
+    downloadExe: "Télécharger le .exe",
+    openSource: "Les deux sont open source.",
+    allReleases: "Toutes les versions et le code source",
+    setup: "Installation",
+    steps: [
+      {
+        title: "Installer l'addon",
+        body: [
+          "Décompressez-le dans le dossier AddOns du jeu, par ex. `World of Warcraft/_anniversary_/Interface/AddOns` (ou `_classic_era_`), pour obtenir `AddOns/WowLocker/WowLocker.toc`.",
+          "À l'écran de sélection des personnages, ouvrez AddOns et vérifiez que WowLocker est activé.",
+        ],
+      },
+      {
+        title: "Installer le compagnon",
+        body: [
+          "Windows : lancez le .exe. Il n'est pas encore signé, SmartScreen peut avertir : Informations complémentaires → Exécuter quand même. Son icône apparaît dans la zone de notification (la flèche ^ près de l'horloge).",
+          "macOS : décompressez, placez wow-locker dans Applications, puis clic droit → Ouvrir la première fois (il n'est pas encore notarisé). Son icône apparaît dans la barre des menus.",
+        ],
+      },
+      {
+        title: "Le lier à Battle.net",
+        body: [
+          "Le compagnon ouvre sa page de réglages : cliquez sur Lier avec Battle.net et connectez-vous sur wow-locker.app. La connexion prouve seulement quels personnages sont les vôtres : le compagnon peut envoyer leurs données, rien d'autre.",
+          "Il trouve seul votre dossier World of Warcraft ; sinon, ajoutez-le dans ses réglages, où vous choisissez aussi les comptes et personnages et le lancement à l'ouverture de session.",
+        ],
+      },
+      {
+        title: "Jouer",
+        body: [
+          "Le jeu enregistre les données de l'addon à la déconnexion ou avec `/reload` ; le compagnon les envoie quelques secondes après. Tapez `/wowlocker` en jeu pour voir ce qui a été enregistré.",
+          "Les personnages pas encore dans votre casier y sont ajoutés au premier envoi.",
+        ],
+      },
+      {
+        title: "Être notifié",
+        body: [
+          "Dans Réglages, activez les notifications sur votre téléphone ou ordinateur et choisissez les événements : morts, niveaux, frôlements de mort, donjons, courrier qui expire…",
+        ],
+      },
+    ],
+    toLocker: "Ouvrir mon casier",
+    toNotifications: "Réglages des notifications",
+    faq: "Questions",
+    questions: [
+      {
+        q: "Est-ce autorisé ?",
+        a: "L'addon lit seulement ce que le jeu vous montre via l'API standard des addons et l'écrit dans ses variables sauvegardées, comme n'importe quel addon. Il n'automatise rien. Le compagnon ne lit que ce fichier.",
+      },
+      {
+        q: "Qu'est-ce qui est envoyé, et où ?",
+        a: "Uniquement les données WowLocker (les événements et l'état listés plus haut), uniquement vers wow-locker.app, uniquement pour les personnages de votre compte Battle.net. Votre mot de passe Battle.net ne passe jamais par wow-locker, et le compagnon ne garde qu'un jeton d'envoi.",
+      },
+      {
+        q: "Le jeu doit-il tourner pour les notifications ?",
+        a: "Non. Les rappels (courrier qui expire, repos complet, recharge prête) sont calculés à partir du dernier envoi et partent jeu fermé.",
+      },
+      {
+        q: "Plusieurs comptes ou ordinateurs ?",
+        a: "Liez le compagnon sur chaque ordinateur. Dans ses réglages, choisissez quels comptes WoW et personnages il envoie.",
+      },
+      {
+        q: "Quelque chose ne se synchronise pas",
+        a: "Ouvrez les réglages du compagnon depuis son icône : chaque personnage y montre son dernier envoi, et les erreurs y sont listées. Le jeu n'écrit le fichier qu'à la déconnexion ou avec `/reload`.",
+      },
+    ],
+  },
   locker: {
     title: "Personnages",
     empty: "Aucun personnage pour l'instant. Ajoutez-en un pour suivre son niveau, son équipement, ses talents et son destin Hardcore.",
@@ -322,6 +502,8 @@ const fr: Messages = {
     talents: "Talents",
     stats: "Caractéristiques",
     timeline: "Historique",
+    addonHint: "Seulement ce que Battle.net a vu à la déconnexion. Chaque changement d'équipement, mort et quête, en direct :",
+    addonLink: "installez l'addon",
     noGear: "Rien d'équipé.",
     noTalents: "Aucun point de talent dépensé.",
     talentHint: "Survolez ou touchez un talent pour le détail.",

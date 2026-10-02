@@ -57,7 +57,7 @@ export function Locker() {
   // Desktop: exactly the window under the top bar (3.5rem + its 1px border)
   // minus main's padding (1.25rem + 2.5rem), so the page never scrolls.
   return (
-    <div className="grid items-start gap-6 md:h-[calc(100dvh-7.25rem-1px)] md:grid-cols-[1fr_20rem] md:items-stretch">
+    <div className="grid items-start gap-6 md:h-[calc(100dvh-8.5rem-1px)] md:grid-cols-[1fr_20rem] md:items-stretch">
       {/* The stage: desktop only — on phones the list opens characters directly. */}
       <section className="hidden min-h-0 md:block">
         {selected ? (

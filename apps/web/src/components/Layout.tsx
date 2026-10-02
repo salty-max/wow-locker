@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Package, Settings } from "lucide-react";
+import { Download, Package, Settings } from "lucide-react";
 import { useEffect } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -29,6 +29,7 @@ export function Layout() {
 
   const tabs = [
     { to: "/", label: t.nav.locker, icon: Package, active: path === "/" || path.startsWith("/character") },
+    { to: "/addon", label: t.nav.addon, icon: Download, active: path === "/addon" },
     { to: "/settings", label: t.nav.settings, icon: Settings, active: path === "/settings" },
   ] as const;
 
@@ -57,7 +58,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 px-3 pt-5 pb-28 sm:px-4 sm:pb-10">
+      <main className="flex-1 px-3 pt-9 pb-28 sm:px-4 sm:pt-10 sm:pb-10">
         <Outlet />
       </main>
 

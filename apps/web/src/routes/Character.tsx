@@ -284,6 +284,14 @@ export function Character() {
       <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
         <span className="wow-title">{t.character.timeline}</span>
         <ChatLog c={c} />
+        {!c.addon && (
+          <p className="mt-3 text-xs text-ink-faint">
+            {t.character.addonHint}{" "}
+            <Link to="/addon" className="text-[#ffd100] underline-offset-2 hover:underline">
+              {t.character.addonLink}
+            </Link>
+          </p>
+        )}
       </section>
 
       {inRoster && (
