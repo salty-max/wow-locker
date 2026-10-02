@@ -1,6 +1,7 @@
 import type { CharacterDetail, CharacterEvent, EquippedItem, Quality } from "@wow-locker/shared";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { ItemTooltip } from "@/components/ItemTooltip";
+import { Money } from "@/components/Money";
 import { useLang, useT } from "@/lib/i18n";
 import { useTooltip } from "@/lib/useTooltip";
 
@@ -15,6 +16,23 @@ const SYSTEM = "#ffff00";
 const LOOT = "#00aa00";
 const GUILD = "#40ff40";
 const DEATH = "#ff2020";
+const SKILL = "#5555ff"; // skill-up messages
+const FACTION = "#8080ff"; // reputation messages
+const DANGER = "#ff8000";
+const MUTED = "#a0a0a0";
+
+/** Copper → the game's gold/silver/copper split. */
+const coins = (copper: number) => ({
+  gold: Math.floor(copper / 10000),
+  silver: Math.floor(copper / 100) % 100,
+  copper: copper % 100,
+});
+
+function duration(seconds: number, lang: "en" | "fr"): string {
+  const m = Math.round(seconds / 60);
+  if (m < 60) return `${m} min`;
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}${lang === "fr" ? "" : " min"}`;
+}
 
 function stamp(iso: string, lang: "en" | "fr"): string {
   const d = new Date(iso);
@@ -58,7 +76,16 @@ function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
       break;
     }
     case "death":
-      lines = [{ color: DEATH, text: msg.death(name, d.level, c.race, c.className) }];
+      // The addon knows who did it and where; the API only knows it happened.
+      lines = [
+        {
+          color: DEATH,
+          text:
+            d.killer || d.zone || d.instance
+              ? msg.slain(name, d.level, c.race, c.className, d.killer ?? null, d.instance ?? d.zone ?? null)
+              : msg.death(name, d.level, c.race, c.className),
+        },
+      ];
       break;
     case "gear":
       lines = d.changes.map((ch) =>
@@ -90,11 +117,83 @@ function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
     case "missing":
       lines = [
         { color: SYSTEM, text: msg.missing(name) },
-        { color: "#a0a0a0", text: msg.missingHint },
+        { color: MUTED, text: msg.missingHint },
       ];
       break;
     case "found":
       lines = [{ color: SYSTEM, text: msg.online(name) }];
+      break;
+    case "session":
+      lines = [{ color: SYSTEM, text: d.action === "login" ? msg.online(name) : msg.offline(name) }];
+      break;
+    case "talent":
+      lines = [{ color: SYSTEM, text: msg.talentPoints(d.trees.map((x) => `${x.name} ${x.points}`).join(" / ")) }];
+      break;
+    case "quest":
+      lines = [
+        { color: SYSTEM, text: msg.questDone(d.title ?? `#${d.questId}`) },
+        ...(d.xp ? [{ color: SYSTEM, text: msg.xpGained(d.xp.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB")) }] : []),
+        ...(d.money
+          ? [
+              {
+                color: SYSTEM,
+                text: (
+                  <>
+                    {msg.received}
+                    <Money {...coins(d.money)} />
+                  </>
+                ),
+              },
+            ]
+          : []),
+      ];
+      break;
+    case "closeCall":
+      lines = [{ color: DANGER, text: msg.closeCall(name, d.pct, d.attacker, d.instance ?? d.zone) }];
+      break;
+    case "dungeon":
+      lines = [
+        {
+          color: SYSTEM,
+          text:
+            d.action === "enter"
+              ? msg.dungeonEnter(d.name, d.group.join(", "))
+              : msg.dungeonLeave(d.name, duration(d.duration ?? 0, lang), d.deaths ?? 0, d.closeCalls ?? 0),
+        },
+      ];
+      break;
+    case "loot":
+      lines = [
+        {
+          color: LOOT,
+          text: (
+            <>
+              {msg.lootSelf[d.how]}
+              <ItemLink name={d.name} quality={d.quality} />
+              {d.count > 1 ? `x${d.count}` : ""}.
+            </>
+          ),
+        },
+      ];
+      break;
+    case "skill":
+      lines = [{ color: SKILL, text: d.learned ? msg.skillLearned(d.name) : msg.skillUp(d.name, d.rank) }];
+      break;
+    case "reputation":
+      lines = [{ color: FACTION, text: msg.reputation(d.label ?? String(d.standing), d.faction) }];
+      break;
+    case "reminder":
+      lines = [
+        {
+          color: d.kind === "mailExpiring" ? DANGER : SYSTEM,
+          text:
+            d.kind === "mailExpiring"
+              ? msg.mailExpiring(d.detail ?? "—", d.count ?? 0, d.onExpiry === "returned")
+              : d.kind === "rested"
+                ? msg.rested(name)
+                : msg.cooldownReady(d.detail ?? "—"),
+        },
+      ];
       break;
   }
 

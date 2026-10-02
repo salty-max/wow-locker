@@ -1,4 +1,4 @@
-import { NOTIFIABLE_EVENTS, type EventType, type Lang } from "@wow-locker/shared";
+import { DEFAULT_NOTIFY_EVENTS, NOTIFIABLE_EVENTS, type EventType, type Lang } from "@wow-locker/shared";
 import { createStore } from "@/lib/store";
 
 export type Settings = {
@@ -15,7 +15,7 @@ function defaultLang(): Lang {
   }
 }
 
-const initial: Settings = { lang: defaultLang(), events: NOTIFIABLE_EVENTS };
+const initial: Settings = { lang: defaultLang(), events: DEFAULT_NOTIFY_EVENTS };
 
 export const settings = createStore<Settings>("wow-locker:settings", initial, (raw) => {
   const r = (raw ?? {}) as Partial<Settings>;

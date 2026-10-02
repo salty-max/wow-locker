@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { Layout } from "@/components/Layout";
 import { Character } from "@/routes/Character";
 import { Import } from "@/routes/Import";
+import { Pair } from "@/routes/Pair";
 import { Locker } from "@/routes/Locker";
 import { Settings } from "@/routes/Settings";
 
@@ -17,9 +18,20 @@ const importRoute = createRoute({
   }),
   component: Import,
 });
+const pairRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pair",
+  validateSearch: (s: Record<string, unknown>): { code?: string; done?: boolean; error?: string; k?: string } => ({
+    code: typeof s.code === "string" ? s.code : undefined,
+    done: s.done === 1 || s.done === "1" || s.done === true ? true : undefined,
+    error: typeof s.error === "string" ? s.error : undefined,
+    k: typeof s.k === "string" ? s.k : undefined,
+  }),
+  component: Pair,
+});
 const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: Settings });
 
-const routeTree = rootRoute.addChildren([lockerRoute, characterRoute, importRoute, settingsRoute]);
+const routeTree = rootRoute.addChildren([lockerRoute, characterRoute, importRoute, pairRoute, settingsRoute]);
 
 export const router = createRouter({ routeTree, scrollRestoration: true, defaultPreload: "intent" });
 
