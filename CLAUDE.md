@@ -33,8 +33,8 @@ is not generated and keeps the points-per-tree view. Icons:
 
 Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:
 11509, 20506`). Writes `WowLockerDB` (SavedVariables, per character GUID:
-`events` + `state`) — addons have no network access; a Go companion app will
-upload the file. Simulate a session with `luajit addon/test/sim.lua` (it
+`events` + `state`) — addons have no network access; the Go companion uploads
+the file (see Companion). Simulate a session with `luajit addon/test/sim.lua` (it
 asserts every recording). Event types: login, logout, gear, level (+played),
 talent, respec, guild, death (killer, zone, coords, instance), quest (title,
 xp, money), close_call (<15% health, reset above 50%), dungeon_enter /
@@ -51,6 +51,20 @@ decodes to the Battle.net API character id (`0x03D658B8` = 64379064 = Namzie)
 and `<realmId>` is the API realm id (6113 = Soulseeker) — match uploads on
 that, not on names. By PLAYER_LOGOUT the client reads XP/money as 0: the
 final snapshot must not re-read them.
+
+## Companion (`companion/`, Go)
+
+Tray app (fyne.io/systray; macOS needs cgo, Windows builds from a Mac with
+CGO_ENABLED=0). `luasv.go` parses SavedVariables as data (never executes it):
+tables with keys exactly 1..n become arrays. `testdata/sim.{lua,json}` come
+from the addon sim (`WL_SV=… WL_DUMP=… luajit addon/test/sim.lua`): regenerate
+both after changing the addon. `sync.go` polls file mtimes every 3 s, waits 2 s
+for the game to finish writing, uploads when the file's hash (+ selection)
+changed. Pairing: `POST /api/companion/pair/start` → browser on `/pair` →
+Battle.net login → poll for the token (`apps/api/src/lib/companion.ts`).
+Settings page on 127.0.0.1:47615 (also the single-instance lock), every API
+call needs the config's key in `X-Locker-Key` + a matching Host header.
+Release: `WOWLOCKER_SERVER=https://… companion/scripts/build.sh`.
 
 ## Battle.net API facts (verified live, see spike/FINDINGS.md)
 

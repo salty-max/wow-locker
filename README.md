@@ -32,8 +32,34 @@ records what happens in between — every gear swap, level-up (with /played),
 talent point, guild change, quest turned in, notable loot, profession and
 reputation milestone, dungeon run, Hardcore close call and death (killer, zone,
 coordinates) — plus rested XP, gold, /played, location and completed quests. Addons can't reach the network, so it writes its
-SavedVariables on logout or `/reload`; a companion app (Go, in progress)
-uploads them. Test it outside the game with `luajit addon/test/sim.lua`.
+SavedVariables on logout or `/reload`; the companion app uploads them. Test it
+outside the game with `luajit addon/test/sim.lua`.
+
+## Companion app (`companion/`)
+
+A small Go app living in the macOS menu bar / Windows tray. It finds the game
+folders (`_classic_era_`, `_anniversary_`, …), watches each account's
+`SavedVariables/WowLocker.lua`, and uploads it a few seconds after the game
+writes it (logout, `/reload`, disconnect).
+
+- **Linking**: "Link with Battle.net" opens wow-locker's `/pair` page; the
+  Battle.net login proves which characters are yours, and the server only
+  accepts uploads for those. The companion keeps an upload token, nothing else.
+- **Settings** (a page served on `127.0.0.1` only, opened from the icon): WoW
+  folders (detected or added), which accounts and characters to upload, launch
+  at login, server address.
+- The SavedVariables file is parsed as data by a dedicated reader, never
+  executed.
+
+```bash
+cd companion
+go test ./...                       # parser checked against the addon simulation
+go run . --headless                 # no tray; settings at the printed URL
+WOWLOCKER_SERVER=https://… scripts/build.sh   # dist/: macOS .app, Windows .exe, addon zip
+```
+
+`WOWLOCKER_CONFIG_DIR` and `WOWLOCKER_NO_BROWSER=1` isolate a test run from
+your real config.
 
 ## Stack
 

@@ -19,4 +19,11 @@
   timeline as a WoW chat window, WoW-style item and talent tooltips.
 - In-game addon (Classic Era / Hardcore, TBC Anniversary) recording the live
   timeline, Hardcore deaths, rested XP, gold, /played and location.
+- Addon events in the timeline and in push: quests, close calls, dungeon runs,
+  notable loot, skills, reputation, deaths with killer and place.
+- Offline reminders from addon data: mail about to expire, fully rested,
+  profession cooldown ready.
+- Companion app (macOS menu bar, Windows tray): links through a Battle.net
+  login, uploads the addon's data after each logout or /reload, with a
+  settings page (folders, accounts, characters, launch at login, server).
 - Installable PWA, EN/FR, update prompt, iOS install guide.
