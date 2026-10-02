@@ -198,13 +198,44 @@ if dump then
     local keys, out = {}, {}
     for k in pairs(v) do keys[#keys + 1] = tostring(k) end
     table.sort(keys)
-    for _, k in ipairs(keys) do out[#out + 1] = enc(k) .. ":" .. enc(v[k] ~= nil and v[k] or v[tonumber(k)]) end
+    for _, k in ipairs(keys) do
+      local val = v[k]
+      if val == nil then val = v[tonumber(k)] end -- (not `and/or`: it turns false into nil)
+      out[#out + 1] = enc(k) .. ":" .. enc(val)
+    end
     return "{" .. table.concat(out, ",") .. "}"
   end
   local fh = assert(io.open(dump, "w"))
   fh:write(enc(WowLockerDB))
   fh:close()
   io.write("wrote " .. dump .. "\n")
+end
+
+-- WL_SV=path: write WowLockerDB the way the game writes SavedVariables (keys
+-- in brackets, "-- [n]" after array items, %q strings): the companion's
+-- parser is tested against it.
+local sv = os.getenv("WL_SV")
+if sv then
+  local function ser(v, indent)
+    local t = type(v)
+    if t == "string" then return ("%q"):format(v) end
+    if t ~= "table" then return tostring(v) end
+    local out, n = { "{" }, #v
+    for i = 1, n do out[#out + 1] = indent .. "\t" .. ser(v[i], indent .. "\t") .. ", -- [" .. i .. "]" end
+    local keys = {}
+    for k in pairs(v) do if not (type(k) == "number" and k >= 1 and k <= n) then keys[#keys + 1] = k end end
+    table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+    for _, k in ipairs(keys) do
+      local key = type(k) == "string" and ("[%q]"):format(k) or ("[" .. tostring(k) .. "]")
+      out[#out + 1] = indent .. "\t" .. key .. " = " .. ser(v[k], indent .. "\t") .. ","
+    end
+    out[#out + 1] = indent .. "}"
+    return table.concat(out, "\n")
+  end
+  local fh = assert(io.open(sv, "w"))
+  fh:write("\nWowLockerDB = " .. ser(WowLockerDB, "") .. "\n")
+  fh:close()
+  io.write("wrote " .. sv .. "\n")
 end
 
 -- ── second session: things that must NOT be recorded ──
