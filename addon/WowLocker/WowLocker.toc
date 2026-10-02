@@ -2,7 +2,7 @@
 ## Title: wow-locker
 ## Notes: Records your characters' timeline (gear, levels, talents, guild, Hardcore deaths), rested XP, gold, played time and location for wow-locker. No network access: the wow-locker companion app uploads the saved file.
 ## Author: salty-max
-## Version: 0.1.1
+## Version: 0.2.0
 ## SavedVariables: WowLockerDB
 ## IconTexture: Interface\Icons\INV_Box_02
 

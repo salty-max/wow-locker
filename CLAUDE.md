@@ -34,7 +34,13 @@ is not generated and keeps the points-per-tree view. Icons:
 Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:
 11509, 20506`). Writes `WowLockerDB` (SavedVariables, per character GUID:
 `events` + `state`) — addons have no network access; a Go companion app will
-upload the file. Simulate a session with `luajit addon/test/sim.lua`.
+upload the file. Simulate a session with `luajit addon/test/sim.lua` (it
+asserts every recording). Event types: login, logout, gear, level (+played),
+talent, respec, guild, death (killer, zone, coords, instance), quest (title,
+xp, money), close_call (<15% health, reset above 50%), dungeon_enter /
+dungeon_leave (group, duration, deaths, close calls), loot (green+, own only,
+localized patterns), skill (learned / every 25 points), reputation (new
+standing). State also keeps levelPlayed, questsCompleted, skills, reputations.
 Verified on a real session (2026-10-02): the GUID `Player-<realmId>-<hex>`
 decodes to the Battle.net API character id (`0x03D658B8` = 64379064 = Namzie)
 and `<realmId>` is the API realm id (6113 = Soulseeker) — match uploads on

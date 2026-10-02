@@ -28,9 +28,10 @@ WoW: Forever has no API yet. Not affiliated with Blizzard Entertainment.
 ## In-game addon (`addon/WowLocker`)
 
 The API only sees characters as they were at their last logout. The addon
-records what happens in between — every gear swap, level-up, talent point,
-guild change, Hardcore death (killer, zone, coordinates) — plus rested XP,
-gold, /played and location. Addons can't reach the network, so it writes its
+records what happens in between — every gear swap, level-up (with /played),
+talent point, guild change, quest turned in, notable loot, profession and
+reputation milestone, dungeon run, Hardcore close call and death (killer, zone,
+coordinates) — plus rested XP, gold, /played, location and completed quests. Addons can't reach the network, so it writes its
 SavedVariables on logout or `/reload`; a companion app (Go, in progress)
 uploads them. Test it outside the game with `luajit addon/test/sim.lua`.
 
