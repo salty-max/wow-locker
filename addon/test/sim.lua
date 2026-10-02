@@ -36,7 +36,7 @@ function UnitXP() return state.xp end
 function UnitXPMax() return state.xpMax end
 function GetXPExhaustion() return state.rested end
 function GetMoney() return state.money end
-function GetGuildInfo() return state.guild end
+function GetGuildInfo() if state.guildLoading then return nil end; return state.guild end
 function IsInGuild() return state.guild ~= nil end
 function UnitHealth() return state.hp end
 function UnitHealthMax() return state.hpMax end
@@ -179,3 +179,73 @@ local mc = s.cooldowns[1]
 check(#s.cooldowns == 1 and mc.name == "Mooncloth" and mc.readyAt == T0 + 2480 + 4 * 86400,
   "Mooncloth ready 4 days after the craft, as a real time (not GetTime)")
 check(s.resting == true, "logged out resting (inn rate for rested XP)")
+
+-- WL_DUMP=path: write WowLockerDB as JSON (what the companion uploads) — the
+-- API's tests use it as a fixture, so both sides agree on the format.
+local dump = os.getenv("WL_DUMP")
+if dump then
+  local function enc(v)
+    local t = type(v)
+    if t == "nil" then return "null" end
+    if t == "boolean" or t == "number" then return tostring(v) end
+    if t == "string" then return '"' .. v:gsub('[%c"\\]', function(c) return string.format("\\u%04x", c:byte()) end) .. '"' end
+    local n = #v
+    if n > 0 or next(v) == nil then
+      local out = {}
+      for i = 1, n do out[i] = enc(v[i]) end
+      return "[" .. table.concat(out, ",") .. "]"
+    end
+    local keys, out = {}, {}
+    for k in pairs(v) do keys[#keys + 1] = tostring(k) end
+    table.sort(keys)
+    for _, k in ipairs(keys) do out[#out + 1] = enc(k) .. ":" .. enc(v[k] ~= nil and v[k] or v[tonumber(k)]) end
+    return "{" .. table.concat(out, ",") .. "}"
+  end
+  local fh = assert(io.open(dump, "w"))
+  fh:write(enc(WowLockerDB))
+  fh:close()
+  io.write("wrote " .. dump .. "\n")
+end
+
+-- ── second session: things that must NOT be recorded ──
+local before = #me.events
+local function newEvents()
+  local out = {}
+  for i = before + 1, #me.events do out[#out + 1] = me.events[i] end
+  return out
+end
+local function ofType(list, t) local n = 0; for _, e in ipairs(list) do if e.type == t then n = n + 1 end end; return n end
+tick(3600)
+state.xp, state.xpMax, state.rested, state.money = 100, 28000, 0, 12000
+-- in a guild whose name only arrives after PLAYER_LOGIN
+state.guild, state.guildLoading = "Les Gnomes", true
+-- the Professions header is collapsed at login: Cooking and First Aid are hidden
+local profs = { state.skills[2], state.skills[5] }
+table.remove(state.skills, 5); table.remove(state.skills, 2)
+fire("PLAYER_LOGIN"); fire("PLAYER_ENTERING_WORLD")
+state.guildLoading = false; fire("PLAYER_GUILD_UPDATE")
+tick(60); state.level = 24; fire("PLAYER_LEVEL_UP", 24); fire("CHARACTER_POINTS_CHANGED") -- an unspent point, no change
+table.insert(state.skills, 2, profs[1]); table.insert(state.skills, 3, profs[2]); fire("SKILL_LINES_CHANGED") -- header expanded
+table.insert(state.skills, { "Herbalism", false, 1, 75 }); fire("SKILL_LINES_CHANGED") -- really learned
+tick(60); state.talents[3][2] = 11; fire("CHARACTER_POINTS_CHANGED") -- a point spent
+state.guild = nil; fire("PLAYER_GUILD_UPDATE") -- left the guild
+local ev = newEvents()
+check(ofType(ev, "guild") == 1 and ev[#ev].type == "guild" and ev[#ev].from == "Les Gnomes",
+  "guild name loading after login isn't a change; leaving it is")
+check(ofType(ev, "talent") == 1, "a level-up's unspent point isn't a talent change; spending it is")
+check(ofType(ev, "skill") == 1 and ev[1].type ~= "skill", "expanding a header isn't learning; Herbalism is")
+-- into the Deadmines, log out inside, come back 8 hours later (instance reset)
+before = #me.events
+tick(60); state.instance = { true, "party" }; fire("PLAYER_ENTERING_WORLD")
+tick(900); fire("PLAYER_LOGOUT")
+tick(8 * 3600); fire("PLAYER_LOGIN"); fire("PLAYER_ENTERING_WORLD")
+ev = newEvents()
+local leave
+for _, e in ipairs(ev) do if e.type == "dungeon_leave" then leave = e end end
+check(ofType(ev, "dungeon_enter") == 2 and leave and leave.duration == 900,
+  "logging back into an instance hours later: the old run ended at logout, a new one starts")
+-- …whereas a quick reconnect continues the run
+before = #me.events
+tick(300); fire("PLAYER_LOGOUT"); tick(60); fire("PLAYER_LOGIN"); fire("PLAYER_ENTERING_WORLD")
+check(ofType(newEvents(), "dungeon_leave") == 0 and me.state.run and me.state.run.loggedOutAt == nil,
+  "a reconnect within 30 minutes continues the run")

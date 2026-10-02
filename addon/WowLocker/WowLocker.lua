@@ -54,6 +54,7 @@ local ready = false
 local lastAttacker -- { name, spell, environmental, t }: the last thing that damaged us
 local lastTalents -- points per tree: a respec is points leaving a tree
 local lastGuild
+local guildKnown -- false while in a guild whose name hasn't loaded yet
 local questTitles = {} -- questId → title, learned from the quest log
 local closeCall -- the open close-call event (lowest health is updated in place)
 local pendingLevel -- the level event waiting for its /played answer
@@ -191,6 +192,13 @@ local function readStandings()
   return reps
 end
 
+-- Lines under a collapsed header vanish from the API: merge, never forget.
+local function merge(known, now)
+  known = known or {}
+  for name, v in pairs(now) do known[name] = v end
+  return known
+end
+
 local function storeSkillsAndReps()
   local list = {}
   for name, s in pairs(lastSkills or {}) do
@@ -221,20 +229,23 @@ local function checkInstance()
   local s = me.state
   local name = inInstance and GetInstanceInfo() or nil
   local dungeon = inInstance and (kind == "party" or kind == "raid")
-  if s.run and (not dungeon or s.run.name ~= name) then
+  -- Logged out inside for over 30 min (the instance has reset): that run ended then.
+  local away = s.run and s.run.loggedOutAt and time() - s.run.loggedOutAt > 1800
+  if s.run and (away or not dungeon or s.run.name ~= name) then
     local run = s.run
     record({
       type = "dungeon_leave",
       name = run.name,
       kind = run.kind,
-      duration = time() - run.startedAt,
+      duration = (away and run.loggedOutAt or time()) - run.startedAt,
       deaths = run.deaths,
       closeCalls = run.closeCalls,
       group = run.group,
     })
     s.run = nil
   end
-  -- Same instance after a /reload: the run simply continues.
+  -- Same instance after a /reload or a short disconnect: the run continues.
+  if s.run then s.run.loggedOutAt = nil end
   if dungeon and not s.run then
     s.run = { name = name, kind = kind, startedAt = time(), deaths = 0, closeCalls = 0, group = groupNames() }
     record({ type = "dungeon_enter", name = name, kind = kind, level = UnitLevel("player"), group = s.run.group })
@@ -308,14 +319,6 @@ end
 -- ── /played without spamming the chat ────────────────────────────────────────
 
 local quietPlayed = false
-local function requestPlayedQuietly()
-  quietPlayed = true
-  for i = 1, NUM_CHAT_WINDOWS do
-    local cf = _G["ChatFrame" .. i]
-    if cf then cf:UnregisterEvent("TIME_PLAYED_MSG") end
-  end
-  RequestTimePlayed()
-end
 
 local function restoreChatPlayed()
   if not quietPlayed then return end
@@ -324,6 +327,16 @@ local function restoreChatPlayed()
     local cf = _G["ChatFrame" .. i]
     if cf then cf:RegisterEvent("TIME_PLAYED_MSG") end
   end
+end
+
+local function requestPlayedQuietly()
+  quietPlayed = true
+  for i = 1, NUM_CHAT_WINDOWS do
+    local cf = _G["ChatFrame" .. i]
+    if cf then cf:UnregisterEvent("TIME_PLAYED_MSG") end
+  end
+  RequestTimePlayed()
+  C_Timer.After(10, restoreChatPlayed) -- throttled requests may never be answered
 end
 
 -- ── loot ─────────────────────────────────────────────────────────────────────
@@ -367,8 +380,13 @@ local function init()
   -- Baselines: changes are recorded against these, so logging in isn't an event.
   lastTalents = talentPoints()
   lastGuild = GetGuildInfo("player")
-  lastSkills = readSkills()
-  lastStandings = readStandings()
+  guildKnown = lastGuild ~= nil or not IsInGuild()
+  -- Skill names persist across sessions: a skill under a header collapsed at
+  -- login isn't "learned" the day the player expands it.
+  me.knownSkills = me.knownSkills or {}
+  lastSkills = merge(nil, readSkills())
+  for name in pairs(lastSkills) do me.knownSkills[name] = true end
+  lastStandings = merge(nil, readStandings())
   storeSkillsAndReps()
   learnQuestTitles()
   me.state.questsCompleted = completedQuests()
@@ -398,17 +416,24 @@ end
 
 function handlers.CHARACTER_POINTS_CHANGED()
   local now = talentPoints()
-  local lost = false
+  local lost, changed = false, false
   for i, tree in ipairs(lastTalents) do
+    if now[i] and now[i].points ~= tree.points then changed = true end
     if now[i] and now[i].points < tree.points then lost = true end
   end
+  if not changed then return end -- a level-up granting an unspent point
   record({ type = lost and "respec" or "talent", trees = now })
   lastTalents = now
 end
 
 function handlers.PLAYER_GUILD_UPDATE()
   local guild = GetGuildInfo("player")
-  -- The guild name is briefly nil while the roster loads: only record real changes.
+  -- At login the name arrives after PLAYER_LOGIN: that first answer is the
+  -- baseline, not a change. Later, a nil name only counts once out of the guild.
+  if not guildKnown then
+    if guild then lastGuild, guildKnown = guild, true end
+    return
+  end
   if guild ~= lastGuild and (guild or not IsInGuild()) then
     record({ type = "guild", from = lastGuild, to = guild })
     lastGuild = guild
@@ -515,14 +540,15 @@ function handlers.SKILL_LINES_CHANGED()
   for name, s in pairs(now) do
     local before = lastSkills and lastSkills[name]
     if not before then
-      if lastSkills and next(lastSkills) then -- not the first read
+      if not me.knownSkills[name] and next(me.knownSkills) then -- never seen, and not the very first read
         record({ type = "skill", name = name, section = s.section, rank = s.rank, max = s.max, learned = true })
       end
+      me.knownSkills[name] = true
     elseif math.floor(s.rank / SKILL_STEP) > math.floor(before.rank / SKILL_STEP) then
       record({ type = "skill", name = name, section = s.section, rank = s.rank, max = s.max })
     end
   end
-  lastSkills = now
+  lastSkills = merge(lastSkills, now)
   storeSkillsAndReps()
 end
 
@@ -539,7 +565,7 @@ function handlers.UPDATE_FACTION()
       })
     end
   end
-  lastStandings = now
+  lastStandings = merge(lastStandings, now)
   storeSkillsAndReps()
 end
 
@@ -576,6 +602,7 @@ handlers.UPDATE_EXHAUSTION = refresh
 
 function handlers.PLAYER_LOGOUT()
   snapshot(true)
+  if me.state.run then me.state.run.loggedOutAt = time() end
   record({ type = "logout", level = me.state.level })
 end
 
