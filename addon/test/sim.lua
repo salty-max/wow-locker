@@ -71,6 +71,29 @@ function RequestTimePlayed() playedAsked = playedAsked + 1 end
 function GetInventoryItemLink(_, slot) return state.slots[slot] end
 local combat
 function CombatLogGetCurrentEventInfo() return unpack(combat) end
+-- resting, mail, cooldowns
+state.resting = false
+function IsResting() return state.resting end
+state.newMail = true
+function HasNewMail() return state.newMail end
+ATTACHMENTS_MAX_RECEIVE = 12
+state.inbox = {
+  { sender = "Namzan", subject = "Gear for you", money = 0, days = 2.5, items = { { "Linen Cloth", 2589, 20, 1 } }, canReply = true, returned = false },
+  { sender = "Stormwind Auction House", subject = "Auction expired: Mageweave", money = 0, days = 1.25, items = { { "Mageweave Cloth", 4338, 5, 1 } }, canReply = false, returned = false },
+}
+function GetInboxNumItems() return #state.inbox end
+function GetInboxHeaderInfo(i)
+  local m = state.inbox[i]
+  return "pkg", "stationery", m.sender, m.subject, m.money, 0, m.days, #m.items, false, m.returned, false, m.canReply
+end
+function GetInboxItem(i, a) local it = state.inbox[i].items[a]; if it then return it[1], it[2], "tex", it[3], it[4], true end end
+local uptime = 5000 -- GetTime() is seconds since boot, not a real clock
+function GetTime() return uptime + (clock - T0) end
+local cooldownStart
+function IsPlayerSpell(id) return id == 18560 end -- a tailor: knows Mooncloth
+function GetSpellInfo(id) return id == 18560 and "Mooncloth" or nil end
+function GetSpellCooldown(id) if id == 18560 and cooldownStart then return cooldownStart, 4 * 86400, 1 end; return 0, 0, 1 end
+function GetItemCount() return 0 end
 SlashCmdList = {}
 function print() end
 
@@ -108,6 +131,10 @@ tick(600); combat = { 0, "SPELL_DAMAGE", false, "Creature-0", "Edwin VanCleef", 
 fire("COMBAT_LOG_EVENT_UNFILTERED"); state.hp = 30; fire("UNIT_HEALTH", "player")
 tick(3); state.dead = true; fire("PLAYER_DEAD")
 tick(1200); state.instance = { false, "none" }; fire("ZONE_CHANGED_NEW_AREA")
+-- open a mailbox; craft Mooncloth (4-day cooldown); log out in an inn
+tick(60); fire("MAIL_INBOX_UPDATE")
+tick(30); cooldownStart = GetTime(); fire("UNIT_SPELLCAST_SUCCEEDED", "player", "cast-guid", 18560)
+state.resting = true; fire("PLAYER_UPDATE_RESTING")
 -- logout: the client has already cleared XP / money
 state.xp, state.xpMax, state.rested, state.money = 0, 0, nil, 0
 fire("PLAYER_LOGOUT")
@@ -143,3 +170,12 @@ check(count.skill == 2, "skill milestone + new skill, not every weapon point")
 check(count.reputation == 1, "reputation: Friendly with Stormwind")
 check(count.dungeon_enter == 1 and count.dungeon_leave == 1, "one dungeon run despite the /reload")
 check(#s.questsCompleted == 3, "completed quests: 2 known + the one turned in")
+check(s.mail.hasNew == true and #s.mail.letters == 2, "mailbox: unread flag + 2 letters")
+local l1, l2 = s.mail.letters[1], s.mail.letters[2]
+check(l1.onExpiry == "returned" and l1.expiresAt == s.mail.readAt + 216000 and l1.items[1].count == 20,
+  "player letter with items: returned to sender in 2.5 days")
+check(l2.onExpiry == "deleted" and l2.expiresAt == s.mail.readAt + 108000, "auction-house letter: deleted in 1.25 days")
+local mc = s.cooldowns[1]
+check(#s.cooldowns == 1 and mc.name == "Mooncloth" and mc.readyAt == T0 + 2480 + 4 * 86400,
+  "Mooncloth ready 4 days after the craft, as a real time (not GetTime)")
+check(s.resting == true, "logged out resting (inn rate for rested XP)")

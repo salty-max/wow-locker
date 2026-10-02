@@ -15,7 +15,10 @@
 --                    zone, subZone, mapId, x, y, guild, hardcore, updatedAt,
 --                    levelPlayed = { [level] = playedTotalWhenReached },
 --                    questsCompleted = { questId, ... }, skills = { … },
---                    reputations = { … }, run = currentDungeonRun },
+--                    reputations = { … }, run = currentDungeonRun,
+--                    resting,                              -- in an inn/city (rested rate)
+--                    mail = { readAt, hasNew, letters = { … } },   -- when the mailbox was last open
+--                    cooldowns = { { spellId|itemId, name, readyAt }, … } },
 --       },
 --     },
 --   }
@@ -27,6 +30,20 @@ local MAX_EVENTS = 5000 -- per character; the companion uploads long before this
 local CLOSE_CALL = 0.15 -- health fraction that counts as a Hardcore close call
 local CLOSE_CALL_RESET = 0.5 -- …and has to be climbed back above before the next one
 local SKILL_STEP = 25 -- skill milestones (weapon skills rise constantly)
+-- Timed crafts worth a "ready" notification. Durations are read from the game
+-- (they differ between Era and Anniversary); unknown ids are simply skipped.
+local COOLDOWN_SPELLS = {
+  18560, -- Mooncloth
+  17187, -- Transmute: Arcanite
+  11479, 11480, -- Transmute: Iron to Gold, Mithril to Truesilver
+  17559, 17560, 17561, 17562, 17563, 17564, 17565, 17566, -- elemental transmutes
+  26751, 31373, 36686, -- TBC: Primal Mooncloth, Spellcloth, Shadowcloth
+  29688, 32765, 32766, -- TBC: Primal Might, Earthstorm / Skyfire Diamond
+}
+local COOLDOWN_ITEMS = { 15846 } -- Salt Shaker
+local COOLDOWN_SPELL_SET = {}
+for _, id in ipairs(COOLDOWN_SPELLS) do COOLDOWN_SPELL_SET[id] = true end
+
 local LOOT_COLORS = { ["1eff00"] = true, ["0070dd"] = true, ["a335ee"] = true, ["ff8000"] = true } -- uncommon+
 
 local f = CreateFrame("Frame")
@@ -108,6 +125,7 @@ local function snapshot(final)
     s.rested = GetXPExhaustion() or 0
   end
   s.money = GetMoney()
+  s.resting = IsResting() and true or false
   s.guild = GetGuildInfo("player")
   s.hardcore = C_GameRules and C_GameRules.IsHardcoreActive and C_GameRules.IsHardcoreActive() or nil
   location()
@@ -223,6 +241,70 @@ local function checkInstance()
   end
 end
 
+-- ── mailbox ──────────────────────────────────────────────────────────────────
+
+-- Readable only while a mailbox is open. On expiry, mail a player sent with
+-- items goes back to them; returned mail and system mail are deleted.
+local function readMailbox()
+  local letters = {}
+  local now = time()
+  for i = 1, GetInboxNumItems() do
+    local _, _, sender, subject, money, cod, daysLeft, itemCount, wasRead, wasReturned, _, canReply = GetInboxHeaderInfo(i)
+    local items = {}
+    for a = 1, (ATTACHMENTS_MAX_RECEIVE or 12) do
+      local name, itemId, _, count, quality = GetInboxItem(i, a)
+      if name then items[#items + 1] = { name = name, itemId = itemId, count = count, quality = quality } end
+    end
+    letters[#letters + 1] = {
+      sender = sender,
+      subject = subject,
+      money = money,
+      cod = cod,
+      read = wasRead,
+      items = items,
+      expiresAt = now + math.floor((daysLeft or 0) * 86400),
+      onExpiry = (itemCount and itemCount > 0 and canReply and not wasReturned) and "returned" or "deleted",
+    }
+  end
+  me.state.mail = { readAt = now, hasNew = HasNewMail() and true or false, letters = letters }
+end
+
+-- ── profession cooldowns ─────────────────────────────────────────────────────
+
+-- GetSpellCooldown's start is on the GetTime() clock: convert to a real time.
+local function readyAt(start, duration)
+  if not start or start == 0 or not duration or duration == 0 then return time() end
+  return time() + math.max(0, math.floor(start + duration - GetTime() + 0.5))
+end
+
+local function spellCooldown(id)
+  if C_Spell and C_Spell.GetSpellCooldown then
+    local cd = C_Spell.GetSpellCooldown(id)
+    return cd and cd.startTime, cd and cd.duration
+  end
+  return GetSpellCooldown(id)
+end
+
+local function knows(id)
+  if IsPlayerSpell then return IsPlayerSpell(id) end
+  return IsSpellKnown and IsSpellKnown(id)
+end
+
+local function readCooldowns()
+  local list = {}
+  for _, id in ipairs(COOLDOWN_SPELLS) do
+    if knows(id) then
+      list[#list + 1] = { spellId = id, name = (GetSpellInfo(id)), readyAt = readyAt(spellCooldown(id)) }
+    end
+  end
+  for _, id in ipairs(COOLDOWN_ITEMS) do
+    if GetItemCount(id) > 0 then
+      list[#list + 1] = { itemId = id, name = (GetItemInfo(id)), readyAt = readyAt(GetItemCooldown(id)) }
+    end
+  end
+  me.state.cooldowns = list
+end
+
 -- ── /played without spamming the chat ────────────────────────────────────────
 
 local quietPlayed = false
@@ -290,6 +372,8 @@ local function init()
   storeSkillsAndReps()
   learnQuestTitles()
   me.state.questsCompleted = completedQuests()
+  me.state.mail = me.state.mail or {}
+  me.state.mail.hasNew = HasNewMail() and true or false
   snapshot()
   record({ type = "login", level = me.state.level })
   requestPlayedQuietly()
@@ -462,7 +546,23 @@ end
 function handlers.PLAYER_ENTERING_WORLD()
   snapshot()
   checkInstance()
+  readCooldowns()
 end
+
+handlers.MAIL_INBOX_UPDATE = readMailbox -- the mailbox is open (or its content changed)
+
+function handlers.UPDATE_PENDING_MAIL()
+  if me.state.mail then me.state.mail.hasNew = HasNewMail() and true or false end
+end
+
+function handlers.UNIT_SPELLCAST_SUCCEEDED(unit, _, spellId)
+  if unit == "player" and COOLDOWN_SPELL_SET[spellId] then
+    -- The cooldown starts a moment after the cast event.
+    C_Timer.After(1, readCooldowns)
+  end
+end
+
+handlers.PLAYER_UPDATE_RESTING = function() snapshot() end
 
 function handlers.ZONE_CHANGED_NEW_AREA()
   location()
@@ -489,7 +589,7 @@ end)
 
 f:RegisterEvent("PLAYER_LOGIN")
 for event in pairs(handlers) do
-  if event == "UNIT_HEALTH" then
+  if event == "UNIT_HEALTH" or event == "UNIT_SPELLCAST_SUCCEEDED" then
     f:RegisterUnitEvent(event, "player") -- not every party member and target
   else
     f:RegisterEvent(event)

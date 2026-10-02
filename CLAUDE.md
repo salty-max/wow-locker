@@ -40,7 +40,12 @@ talent, respec, guild, death (killer, zone, coords, instance), quest (title,
 xp, money), close_call (<15% health, reset above 50%), dungeon_enter /
 dungeon_leave (group, duration, deaths, close calls), loot (green+, own only,
 localized patterns), skill (learned / every 25 points), reputation (new
-standing). State also keeps levelPlayed, questsCompleted, skills, reputations.
+standing). State also keeps levelPlayed, questsCompleted, skills, reputations,
+resting (inn/city: rested rate), mail (read while a mailbox is open: letters
+with items, expiresAt, onExpiry returned|deleted; hasNew from login) and
+cooldowns (known timed crafts — Mooncloth, transmutes, Salt Shaker, TBC
+cloths — with a real-clock readyAt converted from GetTime). These feed
+offline push notifications: mail expiring, fully rested, cooldown ready.
 Verified on a real session (2026-10-02): the GUID `Player-<realmId>-<hex>`
 decodes to the Battle.net API character id (`0x03D658B8` = 64379064 = Namzie)
 and `<realmId>` is the API realm id (6113 = Soulseeker) — match uploads on
