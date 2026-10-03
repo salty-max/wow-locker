@@ -20,10 +20,11 @@ import {
   Wind,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import { StatusBadges } from "@/components/Badges";
 import { CharacterRender } from "@/components/CharacterRender";
+import { AddonStatus, LevellingFrame, MailFrame, ReputationFrame, SkillsFrame } from "@/components/AddonPanels";
 import { ChatLog } from "@/components/ChatLog";
+import { StatBox } from "@/components/StatBox";
 import { ItemTooltip } from "@/components/ItemTooltip";
 import { TalentTrees } from "@/components/TalentTrees";
 import { When } from "@/components/When";
@@ -33,6 +34,7 @@ import { useT } from "@/lib/i18n";
 import { moveInRoster, removeFromRoster, useRoster } from "@/lib/roster";
 import { hasTalentTrees } from "@/lib/talentData";
 import { useTooltip } from "@/lib/useTooltip";
+import { xpView } from "@/lib/addonView";
 import { cn } from "@/lib/utils";
 import { realmLabel } from "@/lib/wow";
 
@@ -120,21 +122,6 @@ function PaperDoll({ c }: { c: CharacterDetail }) {
   );
 }
 
-function StatBox({ title, rows }: { title: string; rows: [string, ReactNode][] }) {
-  return (
-    <div className="rounded border border-[#3a3a3a] bg-black/50 p-2.5 shadow-[inset_0_1px_4px_rgb(0_0_0/0.9)]">
-      <p className="wow-header mb-1.5 text-xs">{title}</p>
-      <dl className="space-y-0.5 text-[13px]">
-        {rows.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-3">
-            <dt className="text-[#ffd100] [text-shadow:0_1px_1px_#000]">{k}</dt>
-            <dd className="tabular-nums text-white">{v}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  );
-}
 
 function StatPanel({ s }: { s: Stats }) {
   const t = useT();
@@ -247,11 +234,16 @@ export function Character() {
             </div>
           </div>
         </div>
-        {!c.isGhost && c.xpToNext != null && (
-          <div className="mt-3">
-            <XpBar xp={c.experience} max={c.xpToNext} />
-          </div>
-        )}
+        {!c.isGhost &&
+          (() => {
+            // The addon's XP (with rested) when it's as recent as Battle.net's.
+            const v = xpView(c);
+            return v ? (
+              <div className="mt-3">
+                <XpBar xp={v.xp} max={v.max} rested={v.rested} />
+              </div>
+            ) : null;
+          })()}
         <p className="mt-1 text-[11px] text-ink-faint" title={t.character.freshness}>
           {c.isGhost && c.deadAt ? (
             <>
@@ -273,6 +265,7 @@ export function Character() {
         <div className="mt-5">
           <PaperDoll c={c} />
           {c.stats && <StatPanel s={c.stats} />}
+          <AddonStatus c={c} />
         </div>
       </div>
 
@@ -280,6 +273,17 @@ export function Character() {
         <span className="wow-title">{t.character.talents}</span>
         {hasTalentTrees(c.flavour) ? <TalentTrees c={{ ...c, flavour: c.flavour }} /> : <TalentPoints groups={c.talents} />}
       </section>
+
+      {c.addon && (
+        <>
+          <div className="grid items-start gap-x-6 md:grid-cols-2">
+            <SkillsFrame a={c.addon} />
+            <ReputationFrame a={c.addon} />
+          </div>
+          <MailFrame a={c.addon} />
+          <LevellingFrame a={c.addon} />
+        </>
+      )}
 
       <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
         <span className="wow-title">{t.character.timeline}</span>
