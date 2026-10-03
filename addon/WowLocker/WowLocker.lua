@@ -278,14 +278,15 @@ local function location()
   s.zone = GetRealZoneText()
   s.subZone = GetSubZoneText()
   local mapId = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  -- No map at all (while logging out, the game no longer says): keep the last
+  -- known position. A map but no position on it (inside an instance): no
+  -- coordinates, rather than the last ones outside.
+  if not mapId then return end
   s.mapId = mapId
-  -- No position (e.g. inside an instance): no coordinates, rather than the last ones outside.
   s.x, s.y = nil, nil
-  if mapId then
-    local pos = C_Map.GetPlayerMapPosition(mapId, "player")
-    if pos then
-      s.x, s.y = math.floor(pos.x * 1000 + 0.5) / 10, math.floor(pos.y * 1000 + 0.5) / 10
-    end
+  local pos = C_Map.GetPlayerMapPosition(mapId, "player")
+  if pos then
+    s.x, s.y = math.floor(pos.x * 1000 + 0.5) / 10, math.floor(pos.y * 1000 + 0.5) / 10
   end
 end
 

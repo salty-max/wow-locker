@@ -456,6 +456,13 @@ fire("ZONE_CHANGED_NEW_AREA")
 check(me.state.x == nil and me.state.y == nil, "no position from the game: no stale coordinates")
 C_Map.GetPlayerMapPosition = baseMapPos
 fire("ZONE_CHANGED_NEW_AREA")
+-- logging out: the game no longer gives a map; the last position must survive
+local baseBestMap = C_Map.GetBestMapForUnit
+C_Map.GetBestMapForUnit = function() return nil end
+fire("PLAYER_LOGOUT")
+check(me.state.mapId == 1436 and me.state.x == 42.1 and me.state.y == 74.6, "logout without a map keeps the last position")
+C_Map.GetBestMapForUnit = baseBestMap
+fire("PLAYER_LOGIN"); fire("PLAYER_ENTERING_WORLD")
 
 -- into the Deadmines, log out inside, come back 8 hours later (instance reset)
 before = #me.events
