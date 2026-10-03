@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
+    "types": ["bun"],
     "paths": {
       "@/*": ["./src/*"]
     }
