@@ -26,17 +26,19 @@ jobs:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      # The default branch (for the upload script, which older tags don't have);
+      # the tag's own files are read with git show.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
           fetch-depth: 0
 
       - name: Did the addon change?
         id: changed
         run: |
           version() { sed -n 's/^## Version: *//p' | tr -d '\r'; }
-          now=$(version < addon/WowLocker/WowLocker.toc)
-          prev_tag=$(git tag --sort=-creatordate | grep -v -x "$TAG" | head -1)
+          now=$(git show "$TAG:addon/WowLocker/WowLocker.toc" | version)
+          # The release just before this one (tags newest first).
+          prev_tag=$(git tag --sort=-creatordate | sed -n "/^$TAG\$/{n;p;q;}")
           prev=$( [ -n "$prev_tag" ] && git show "$prev_tag:addon/WowLocker/WowLocker.toc" 2>/dev/null | version || true)
           echo "addon $now (previous release $prev_tag: ${prev:-none})"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$now" != "$prev" ]; then
