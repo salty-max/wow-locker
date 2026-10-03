@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -22,6 +23,7 @@ import type {
   Faction,
   Flavour,
   ItemTooltip,
+  Lang,
   Region,
   ReminderKind,
   Stats,
@@ -69,6 +71,10 @@ export const characters = pgTable(
     fetchedAt: timestamp("fetched_at", { withTimezone: true }),
     /** What the in-game addon reported at the last companion upload. */
     addon: jsonb("addon").$type<AddonState | null>(),
+    /** The Battle.net account that owns it (proven by a login), if known. */
+    ownerId: integer("owner_id").references(() => accounts.id, { onDelete: "set null" }),
+    /** The owner opened its private details (bags, mail, gold, position) to anyone. */
+    shared: boolean("shared").notNull().default(false),
     /** Format of the stored snapshot (see SNAPSHOT_VERSION in tracker.ts). */
     snapshotVersion: integer("snapshot_version").notNull().default(0),
     requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
@@ -116,7 +122,44 @@ export const companionLinks = pgTable("companion_links", {
   owned: jsonb("owned").$type<{ id: number; flavour: Flavour; realmSlug: string; name: string }[]>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastUploadAt: timestamp("last_upload_at", { withTimezone: true }),
+  /** The account that paired it: its uploads join that account's roster. */
+  accountId: integer("account_id").references(() => accounts.id, { onDelete: "set null" }),
 });
+
+/**
+ * A WoWLocker account: created by logging in with Battle.net, keyed on the
+ * Battle.net account id (stable, unlike the BattleTag). It carries what used
+ * to live on each device: the roster and the notification choices. The
+ * Battle.net access token is never kept.
+ */
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  bnetId: bigint("bnet_id", { mode: "number" }).notNull().unique(),
+  battletag: text("battletag"),
+  /** Battle.net character ids the account owned at its last login, per region. */
+  owned: jsonb("owned").$type<{ region: Region; ids: number[] }[]>().notNull().default(sql`'[]'::jsonb`),
+  /** The locker: tracked character ids, in display order. */
+  roster: integer("roster").array().notNull().default(sql`'{}'::integer[]`),
+  /** Null until a device sends its own (then they follow the account). */
+  lang: text("lang").$type<Lang>(),
+  events: text("events").array().$type<EventType[]>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** A logged-in browser: the cookie holds a random token, only its SHA-256 is kept. */
+export const sessions = pgTable(
+  "sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    accountId: integer("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("sessions_account").on(t.accountId), index("sessions_expiry").on(t.expiresAt)],
+);
 
 /** Offline reminders computed from addon data, fired by the scheduler. */
 export const reminders = pgTable(
@@ -189,6 +232,8 @@ export const pushSubscription = pgTable("push_subscription", {
   characterIds: integer("character_ids").array().notNull(),
   events: text("events").array().$type<EventType[]>().notNull(),
   lang: text("lang").notNull().default("en"),
+  /** Subscribed while logged in: follows the account's roster, events and language. */
+  accountId: integer("account_id").references(() => accounts.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -205,3 +250,4 @@ export type CharacterRow = typeof characters.$inferSelect;
 export type EventRow = typeof characterEvents.$inferSelect;
 export type SubscriptionRow = typeof pushSubscription.$inferSelect;
 export type CompanionLinkRow = typeof companionLinks.$inferSelect;
+export type AccountRow = typeof accounts.$inferSelect;

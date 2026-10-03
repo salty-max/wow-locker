@@ -1,7 +1,8 @@
 import type { CharacterDetail, EquippedItem, Stats, TalentGroup } from "@wow-locker/shared";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, ChevronDown, ChevronUp, Share2, Skull, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Globe, Lock, Share2, Skull, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { StatusBadges } from "@/components/Badges";
 import { CharacterRender } from "@/components/CharacterRender";
 import { AddonStatus, LevellingFrame, MailFrame, PetFrame, ReputationFrame, SkillsFrame } from "@/components/AddonPanels";
@@ -203,6 +204,35 @@ function ShareButton({ c }: { c: CharacterDetail }) {
   );
 }
 
+/** The owner's switch: private details (bags, mail, gold, position) for them only, or for anyone with the link. */
+function SharingToggle({ c }: { c: CharacterDetail }) {
+  const t = useT();
+  const S = t.sharing;
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      await api.setSharing(c.id, !c.shared);
+      await qc.invalidateQueries({ queryKey: ["character", c.id] });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      className={cn("wow-btn wow-btn-sm", !c.shared && "wow-btn-dark")}
+      aria-pressed={c.shared}
+      title={c.shared ? S.sharedHint : S.privateHint}
+      disabled={busy}
+      onClick={() => void toggle()}
+    >
+      {c.shared ? <Globe className="size-3.5" /> : <Lock className="size-3.5" />} {c.shared ? S.shared : S.private}
+    </button>
+  );
+}
+
 export function Character() {
   const t = useT();
   const router = useRouter();
@@ -227,6 +257,7 @@ export function Character() {
             <Skull className="size-3.5" /> {t.today.memorial}
           </Link>
         )}
+        {c.mine && <SharingToggle c={c} />}
         <ShareButton c={c} />
       </div>
 
@@ -302,6 +333,11 @@ export function Character() {
           <PaperDoll c={c} />
           {c.stats && <StatPanel s={c.stats} />}
           <AddonStatus c={c} />
+          {c.restricted && c.addon && (
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-faint">
+              <Lock className="size-3.5 shrink-0" /> {t.sharing.restricted}
+            </p>
+          )}
         </div>
       </div>
 

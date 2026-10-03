@@ -6,19 +6,20 @@ import { characters } from "@/db/schema";
 import { accountProfile, api, authorizeUrl, BnetError, exchangeCode, userInfo } from "@/lib/bnet";
 import { classKeyOf, factionOf } from "@/lib/classic";
 import { waitUntil } from "@vercel/functions";
+import { createSession, loginAccount } from "@/lib/accounts";
 import { completePairing } from "@/lib/companion";
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { listRealms } from "@/lib/realms";
 
 /**
- * "Log in with Battle.net" → import the account's characters.
+ * "Log in with Battle.net": opens a WoWLocker session (accounts.ts) and offers
+ * to import the account's characters.
  *
- * Deliberately stateless about the user: the access token is used once, right
- * in the callback, to read the account's character list, then dropped. Nothing
- * about the Battle.net account is stored; the list waits a few minutes under a
- * random key (in the ephemeral table: any server instance can answer) so the
- * web app can show the import screen.
+ * The access token is used once, right in the callback, to read who the user
+ * is and their character list, then dropped. The list waits a few minutes
+ * under a random key (in the ephemeral table: any server instance can answer)
+ * so the web app can show the import screen.
  */
 
 const TTL_MS = 10 * 60_000;
@@ -45,11 +46,17 @@ export async function startLogin(region: Region, pairCode?: string): Promise<str
 }
 
 /** Handle Blizzard's redirect. Returns where to send the browser, or throws. */
-export async function finishLogin(code: string, state: string): Promise<{ importKey: string; pairCode?: string; pairExpired?: string }> {
+export async function finishLogin(
+  code: string,
+  state: string,
+): Promise<{ importKey: string; pairCode?: string; pairExpired?: string; session: string | null }> {
   const pending = await takeTemp<PendingLogin>("login", state); // one use
   if (!pending) throw new Error("unknown or expired login state");
   const token = await exchangeCode(code, redirectUri());
-  const [{ battletag }, realms] = await Promise.all([userInfo(token).catch(() => ({ battletag: undefined })), listRealms(pending.region)]);
+  const [{ id: bnetId, battletag }, realms] = await Promise.all([
+    userInfo(token).catch(() => ({ id: undefined, battletag: undefined })),
+    listRealms(pending.region),
+  ]);
   const category = new Map(realms.map((r) => [`${r.flavour}:${r.slug}`, r.category]));
 
   const found: (Omit<AccountCharacter, "trackedId" | "isGhost" | "isSelfFound"> & { id: number })[] = [];
@@ -98,16 +105,21 @@ export async function finishLogin(code: string, state: string): Promise<{ import
   // waitUntil keeps a serverless function alive until it's done.
   waitUntil(checkStatuses(k, data).catch((err) => log.warn("account.check.failed", { err: String(err) })));
   log.info("account.imported", { region: pending.region, characters: data.characters.length, unavailable });
+  // The account, and a session for this browser (no id: Blizzard didn't say who, no account).
+  // A flavour that didn't answer leaves its characters out of `owned` until the next login.
+  const acc = bnetId ? await loginAccount({ bnetId, battletag: battletag ?? null, region: pending.region, owned: found.map((c) => c.id) }) : null;
+  const session = acc ? await createSession(acc.id) : null;
   let pairCode = pending.pairCode;
   if (pairCode) {
     const paired = await completePairing(pairCode, {
       region: pending.region,
       battletag: battletag ?? null,
       owned: found.map((c) => ({ id: c.id, flavour: c.flavour, realmSlug: c.realmSlug, name: c.name })),
+      accountId: acc?.id ?? null,
     });
     if (!paired) pairCode = undefined;
   }
-  return { importKey: k, pairCode, pairExpired: !!pending.pairCode && !pairCode ? pending.pairCode : undefined };
+  return { importKey: k, pairCode, pairExpired: !!pending.pairCode && !pairCode ? pending.pairCode : undefined, session };
 }
 
 /** Progress is saved every few characters, so the import screen fills in live. */

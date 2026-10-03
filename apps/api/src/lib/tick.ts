@@ -1,3 +1,4 @@
+import { sweepSessions } from "@/lib/accounts";
 import { fireReminders } from "@/lib/companion";
 import { acquireLease, releaseLease, sweepTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
@@ -32,7 +33,7 @@ export async function runTick(budgetMs = TICK_BUDGET_MS): Promise<TickResult> {
     const { fired: recaps } = await pushSessionRecaps();
     const pushed = retried + recaps;
     const { fired: reminders } = await fireReminders();
-    const swept = await sweepTemp();
+    const swept = (await sweepTemp()) + (await sweepSessions());
     if (r.checked) await setState("lastRefreshAt", new Date().toISOString());
     const result = { ran: true, checked: r.checked, pushed, reminders, swept, ms: Date.now() - started };
     if (r.checked || pushed || reminders) log.info("tick", result);

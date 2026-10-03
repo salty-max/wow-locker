@@ -111,6 +111,24 @@ Link previews: crawlers' user agents (Discordbot, Slackbot…) on
 `/character/:id` are routed to the function, which answers an OpenGraph page
 (`lib/og.ts`); people get the SPA.
 
+## Accounts and privacy
+
+A Battle.net login creates an account (`lib/accounts.ts`, keyed on the
+Battle.net account id) and a session: cookie `wl_session` (httpOnly,
+SameSite=Lax), only its SHA-256 stored, 180-day sliding expiry; account
+writes also check Origin. The access token is never kept. The login records
+which Battle.net characters are the account's (`accounts.owned`) and sets
+`characters.owner_id`; companions paired from that Battle.net account attach
+to it, and their uploads join the account's roster. Guests still work: the
+web stores (`lib/roster.ts`, `lib/settings.ts`) stay the UI's source and
+`lib/account.ts` syncs them with `/api/me` (first login on a device merges).
+Privacy (`lib/privacy.ts`): unowned characters are public; an owned one hides
+bags, bank, mail, gold, crafts and position (and reminders, recap gold) from
+everyone but its owner unless `shared`. Every per-viewer API answer must go
+through it (summaries, detail, item search, memorial, pushes of personal
+events). Deleting an account wipes its characters' addon data, since they
+would otherwise turn public.
+
 ## Derived views (pure, tested)
 
 - Session recaps (`lib/sessions.ts`): first login → last logout, a login within

@@ -1,7 +1,7 @@
 import type { EventData, EventType, Lang } from "@wow-locker/shared";
-import { arrayContains, inArray } from "drizzle-orm";
+import { and, arrayContains, eq, inArray, isNull, or } from "drizzle-orm";
 import { db } from "@/db";
-import { pushSubscription, type SubscriptionRow } from "@/db/schema";
+import { accounts, pushSubscription, type CharacterRow, type SubscriptionRow } from "@/db/schema";
 import { log } from "@/lib/log";
 import { asLang, DEFAULT_LANG, renderEvent, renderWelcome, type Rendered } from "@/lib/notify";
 import { sendPush, type PushSub, type Vapid } from "@/lib/webpush";
@@ -40,8 +40,9 @@ export async function saveSubscription(
   characterIds: number[],
   events: EventType[],
   lang: Lang,
+  accountId: number | null = null,
 ): Promise<void> {
-  const row = { p256dh: sub.keys.p256dh, auth: sub.keys.auth, deviceId, characterIds, events, lang };
+  const row = { p256dh: sub.keys.p256dh, auth: sub.keys.auth, deviceId, characterIds, events, lang, accountId };
   await db
     .insert(pushSubscription)
     .values({ endpoint: sub.endpoint, ...row })
@@ -81,22 +82,39 @@ export async function sendWelcome(sub: PushSub, lang: Lang): Promise<boolean> {
 
 export type DeliveryResult = { sent: number; targets: number };
 
-/** Push one event to every device tracking this character that wants this kind of event. */
+/** Reminders (mail, crafts) and session recaps (gold) are the owner's business. */
+const PERSONAL = new Set<EventType>(["reminder", "session"]);
+
+/**
+ * Push one event to every device tracking this character that wants this kind
+ * of event. A device subscribed while logged in follows its account's roster,
+ * choices and language; a guest device, its own. An owned, unshared
+ * character's personal events reach its owner's devices only.
+ */
 export async function deliverEvent(
-  character: { id: number; name: string },
+  character: Pick<CharacterRow, "id" | "name" | "ownerId" | "shared">,
   event: { id: number; data: EventData },
 ): Promise<DeliveryResult> {
   const vapid = getVapid();
   if (!vapid) return { sent: 0, targets: 0 };
-  const subs = await db
-    .select()
+  const rows = await db
+    .select({ s: pushSubscription, a: accounts })
     .from(pushSubscription)
-    .where(arrayContains(pushSubscription.characterIds, [character.id]));
-  const targets = subs.filter((s) => s.events.includes(event.data.type));
+    .leftJoin(accounts, eq(accounts.id, pushSubscription.accountId))
+    .where(
+      or(
+        and(isNull(pushSubscription.accountId), arrayContains(pushSubscription.characterIds, [character.id])),
+        arrayContains(accounts.roster, [character.id]),
+      ),
+    );
+  const personal = PERSONAL.has(event.data.type) && character.ownerId != null && !character.shared;
+  const targets = rows
+    .filter(({ s, a }) => (a?.events ?? s.events).includes(event.data.type))
+    .filter(({ a }) => !personal || a?.id === character.ownerId);
   let sent = 0;
   const dead: string[] = [];
-  for (const s of targets) {
-    const r = renderEvent(character.name, event.data, asLang(s.lang) ?? DEFAULT_LANG);
+  for (const { s, a } of targets) {
+    const r = renderEvent(character.name, event.data, asLang(a?.lang ?? s.lang) ?? DEFAULT_LANG);
     const res = await send(s, r, `/character/${character.id}`, `e${event.id}`, ttlFor(event.data), vapid);
     if (res === "ok") sent++;
     else if (res === "gone") dead.push(s.endpoint);

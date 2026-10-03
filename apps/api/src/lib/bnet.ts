@@ -157,12 +157,13 @@ export async function exchangeCode(code: string, redirectUri: string): Promise<s
 }
 
 /** The logged-in user's BattleTag (works with any user token). */
-export async function userInfo(userToken: string): Promise<{ battletag?: string }> {
+/** The logged-in Battle.net account: `id` is stable, the BattleTag can change. */
+export async function userInfo(userToken: string): Promise<{ id?: number; battletag?: string }> {
   const res = await fetchImpl("https://oauth.battle.net/userinfo", {
     headers: { Authorization: `Bearer ${userToken}` },
     signal: AbortSignal.timeout(15_000),
   });
-  return res.ok ? ((await res.json()) as { battletag?: string }) : {};
+  return res.ok ? ((await res.json()) as { id?: number; battletag?: string }) : {};
 }
 
 export type RawAccountProfile = {

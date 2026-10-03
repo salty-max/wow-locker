@@ -49,6 +49,9 @@ const char = (id: number, over: Partial<CharacterSummary> = {}): CharacterSummar
   lastEventAt: null,
   addonSyncedAt: null,
   today: today(),
+  mine: false,
+  shared: false,
+  restricted: false,
   ...over,
 });
 

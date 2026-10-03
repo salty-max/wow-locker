@@ -6,6 +6,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { CharacterWatcher, Toaster } from "@/components/Toaster";
 import { Logo } from "@/components/Logo";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
+import { useAccountSync } from "@/lib/account";
 import { useT } from "@/lib/i18n";
 import { resyncPush } from "@/lib/notifications";
 import { useRoster } from "@/lib/roster";
@@ -17,16 +18,18 @@ export function Layout() {
   const { lang, events } = useSettings();
   const { ids } = useRoster();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const me = useAccountSync();
 
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
   // The server pushes per device for the characters in its roster: keep its
-  // copy of roster, event choices and language in sync.
+  // copy of roster, event choices and language in sync (and tied to the
+  // account while logged in).
   useEffect(() => {
     void resyncPush().catch(() => {});
-  }, [lang, events, ids]);
+  }, [lang, events, ids, me?.id]);
 
   const tabs = [
     { to: "/", label: t.nav.locker, icon: Package, active: path === "/" || path.startsWith("/character") },

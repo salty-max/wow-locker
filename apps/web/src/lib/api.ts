@@ -6,6 +6,7 @@ import type {
   Flavour,
   ItemMatch,
   ItemTooltip,
+  Me,
   Memorial,
   Realm,
   Region,
@@ -29,7 +30,19 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+const json = (method: string, body?: unknown): RequestInit => ({
+  method,
+  headers: { "Content-Type": "application/json" },
+  body: body === undefined ? undefined : JSON.stringify(body),
+});
+
 export const api = {
+  me: () => req<Me | null>("/api/me"),
+  saveRoster: (ids: number[]) => req<Me>("/api/me/roster", json("PUT", { ids })),
+  saveSettings: (patch: { lang?: string; events?: string[] }) => req<Me>("/api/me/settings", json("PUT", patch)),
+  logout: () => req<{ ok: true }>("/api/me/logout", json("POST")),
+  deleteAccount: () => req<{ ok: true }>("/api/me", json("DELETE")),
+  setSharing: (id: number, shared: boolean) => req<{ shared: boolean }>(`/api/characters/${id}/sharing`, json("PUT", { shared })),
   realms: (region: Region) => req<Realm[]>(`/api/realms?region=${region}`),
   characters: (ids: number[]) => req<CharacterSummary[]>(`/api/characters?ids=${ids.join(",")}`),
   character: (id: number) => req<CharacterDetail>(`/api/characters/${id}`),

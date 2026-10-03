@@ -1,7 +1,7 @@
 import { REGIONS } from "@wow-locker/shared";
 import { ChevronDown, Download, LogIn, LogOut, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { setAccount, useAccount } from "@/lib/account";
+import { useLogout, useMe } from "@/lib/account";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils";
 /** Battle.net login status in the top bar: a login button, or your BattleTag + menu. */
 export function AccountMenu() {
   const t = useT();
-  const acc = useAccount();
+  const acc = useMe().data;
+  const logout = useLogout();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
@@ -38,7 +39,7 @@ export function AccountMenu() {
         <span className={cn("max-w-24 truncate sm:max-w-32", acc && "text-[#7cc4ff]")}>
           {acc ? (acc.battletag ?? "Battle.net") : t.account.login}
         </span>
-        {acc && <span className="text-[10px] text-ink-faint uppercase">{acc.region}</span>}
+        {acc && <span className="text-[10px] text-ink-faint uppercase">{acc.regions.join(" ")}</span>}
         <ChevronDown className="size-3 opacity-70" />
       </button>
 
@@ -47,12 +48,15 @@ export function AccountMenu() {
           {acc ? (
             <>
               <p className="px-3 pt-1.5 pb-2 text-xs text-ink-faint">
-                {t.account.loggedInAs} <span className="text-[#7cc4ff]">{acc.battletag ?? "Battle.net"}</span> ({acc.region.toUpperCase()})
+                {t.account.loggedInAs} <span className="text-[#7cc4ff]">{acc.battletag ?? "Battle.net"}</span>
               </p>
-              <a className={item} href={api.loginUrl(acc.region)}>
-                <Download className="size-4" /> {t.account.import}
-              </a>
-              {REGIONS.filter((r) => r !== acc.region).map((r) => (
+              {acc.regions.map((r) => (
+                <a key={r} className={item} href={api.loginUrl(r)}>
+                  <Download className="size-4" /> {t.account.import}
+                  {acc.regions.length > 1 && <span className="text-xs text-ink-faint uppercase">{r}</span>}
+                </a>
+              ))}
+              {REGIONS.filter((r) => !acc.regions.includes(r)).map((r) => (
                 <a key={r} className={item} href={api.loginUrl(r)}>
                   <LogIn className="size-4" /> {t.account.switchRegion(r.toUpperCase())}
                 </a>
@@ -60,8 +64,8 @@ export function AccountMenu() {
               <button
                 className={item}
                 onClick={() => {
-                  setAccount(null);
                   setOpen(false);
+                  void logout();
                 }}
               >
                 <LogOut className="size-4" /> {t.account.logout}

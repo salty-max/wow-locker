@@ -90,6 +90,12 @@ export type CharacterSummary = {
   addonSyncedAt: string | null;
   /** The addon's latest numbers, for the Today overview (null: no addon data). */
   today: TodayInfo | null;
+  /** The logged-in viewer owns it (can share it). */
+  mine: boolean;
+  /** Its owner opened its private details to anyone. */
+  shared: boolean;
+  /** Bags, bank, mail, gold and position are hidden from this viewer. */
+  restricted: boolean;
 };
 
 /** What the Today overview needs from a character's last addon save. */
@@ -510,6 +516,18 @@ export type AccountImport = {
 };
 
 export type Lang = "en" | "fr";
+
+/** GET /api/me: the logged-in account (null: a guest, the locker is per device). */
+export type Me = {
+  id: number;
+  battletag: string | null;
+  /** Regions logged in with (each proves that region's characters). */
+  regions: Region[];
+  roster: number[];
+  /** Null until a device sent its own. */
+  lang: Lang | null;
+  events: EventType[] | null;
+};
 
 export type SubscribeRequest = {
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } };

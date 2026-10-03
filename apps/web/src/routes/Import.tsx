@@ -8,7 +8,6 @@ import { api, ApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { addToRoster, useRoster } from "@/lib/roster";
 import { cn } from "@/lib/utils";
-import { setAccount } from "@/lib/account";
 import { flavourLabel, VERSION_LABEL, VERSIONS, versionOf, type Version } from "@/lib/wow";
 
 const route = getRouteApi("/import");
@@ -29,11 +28,6 @@ export function Import() {
     // The server reads each character's dead/alive status after the list: poll until done.
     refetchInterval: (query) => (query.state.data?.checking ? 1500 : false),
   });
-
-  // Remember who logged in: that's the top bar's Battle.net status.
-  useEffect(() => {
-    if (q.data) setAccount({ battletag: q.data.battletag, region: q.data.region, at: new Date().toISOString() });
-  }, [q.data]);
 
   // Per game version, highest level first.
   const all = useMemo(() => [...(q.data?.characters ?? [])].sort((a, b) => b.level - a.level || a.name.localeCompare(b.name)), [q.data]);

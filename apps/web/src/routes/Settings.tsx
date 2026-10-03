@@ -1,7 +1,11 @@
 import { NOTIFIABLE_EVENTS, type EventType, type Lang } from "@wow-locker/shared";
-import { Bell, BellOff, Download, Send } from "lucide-react";
+import { Bell, BellOff, Download, Send, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BnetLogin } from "@/components/BnetLogin";
+import { useLogout, useMe } from "@/lib/account";
+import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { toast } from "@/lib/toast";
 import { canInstall, openInstallGuide } from "@/lib/install";
 import { currentSubscription, disablePush, enablePush, pushSupport, resyncPush, type EnableResult } from "@/lib/notifications";
 import { setSettings, useSettings } from "@/lib/settings";
@@ -123,6 +127,62 @@ function Notifications() {
   );
 }
 
+/** Who's logged in, what follows them, and deleting it all. */
+function Account() {
+  const t = useT();
+  const A = t.account;
+  const me = useMe().data;
+  const logout = useLogout();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  if (me === undefined) return null;
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await api.deleteAccount();
+      await logout();
+      toast({ title: A.deleted });
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  };
+  return (
+    <Section title={A.title}>
+      {me ? (
+        <>
+          <p className="text-sm">
+            <span className="text-ink-dim">{A.loggedInAs}</span> <span className="text-[#7cc4ff]">{me.battletag ?? "Battle.net"}</span>
+          </p>
+          <p className="mt-1 mb-3 text-sm text-ink-dim">{A.synced}</p>
+          {confirming ? (
+            <div className="rounded border border-q-danger/50 bg-black/40 p-3">
+              <p className="text-sm text-white">{A.deleteConfirm}</p>
+              <div className="mt-3 flex gap-2">
+                <button className="wow-btn wow-btn-sm" disabled={busy} onClick={() => void remove()}>
+                  <Trash2 className="size-3.5" /> {A.deleteYes}
+                </button>
+                <button className="wow-btn wow-btn-dark wow-btn-sm" disabled={busy} onClick={() => setConfirming(false)}>
+                  {A.cancel}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="wow-btn wow-btn-dark wow-btn-sm" onClick={() => setConfirming(true)}>
+              <Trash2 className="size-3.5" /> {A.delete}
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="mb-3 text-sm text-ink-dim">{A.guest}</p>
+          <BnetLogin />
+        </>
+      )}
+    </Section>
+  );
+}
+
 export function Settings() {
   const t = useT();
   const { lang } = useSettings();
@@ -143,6 +203,7 @@ export function Settings() {
           ))}
         </div>
       </Section>
+      <Account />
       <Notifications />
       {canInstall() && (
         <Section title={t.settings.install}>

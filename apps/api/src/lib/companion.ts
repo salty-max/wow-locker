@@ -2,6 +2,7 @@ import type { EventData, Flavour, PairPoll, PairStart, Region, UploadResult } fr
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
+import { addToAccountRoster } from "@/lib/accounts";
 import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/lib/addon";
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
@@ -56,7 +57,12 @@ export async function pairingExists(code: string): Promise<boolean> {
 /** Called from the Battle.net callback: the login proved which characters are the user's. */
 export async function completePairing(
   code: string,
-  account: { region: Region; battletag: string | null; owned: { id: number; flavour: Flavour; realmSlug: string; name: string }[] },
+  account: {
+    region: Region;
+    battletag: string | null;
+    owned: { id: number; flavour: Flavour; realmSlug: string; name: string }[];
+    accountId: number | null;
+  },
 ): Promise<boolean> {
   const p = await getTemp<Pending>("pair", code);
   if (!p || p.result) return false;
@@ -67,6 +73,7 @@ export async function completePairing(
     battletag: account.battletag,
     ownedIds: account.owned.map((c) => c.id),
     owned: account.owned,
+    accountId: account.accountId,
   });
   // Exposed to the poll only once the link exists.
   if (!(await setTemp("pair", code, { ...p, result: { token, battletag: account.battletag, characters: account.owned.length } }))) return false;
@@ -121,6 +128,12 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
     if (!row) {
       result.characters.push({ guid, name: parsed.name, status: "unknown", events: 0 });
       continue;
+    }
+    // The companion's account owns what it uploads, and has it in its locker.
+    if (link.accountId != null) {
+      if (row.ownerId !== link.accountId) await db.update(characters).set({ ownerId: link.accountId }).where(eq(characters.id, row.id));
+      row.ownerId = link.accountId;
+      await addToAccountRoster(link.accountId, row.id);
     }
     const added = await applyAddon(row, parsed);
     result.characters.push({ guid, name: parsed.name, status: "synced", events: added, characterId: row.id });

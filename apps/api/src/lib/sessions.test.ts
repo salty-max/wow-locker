@@ -200,6 +200,8 @@ describe("link previews", () => {
     missingReportedAt: null,
     fetchedAt: null,
     addon: null,
+    ownerId: null,
+    shared: false,
     snapshotVersion: 3,
     requestedAt: new Date(),
     createdAt: new Date(),

@@ -19,6 +19,7 @@ import { availabilityStep, diffSnapshots } from "@/lib/diff";
 import { log } from "@/lib/log";
 import { fromEquipment, fromSpecializations, fromStatistics, fromSummary } from "@/lib/normalize";
 import { deliverEvent } from "@/lib/push";
+import { canSeePrivate, isMine, publicAddon, publicEvents, type Viewer } from "@/lib/privacy";
 import { realmCategory } from "@/lib/realms";
 import { RELOAD_GAP_MS, sessionRecaps } from "@/lib/sessions";
 import { todayInfo } from "@/lib/today";
@@ -69,7 +70,8 @@ export function versionedRender(url: string | null, lastLoginAt: Date | null, no
   return `${url}${url.includes("?") ? "&" : "?"}v=${v}`;
 }
 
-export function toSummary(c: CharacterRow, lastEventAt: Date | null = null): CharacterSummary {
+export function toSummary(c: CharacterRow, lastEventAt: Date | null = null, viewer: Viewer = null): CharacterSummary {
+  const open = canSeePrivate(c, viewer);
   return {
     id: c.id,
     region: c.region,
@@ -100,7 +102,10 @@ export function toSummary(c: CharacterRow, lastEventAt: Date | null = null): Cha
     fetchedAt: c.fetchedAt?.toISOString() ?? null,
     lastEventAt: lastEventAt?.toISOString() ?? null,
     addonSyncedAt: c.addon?.syncedAt ?? null,
-    today: todayInfo(c.addon),
+    today: todayInfo(c.addon && !open ? publicAddon(c.addon) : c.addon),
+    mine: isMine(c, viewer),
+    shared: c.shared,
+    restricted: !open,
   };
 }
 
@@ -112,7 +117,7 @@ const toEvent = (e: EventRow): CharacterEvent => ({
   data: e.data,
 });
 
-export async function getCharacters(ids: number[]): Promise<CharacterSummary[]> {
+export async function getCharacters(ids: number[], viewer: Viewer = null): Promise<CharacterSummary[]> {
   if (!ids.length) return [];
   const rows = await db.select().from(characters).where(inArray(characters.id, ids));
   // Being looked at keeps a character "hot" for the poller.
@@ -123,11 +128,11 @@ export async function getCharacters(ids: number[]): Promise<CharacterSummary[]> 
     .where(inArray(characterEvents.characterId, ids))
     .groupBy(characterEvents.characterId);
   const lastEvent = new Map(latest.map((r) => [r.id, r.at ? new Date(r.at) : null]));
-  return rows.map((r) => toSummary(r, lastEvent.get(r.id) ?? null));
+  return rows.map((r) => toSummary(r, lastEvent.get(r.id) ?? null, viewer));
 }
 
 /** `touch: false`: a link-preview crawler, which shouldn't keep it polled. */
-export async function getCharacter(id: number, { touch = true } = {}): Promise<CharacterDetail | null> {
+export async function getCharacter(id: number, { touch = true, viewer = null }: { touch?: boolean; viewer?: Viewer } = {}): Promise<CharacterDetail | null> {
   const [c] = await db.select().from(characters).where(eq(characters.id, id));
   if (!c) return null;
   if (touch) await db.update(characters).set({ requestedAt: new Date() }).where(eq(characters.id, id));
@@ -138,9 +143,11 @@ export async function getCharacter(id: number, { touch = true } = {}): Promise<C
     .orderBy(desc(characterEvents.at), desc(characterEvents.id))
     .limit(300);
   // Uploads from before bags existed have neither field.
-  const addon = c.addon
+  const stored = c.addon
     ? { ...c.addon, bags: c.addon.bags ?? [], bank: c.addon.bank ?? null, mapId: c.addon.mapId ?? null, pet: c.addon.pet ?? null, stable: c.addon.stable ?? null }
     : null;
+  const open = canSeePrivate(c, viewer);
+  const addon = stored && !open ? publicAddon(stored) : stored;
   const icons = await cachedIcons(c, addonItemIds(addon));
   // Recaps for sessions whose logout was stored before recaps (or not pushed yet).
   const recaps = sessionRecaps([...events].reverse(), c.flavour);
@@ -149,11 +156,11 @@ export async function getCharacter(id: number, { touch = true } = {}): Promise<C
     return r && e.data.type === "session" && !e.data.recap ? { ...e, data: { ...e.data, recap: r } } : e;
   });
   return {
-    ...toSummary(c, events[0]?.at ?? null),
+    ...toSummary(c, events[0]?.at ?? null, viewer),
     equipment: c.equipment,
     talents: c.talents,
     stats: c.stats,
-    events: withRecaps.map(toEvent),
+    events: open ? withRecaps.map(toEvent) : publicEvents(withRecaps.map(toEvent)),
     addon,
     itemIcons: Object.fromEntries(icons),
     dangers: addon ? dangerStats(await dangerEvents([id])) : null,
@@ -176,7 +183,7 @@ async function dangerEvents(ids: number[]): Promise<EventData[]> {
 const LAST_MOMENTS_MS = 3600_000;
 
 /** The fallen of a roster (with how they fell) and the dangers across all of it. */
-export async function getMemorial(ids: number[]): Promise<Memorial> {
+export async function getMemorial(ids: number[], viewer: Viewer = null): Promise<Memorial> {
   if (!ids.length) return { fallen: [], dangers: dangerStats([]) };
   const rows = await db.select().from(characters).where(inArray(characters.id, ids));
   const fallen: Memorial["fallen"] = [];
@@ -204,10 +211,11 @@ export async function getMemorial(ids: number[]): Promise<Memorial> {
           .orderBy(desc(characterEvents.at), desc(characterEvents.id))
           .limit(8)
       : [];
+    const moments = before.map(toEvent);
     fallen.push({
-      character: toSummary(c),
+      character: toSummary(c, null, viewer),
       death: death ? toEvent(death) : null,
-      lastMoments: before.map(toEvent),
+      lastMoments: canSeePrivate(c, viewer) ? moments : publicEvents(moments),
       played: c.addon?.playedTotal ?? null,
       questsCompleted: c.addon?.questsCompleted ?? null,
     });
@@ -218,8 +226,9 @@ export async function getMemorial(ids: number[]): Promise<Memorial> {
 /**
  * An item across the given characters (a device's roster): how many in bags,
  * bank (as of the last visit), mail and equipped. Name match, case-insensitive.
+ * Bags, bank and mail only where the viewer may see them.
  */
-export async function searchItems(ids: number[], query: string): Promise<ItemMatch[]> {
+export async function searchItems(ids: number[], query: string, viewer: Viewer = null): Promise<ItemMatch[]> {
   const q = query.trim().toLowerCase();
   if (!ids.length || q.length < 2) return [];
   const rows = await db.select().from(characters).where(inArray(characters.id, ids.slice(0, 50)));
@@ -233,7 +242,8 @@ export async function searchItems(ids: number[], query: string): Promise<ItemMat
   };
   const QUALITY: Record<string, number> = { poor: 0, common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, artifact: 6, heirloom: 7 };
   for (const c of rows) {
-    const a = c.addon;
+    // Others' private characters: only what they wear.
+    const a = canSeePrivate(c, viewer) ? c.addon : null;
     for (const box of a?.bags ?? []) for (const it of box.items) add(c, it.itemId, it.name, it.quality, "bags", it.count);
     for (const box of a?.bank?.containers ?? []) for (const it of box.items) add(c, it.itemId, it.name, it.quality, "bank", it.count);
     for (const l of a?.mail?.letters ?? []) for (const it of l.items) if (it.itemId != null) add(c, it.itemId, it.name, it.quality, "mail", it.count);

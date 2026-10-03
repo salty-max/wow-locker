@@ -2,8 +2,6 @@ import { REGIONS } from "@wow-locker/shared";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { CheckCircle2, LogIn } from "lucide-react";
-import { useEffect } from "react";
-import { setAccount } from "@/lib/account";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 
@@ -21,11 +19,8 @@ export function Pair() {
     queryFn: async () => ((await (await fetch(`/api/companion/pair/${encodeURIComponent(code ?? "")}`)).json()) as { pending: boolean }).pending,
     enabled: !!code && !done,
   });
-  // The pairing login is also a normal Battle.net login: remember who it was.
+  // The pairing login is also a normal Battle.net login (it opened a session).
   const account = useQuery({ queryKey: ["import", k], queryFn: () => api.accountImport(k!), enabled: !!k, retry: false });
-  useEffect(() => {
-    if (account.data) setAccount({ battletag: account.data.battletag, region: account.data.region, at: new Date().toISOString() });
-  }, [account.data]);
 
   const expired = error === "expired" || (pending.data === false && !done);
 
