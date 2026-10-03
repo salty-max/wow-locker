@@ -1,3 +1,4 @@
+import type { RawPreviewItem } from "@/lib/normalize";
 import type { Flavour, Region } from "@wow-locker/shared";
 import { log } from "@/lib/log";
 
@@ -117,6 +118,8 @@ export const api = {
     bnet<RawStatistics>(r, charPath(realm, name, "/statistics"), ns.profile(f, r)),
   media: (f: Flavour, r: Region, realm: string, name: string) =>
     bnet<RawMedia>(r, charPath(realm, name, "/character-media"), ns.profile(f, r)),
+  item: (f: Flavour, r: Region, itemId: number) =>
+    bnet<{ preview_item?: RawPreviewItem }>(r, `/data/wow/item/${itemId}`, ns.static(f, r)),
   itemMedia: (f: Flavour, r: Region, itemId: number) =>
     bnet<RawMedia>(r, `/data/wow/media/item/${itemId}`, ns.static(f, r)),
 };
@@ -212,7 +215,7 @@ export type RawEquipment = {
     name: string;
     enchantments?: { display_string: string }[];
     binding?: { name: string };
-    inventory_type?: { name: string };
+    inventory_type?: { type?: string; name: string };
     item_subclass?: { name: string };
     armor?: { display?: { display_string: string } };
     weapon?: {

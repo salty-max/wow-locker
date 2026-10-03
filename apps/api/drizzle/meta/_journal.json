@@ -43,6 +43,13 @@
       "when": 1790969329966,
       "tag": "0005_ephemeral",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791030902727,
+      "tag": "0006_item_tooltips",
+      "breakpoints": true
     }
   ]
 }

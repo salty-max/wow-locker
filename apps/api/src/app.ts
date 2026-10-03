@@ -1,5 +1,5 @@
 import type { AddCharacterRequest, SubscribeRequest } from "@wow-locker/shared";
-import { NOTIFIABLE_EVENTS, REGIONS, type EventType, type Region } from "@wow-locker/shared";
+import { FLAVOURS, NOTIFIABLE_EVENTS, REGIONS, type EventType, type Flavour, type Region } from "@wow-locker/shared";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { appOrigin, finishLogin, getImport, startLogin } from "@/lib/account";
@@ -7,6 +7,7 @@ import { authorizeCron } from "@/lib/auth";
 import { runTick } from "@/lib/tick";
 import { handleUpload, pairingExists, pollPairing, startPairing } from "@/lib/companion";
 import { BnetError } from "@/lib/bnet";
+import { itemTooltip } from "@/lib/items";
 import { log } from "@/lib/log";
 import { asLang, DEFAULT_LANG } from "@/lib/notify";
 import { isAllowedPushEndpoint, removeSubscription, saveSubscription, sendWelcome, vapidPublicKey } from "@/lib/push";
@@ -41,6 +42,20 @@ app.post("/api/characters", async (c) => {
   const body = (await c.req.json().catch(() => null)) as Partial<AddCharacterRequest> | null;
   if (!body || typeof body.realm !== "string" || typeof body.name !== "string") throw new InputError("realm and name required");
   return c.json(await addCharacter(body as AddCharacterRequest), 201);
+});
+
+// An item's tooltip (bags, bank): /api/item-tooltip/eu/classic1x/5195. Items
+// never change, so the CDN may keep the answer for a long time.
+app.get("/api/item-tooltip/:region/:flavour/:id", async (c) => {
+  const region = c.req.param("region") as Region;
+  const flavour = c.req.param("flavour") as Flavour;
+  const id = Number(c.req.param("id"));
+  if (!REGIONS.includes(region) || !FLAVOURS.includes(flavour) || !Number.isInteger(id) || id <= 0 || id > 10_000_000) {
+    return c.json({ error: "bad item" }, 400);
+  }
+  const tooltip = await itemTooltip(region, flavour, id);
+  c.header("Cache-Control", "public, max-age=86400, s-maxage=2592000");
+  return c.json({ tooltip });
 });
 
 // An item across a device's characters: /api/items?ids=1,2&q=linen

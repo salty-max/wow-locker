@@ -5,9 +5,10 @@ import specs from "./__fixtures__/sealinedion-specializations.json";
 import stats from "./__fixtures__/sealinedion-statistics.json";
 import media from "./__fixtures__/sealinedion-character-media.json";
 import tbcSpecs from "./__fixtures__/tbc-specializations.json";
+import previews from "./__fixtures__/item-previews.json";
 import type { RawEquipment, RawSpecializations, RawStatistics, RawSummary } from "./bnet";
 import { xpToNext } from "./classic";
-import { activeTrees, fromEquipment, fromSpecializations, fromStatistics, fromSummary } from "./normalize";
+import { activeTrees, fromEquipment, fromSpecializations, fromStatistics, fromSummary, previewTooltip, type RawPreviewItem } from "./normalize";
 
 describe("normalize (real Hardcore character, Soulseeker)", () => {
   it("reads the summary, including the Hardcore fields", () => {
@@ -60,5 +61,34 @@ describe("normalize (real Hardcore character, Soulseeker)", () => {
     expect(xpToNext("classic1x", 17)).toBe(17700);
     expect(xpToNext("classic1x", 60)).toBeNull();
     expect(xpToNext("classicann", 17)).toBeNull();
+  });
+});
+
+// Real answers of the static item API (classic1x, EU), for bag tooltips.
+const item = (id: number) => (previews as Record<string, RawPreviewItem>)[id];
+
+describe("previewTooltip", () => {
+  it("reads gear like an equipped item", () => {
+    const tip = previewTooltip(item(5195)); // Gold-flecked Gloves
+    expect(tip.slot).toBe("Hands");
+    expect(tip.armor).toMatch(/Armor/);
+    expect(tip.binding).toMatch(/Binds/);
+    expect(tip.durability).toMatch(/Durability/);
+    expect(tip.requirement).toMatch(/Requires Level/);
+    expect(tip.sellPrice).not.toBeNull();
+  });
+
+  it("keeps a consumable's Use: line and hides its subclass, like the game", () => {
+    const tip = previewTooltip(item(858)); // Lesser Healing Potion
+    expect(tip.effects.some((e) => e.startsWith("Use:"))).toBe(true);
+    expect(tip.type).toBeNull();
+    expect(tip.slot).toBeNull(); // no "Non-equippable" line
+    expect(tip.armor).toBeNull();
+  });
+
+  it("handles a plain trade good", () => {
+    const tip = previewTooltip(item(2589)); // Linen Cloth
+    expect(tip).toMatchObject({ binding: null, armor: null, weapon: null, stats: [], effects: [] });
+    expect(tip.sellPrice?.copper ?? 0).toBeGreaterThan(0);
   });
 });

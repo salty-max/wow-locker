@@ -28,6 +28,21 @@ export function fromSummary(s: RawSummary, media: RawMedia | null) {
 
 type RawItem = NonNullable<RawEquipment["equipped_items"]>[number];
 
+/** The static item API's preview: the same shape as an equipped item. */
+export type RawPreviewItem = Partial<RawItem> & { is_subclass_hidden?: boolean };
+
+/** Tooltip lines for an item from the static item API (bags, bank). */
+export function previewTooltip(p: RawPreviewItem): ItemTooltip {
+  const tip = tooltipOf(p as RawItem);
+  return {
+    ...tip,
+    // Consumables, reagents…: the game prints neither their subclass…
+    type: p.is_subclass_hidden ? null : tip.type,
+    // …nor "Non-equippable".
+    slot: p.inventory_type?.type === "NON_EQUIP" ? null : tip.slot,
+  };
+}
+
 function tooltipOf(i: RawItem): ItemTooltip {
   const w = i.weapon;
   const price = i.sell_price?.display_strings;

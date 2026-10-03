@@ -21,6 +21,7 @@ import type {
   EventType,
   Faction,
   Flavour,
+  ItemTooltip,
   Region,
   ReminderKind,
   Stats,
@@ -149,6 +150,23 @@ export const ephemeral = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.kind, t.key] }), index("ephemeral_expiry").on(t.expiresAt)],
+);
+
+/**
+ * An item's tooltip lines (from the static item API), fetched the first time
+ * someone hovers it in bags or the bank. Items don't change: cached for good.
+ * tooltip null = the item API has nothing for it (remembered, not re-asked).
+ */
+export const itemTooltips = pgTable(
+  "item_tooltips",
+  {
+    flavour: text("flavour").$type<Flavour>().notNull(),
+    region: text("region").$type<Region>().notNull(),
+    itemId: integer("item_id").notNull(),
+    tooltip: jsonb("tooltip").$type<ItemTooltip | null>(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("item_tooltips_key").on(t.region, t.flavour, t.itemId)],
 );
 
 /** Item icon URLs never change: fetched once per item and flavour. */
