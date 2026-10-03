@@ -13,6 +13,7 @@ local L = ns.FR and {
   gear = "Changements d'équipement", quests = "Quêtes (acceptées et terminées)", loot = "Butin",
   closeCalls = "Frôlements de mort", dungeons = "Donjons", skills = "Métiers et compétences",
   reputation = "Réputations", mail = "Courrier (rappels d'expiration)", cooldowns = "Recharges d'artisanat",
+  bags = "Sacs et banque",
   threshold = "Frôlement de mort sous",
   lootFrom = "Butin à partir de",
   uncommon = "Inhabituel", rare = "Rare", epic = "Épique",
@@ -36,6 +37,7 @@ local L = ns.FR and {
   gear = "Gear changes", quests = "Quests (accepted and completed)", loot = "Loot",
   closeCalls = "Close calls", dungeons = "Dungeon runs", skills = "Professions and skills",
   reputation = "Reputation", mail = "Mail (expiry reminders)", cooldowns = "Crafting cooldowns",
+  bags = "Bags and bank",
   threshold = "Close call below",
   lootFrom = "Loot from",
   uncommon = "Uncommon", rare = "Rare", epic = "Epic",
@@ -258,7 +260,7 @@ local panel = CreateFrame("Frame")
 panel.name = "WoWLocker"
 panel:Hide()
 
-local RECORD_KEYS = { "gear", "quests", "loot", "closeCalls", "dungeons", "skills", "reputation", "mail", "cooldowns" }
+local RECORD_KEYS = { "gear", "quests", "loot", "closeCalls", "dungeons", "skills", "reputation", "mail", "cooldowns", "bags" }
 local widgets = {}
 
 local function refresh()

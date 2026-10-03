@@ -60,7 +60,7 @@ local DEFAULTS = {
   lootQuality = 2, -- 2 uncommon, 3 rare, 4 epic
   record = {
     gear = true, quests = true, loot = true, closeCalls = true, dungeons = true,
-    skills = true, reputation = true, mail = true, cooldowns = true,
+    skills = true, reputation = true, mail = true, cooldowns = true, bags = true,
   },
 }
 -- Event type → its "record" toggle. Levels, deaths, talents, guild and
@@ -457,6 +457,96 @@ local function readMailbox()
   me.state.mail = { readAt = now, hasNew = HasNewMail() and true or false, letters = letters }
 end
 
+-- ── bags and bank ────────────────────────────────────────────────────────────
+
+-- Classic clients have the C_Container API; older ones the global functions.
+local function containerSize(bag)
+  if C_Container and C_Container.GetContainerNumSlots then return C_Container.GetContainerNumSlots(bag) or 0 end
+  return GetContainerNumSlots and GetContainerNumSlots(bag) or 0
+end
+
+local function containerItem(bag, slot)
+  if C_Container and C_Container.GetContainerItemInfo then
+    local info = C_Container.GetContainerItemInfo(bag, slot)
+    if info then return info.itemID, info.stackCount, info.quality, info.hyperlink end
+    return nil
+  end
+  if GetContainerItemInfo then
+    local _, count, _, quality, _, _, link, _, _, id = GetContainerItemInfo(bag, slot)
+    if link then return id or tonumber(link:match("|Hitem:(%d+)")), count, quality, link end
+  end
+end
+
+local function bagItemName(bag)
+  local invSlot = (C_Container and C_Container.ContainerIDToInventoryID and C_Container.ContainerIDToInventoryID(bag))
+    or (ContainerIDToInventoryID and ContainerIDToInventoryID(bag))
+  if not invSlot then return nil end
+  local _, name = parseItemLink(GetInventoryItemLink("player", invSlot))
+  return name
+end
+
+local BANK_CONTAINER = -1
+
+-- One container: its name (the bag's item name), size and what's in each slot.
+local function readContainer(bag)
+  local size = containerSize(bag)
+  if not size or size == 0 then return nil end
+  local items = {}
+  for slot = 1, size do
+    local id, count, quality, link = containerItem(bag, slot)
+    if id then
+      local _, name, color = parseItemLink(link)
+      items[#items + 1] = {
+        slot = slot, id = id, count = count or 1, name = name,
+        q = quality or (color and QUALITY_BY_COLOR[color:lower()]) or nil,
+      }
+    end
+  end
+  local name = bag == 0 and (BACKPACK_TOOLTIP or "Backpack") or bag == BANK_CONTAINER and (BANK or "Bank") or bagItemName(bag)
+  return { bag = bag, name = name, size = size, items = items }
+end
+
+local function readBags()
+  if not me then return end
+  if settings and settings.record.bags == false then
+    me.state.bags, me.state.bank = nil, nil
+    return
+  end
+  local list = {}
+  for bag = 0, (NUM_BAG_SLOTS or 4) do
+    local c = readContainer(bag)
+    if c then list[#list + 1] = c end
+  end
+  me.state.bags = list
+end
+
+-- Readable only while the bank is open: saved on each visit.
+local bankOpen = false
+local function readBank()
+  if not me or not bankOpen or (settings and settings.record.bags == false) then return end
+  local list = {}
+  local main = readContainer(BANK_CONTAINER)
+  if main then list[#list + 1] = main end
+  local first = (NUM_BAG_SLOTS or 4) + 1
+  for bag = first, first + (NUM_BANKBAGSLOTS or 6) - 1 do
+    local c = readContainer(bag)
+    if c then list[#list + 1] = c end
+  end
+  me.state.bank = { at = time(), containers = list }
+end
+
+-- BAG_UPDATE fires once per changed slot: read everything once, shortly after.
+local bagsPending = false
+local function bagsChanged()
+  if bagsPending then return end
+  bagsPending = true
+  C_Timer.After(0.5, function()
+    bagsPending = false
+    readBags()
+    readBank()
+  end)
+end
+
 -- ── profession cooldowns ─────────────────────────────────────────────────────
 
 -- GetSpellCooldown's start is on the GetTime() clock: convert to a real time.
@@ -786,6 +876,20 @@ function handlers.PLAYER_ENTERING_WORLD()
   snapshot()
   checkInstance()
   readCooldowns()
+  readBags()
+end
+
+handlers.BAG_UPDATE = bagsChanged
+handlers.PLAYERBANKSLOTS_CHANGED = bagsChanged
+handlers.PLAYERBANKBAGSLOTS_CHANGED = bagsChanged
+
+function handlers.BANKFRAME_OPENED()
+  bankOpen = true
+  bagsChanged() -- bank bags can take a moment to report their contents
+end
+
+function handlers.BANKFRAME_CLOSED()
+  bankOpen = false
 end
 
 handlers.MAIL_INBOX_UPDATE = readMailbox -- the mailbox is open (or its content changed)

@@ -97,6 +97,36 @@ function GetItemCount() return 0 end
 SlashCmdList = {}
 function print() end
 
+-- bags (C_Container) and the bank (readable only while open)
+local function link(id, name, color) return ("|cff%s|Hitem:%d::::::::|h[%s]|h|r"):format(color, id, name) end
+state.containers = {
+  [0] = { size = 16, items = { [1] = { 2589, "Linen Cloth", 20, 1, "ffffff" }, [2] = { 858, "Lesser Healing Potion", 4, 1, "ffffff" }, [5] = { 5195, "Gold-flecked Gloves", 1, 2, "1eff00" } } },
+  [1] = { size = 6, items = { [3] = { 4338, "Mageweave Cloth", 12, 1, "ffffff" } } },
+  [-1] = { size = 24, items = { [1] = { 2589, "Linen Cloth", 40, 1, "ffffff" }, [7] = { 6256, "Fishing Pole", 1, 1, "ffffff" } } },
+  [5] = { size = 8, items = { [2] = { 774, "Malachite", 3, 2, "1eff00" } } },
+}
+state.bankOpen = false
+C_Container = {
+  GetContainerNumSlots = function(bag)
+    if (bag == -1 or bag >= 5) and not state.bankOpen then return 0 end
+    local c = state.containers[bag]; return c and c.size or 0
+  end,
+  GetContainerItemInfo = function(bag, slot)
+    if (bag == -1 or bag >= 5) and not state.bankOpen then return nil end
+    local c = state.containers[bag]; local it = c and c.items[slot]
+    if not it then return nil end
+    return { itemID = it[1], stackCount = it[3], quality = it[4], hyperlink = link(it[1], it[2], it[5]) }
+  end,
+  ContainerIDToInventoryID = function(bag) return 19 + bag end,
+}
+local baseInventoryLink = GetInventoryItemLink
+function GetInventoryItemLink(unit, slot)
+  if slot == 20 then return link(4245, "Linen Bag", "ffffff") end -- bag 1
+  if slot == 24 then return link(4241, "Green Woolen Bag", "1eff00") end -- bank bag 5
+  return baseInventoryLink(unit, slot)
+end
+NUM_BAG_SLOTS, NUM_BANKBAGSLOTS = 4, 6
+
 -- Load the way the game does: both files share the addon namespace.
 local printed = {}
 function print(...) printed[#printed + 1] = table.concat({ ... }, " ") end
@@ -138,6 +168,9 @@ tick(600); combat = { 0, "SPELL_DAMAGE", false, "Creature-0", "Edwin VanCleef", 
 fire("COMBAT_LOG_EVENT_UNFILTERED"); state.hp = 30; fire("UNIT_HEALTH", "player")
 tick(3); state.dead = true; fire("PLAYER_DEAD")
 tick(1200); state.instance = { false, "none" }; fire("ZONE_CHANGED_NEW_AREA")
+-- a bank visit
+state.bankOpen = true; fire("BANKFRAME_OPENED"); state.bankOpen = false; fire("BANKFRAME_CLOSED")
+state.containers[0].items[2][3] = 3; fire("BAG_UPDATE", 0) -- drank a potion
 -- open a mailbox; craft Mooncloth (4-day cooldown); log out in an inn
 tick(60); fire("MAIL_INBOX_UPDATE")
 tick(30); cooldownStart = GetTime(); fire("UNIT_SPELLCAST_SUCCEEDED", "player", "cast-guid", 18560)
@@ -190,6 +223,14 @@ local mc = s.cooldowns[1]
 check(#s.cooldowns == 1 and mc.name == "Mooncloth" and mc.readyAt == T0 + 2480 + 4 * 86400,
   "Mooncloth ready 4 days after the craft, as a real time (not GetTime)")
 check(s.resting == true, "logged out resting (inn rate for rested XP)")
+check(#s.bags == 2 and s.bags[1].name == "Backpack" and s.bags[1].size == 16 and #s.bags[1].items == 3,
+  "bags: backpack (16 slots, 3 items) + one bag")
+check(s.bags[2].name == "Linen Bag" and s.bags[2].items[1].name == "Mageweave Cloth" and s.bags[2].items[1].count == 12,
+  "bag name from its item, items with names and counts")
+check(s.bags[1].items[2].count == 3, "a used potion updates the bags")
+check(s.bank and #s.bank.containers == 2 and s.bank.containers[1].name == "Bank" and s.bank.containers[2].name == "Green Woolen Bag",
+  "bank: main + one bank bag, saved on the visit")
+check(s.bank.containers[1].items[1].count == 40, "bank kept after the bank closed (not wiped by later bag reads)")
 
 -- WL_DUMP=path: write WowLockerDB as JSON (what the companion uploads) — the
 -- API's tests use it as a fixture, so both sides agree on the format.
@@ -304,7 +345,7 @@ do
   registered.frame.scripts.OnShow(registered.frame) -- open the panel: builds and refreshes widgets
   local boxes = 0
   for _, m in ipairs(made) do if m.kind == "CheckButton" then boxes = boxes + 1 end end
-  check(boxes == 2 + 9 + 4 + 3, "options panel: 2 chat, 9 record, 4 threshold, 3 loot quality checkboxes")
+  check(boxes == 2 + 10 + 4 + 3, "options panel: 2 chat, 10 record, 4 threshold, 3 loot quality checkboxes")
   SlashCmdList.WOWLOCKER("options")
   check(registered.opened, "/wowlocker options opens the panel")
 end
