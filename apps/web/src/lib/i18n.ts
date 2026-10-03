@@ -315,7 +315,7 @@ const en = {
   slots: {
     HEAD: "Head", NECK: "Neck", SHOULDER: "Shoulder", BACK: "Back", CHEST: "Chest", SHIRT: "Shirt", TABARD: "Tabard",
     WRIST: "Wrist", HANDS: "Hands", WAIST: "Waist", LEGS: "Legs", FEET: "Feet", FINGER_1: "Finger", FINGER_2: "Finger",
-    TRINKET_1: "Trinket", TRINKET_2: "Trinket", MAIN_HAND: "Main Hand", OFF_HAND: "Off Hand", RANGED: "Ranged",
+    TRINKET_1: "Trinket", TRINKET_2: "Trinket", MAIN_HAND: "Main Hand", OFF_HAND: "Off Hand", RANGED: "Ranged", AMMO: "Ammo",
   },
   chat: {
     tracked: (n: string, lvl: number) => `${n} (level ${lvl}) has been added to your locker.`,
@@ -690,7 +690,7 @@ const fr: Messages = {
   slots: {
     HEAD: "Tête", NECK: "Cou", SHOULDER: "Épaule", BACK: "Dos", CHEST: "Torse", SHIRT: "Chemise", TABARD: "Tabard",
     WRIST: "Poignets", HANDS: "Mains", WAIST: "Taille", LEGS: "Jambes", FEET: "Pieds", FINGER_1: "Doigt", FINGER_2: "Doigt",
-    TRINKET_1: "Bijou", TRINKET_2: "Bijou", MAIN_HAND: "Main droite", OFF_HAND: "Main gauche", RANGED: "À distance",
+    TRINKET_1: "Bijou", TRINKET_2: "Bijou", MAIN_HAND: "Main droite", OFF_HAND: "Main gauche", RANGED: "À distance", AMMO: "Munitions",
   },
   chat: {
     tracked: (n: string, lvl: number) => `${n} (niveau ${lvl}) a été ajouté·e à votre casier.`,

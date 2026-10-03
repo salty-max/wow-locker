@@ -68,6 +68,7 @@ export const SLOT_ORDER = [
   "MAIN_HAND",
   "OFF_HAND",
   "RANGED",
+  "AMMO",
 ];
 
 /** Cosmetic slots: changes there are not worth an event. */

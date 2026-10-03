@@ -57,11 +57,12 @@ const SLOT_TEXTURE: Record<string, string> = {
   MAIN_HAND: "mainhand",
   OFF_HAND: "secondaryhand",
   RANGED: "ranged",
+  AMMO: "ammo",
 };
 // Paladins, druids and shamans carry a relic (libram, idol, totem) there.
 const RELIC_CLASSES = new Set(["paladin", "druid", "shaman"]);
 
-function Slot({ slot, item, relic = false }: { slot: string; item?: EquippedItem; relic?: boolean }) {
+function Slot({ slot, item, relic = false, small = false }: { slot: string; item?: EquippedItem; relic?: boolean; small?: boolean }) {
   const t = useT();
   const label = t.slots[slot as keyof typeof t.slots] ?? slot;
   const tip = useTooltip(() =>
@@ -69,14 +70,17 @@ function Slot({ slot, item, relic = false }: { slot: string; item?: EquippedItem
   );
   const texture = slot === "RANGED" && relic ? "relic" : (SLOT_TEXTURE[slot] ?? "bag");
   // The slot is the game's texture (its own bevelled frame); an equipped
-  // item's icon fills it, as in game, with a thin ring from Uncommon up.
-  const ringed = item && item.quality !== "poor" && item.quality !== "common";
+  // item's icon fills it, as in game, inside a thin ring in its quality colour
+  // (grey for poor and common: without it the icon's edge looks cut).
   return (
     <span
       {...tip.anchor}
       tabIndex={0}
       aria-label={item ? item.name : label}
-      className="relative block size-[42px] shrink-0 rounded-[4px] bg-cover outline-none focus-visible:ring-2 focus-visible:ring-[#ffd100]"
+      className={cn(
+        "relative block shrink-0 rounded-[4px] bg-cover outline-none focus-visible:ring-2 focus-visible:ring-[#ffd100]",
+        small ? "size-8" : "size-[42px]",
+      )}
       style={{ backgroundImage: `url(/slots/${texture}.png)` }}
     >
       {item &&
@@ -85,7 +89,7 @@ function Slot({ slot, item, relic = false }: { slot: string; item?: EquippedItem
         ) : (
           <span className="absolute inset-px rounded-[3px] bg-stone-3" />
         ))}
-      {ringed && <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={item.quality} />}
+      {item && <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={item.quality} />}
       {tip.node}
     </span>
   );
@@ -93,6 +97,7 @@ function Slot({ slot, item, relic = false }: { slot: string; item?: EquippedItem
 
 function PaperDoll({ c }: { c: CharacterDetail }) {
   const bySlot = new Map(c.equipment.map((i) => [i.slot, i]));
+  const relic = RELIC_CLASSES.has(c.classKey ?? "");
   const column = (slots: string[]) => (
     <div className="flex flex-col gap-1.5">
       {slots.map((s) => (
@@ -108,10 +113,12 @@ function PaperDoll({ c }: { c: CharacterDetail }) {
           <div className="absolute inset-x-[12%] bottom-1 h-8 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgb(255_209_0/0.15),transparent_70%)]" />
           <CharacterRender url={c.renderUrl} avatarUrl={c.avatarUrl} className="h-full w-full" />
         </div>
-        <div className="mt-1 flex gap-1.5">
+        <div className="mt-1 flex items-center gap-1.5">
           {BOTTOM.map((s) => (
-            <Slot key={s} slot={s} item={bySlot.get(s)} relic={RELIC_CLASSES.has(c.classKey ?? "")} />
+            <Slot key={s} slot={s} item={bySlot.get(s)} relic={relic} />
           ))}
+          {/* As in game: classes without a relic slot get a small ammo slot. */}
+          {!relic && <Slot slot="AMMO" item={bySlot.get("AMMO")} small />}
         </div>
       </div>
       {column(RIGHT)}

@@ -77,10 +77,8 @@ function Slot({ item, icon, realm }: { item: BagItem | undefined; icon: string |
           {item.name.slice(0, 12)}
         </span>
       )}
-      {/* Uncommon and better: a thin quality-coloured ring. */}
-      {item.quality != null && item.quality >= 2 && (
-        <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={q} />
-      )}
+      {/* A thin ring in the quality colour (grey for poor and common), so the icon's edge never looks cut. */}
+      <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={q} />
       {item.count > 1 && (
         <span className="absolute right-0.5 bottom-0 text-[11px] font-bold text-white tabular-nums [text-shadow:0_0_2px_#000,0_1px_1px_#000]">
           {item.count}
