@@ -4,6 +4,12 @@ Game interface textures used by the web app, as PNGs under apps/web/public/:
   slots/<name>.png      empty equipment slots (Interface/PaperDoll/UI-PaperDoll-Slot-*)
   slots/bag-empty.png   an empty bag slot, cut out of Interface/ContainerFrame/UI-Bag-4x4
   ui/cursor-point.png   the mouse cursor (Interface/Cursor/Point), + @2x for Retina
+  ui/xp-frame.png       the XP bar's frame and 20 bubbles, assembled like the game does
+                        from four strips of MainMenuBar/UI-MainMenuBar-Dwarf
+  ui/statusbar.png      the XP bar fill (TargetingFrame/UI-StatusBar), tinted in CSS
+  ui/exhaustion-tick.png  the rested XP marker (MainMenuBar/UI-ExhaustionTickNormal)
+  ui/skill-bar.png      skill / reputation bar fill (PaperDollInfoFrame/UI-Character-Skills-Bar)
+  ui/skill-border.png   their border (UI-Character-Skills-BarBorder), trimmed for a 9-slice
 
 Blizzard's render CDN only serves the icon library, not interface textures, so
 these come from wago.tools' copy of the game files (BLP) and are converted
@@ -31,6 +37,14 @@ SLOTS = {  # FileDataID → name (interface/paperdoll/ui-paperdoll-slot-<name>.b
 BAG_4X4 = 130998  # interface/containerframe/ui-bag-4x4.blp
 BAG_SLOT_BOX = (82, 49, 118, 85)  # the top-left recessed slot, inside the bag's metal grid (36×36)
 CURSOR_POINT = 131028  # interface/cursor/point.blp
+MAIN_MENU_BAR = 136407  # interface/mainmenubar/ui-mainmenubar-dwarf.blp
+# The XP frame's four 256×10 strips, left to right (TexCoords in Classic/StatusTrackingBar.xml).
+XP_STRIPS = [(0.79296875, 0.83203125), (0.54296875, 0.58203125), (0.29296875, 0.33203125), (0.04296875, 0.08203125)]
+STATUS_BAR = 137012  # interface/targetingframe/ui-statusbar.blp
+EXHAUSTION_TICK = 136390  # interface/mainmenubar/ui-exhaustionticknormal.blp
+SKILL_BAR = 136570  # interface/paperdollinfoframe/ui-character-skills-bar.blp
+SKILL_BORDER = 136571  # interface/paperdollinfoframe/ui-character-skills-barborder.blp
+SKILL_BORDER_BOX = (2, 6, 255, 25)  # the border itself, ~5 px thick
 
 
 def fetch(fdid: int) -> bytes:
@@ -81,3 +95,17 @@ save(cursor.resize((cursor.width * 2, cursor.height * 2), Image.NEAREST), "ui", 
 # The hotspot: the opaque pixel nearest the top-left corner (the fingertip).
 hot = min(((x + y, x, y) for y in range(cursor.height) for x in range(cursor.width) if cursor.getpixel((x, y))[3]), default=(0, 0, 0))
 print(f"cursor hotspot: {hot[1]} {hot[2]}")
+
+def blp(fdid: int) -> Image.Image:
+    return Image.open(io.BytesIO(fetch(fdid))).convert("RGBA")
+
+
+menu = blp(MAIN_MENU_BAR)
+xp = Image.new("RGBA", (1024, 10))
+for i, (top, bottom) in enumerate(XP_STRIPS):
+    xp.paste(menu.crop((0, round(top * 256), 256, round(bottom * 256))), (i * 256, 0))
+save(xp, "ui", "xp-frame.png")
+save(blp(STATUS_BAR), "ui", "statusbar.png")
+save(blp(EXHAUSTION_TICK), "ui", "exhaustion-tick.png")
+save(blp(SKILL_BAR), "ui", "skill-bar.png")
+save(blp(SKILL_BORDER).crop(SKILL_BORDER_BOX), "ui", "skill-border.png")

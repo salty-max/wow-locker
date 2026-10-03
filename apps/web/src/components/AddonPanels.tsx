@@ -100,16 +100,24 @@ export function AddonStatus({ c }: { c: CharacterDetail }) {
   );
 }
 
-/** A bar like the game's skill and reputation bars: name left, value right. */
-function Bar({ pct, color, left, right, title }: { pct: number; color: string; left: ReactNode; right: ReactNode; title?: string }) {
+/**
+ * A bar like the game's skill and reputation bars: the UI-Character-Skills-Bar
+ * texture tinted with the bar's colour, inside the skill bar border (drawn as
+ * a 9-slice so its rounded ends survive any width). Name left, value right.
+ */
+function Bar({ pct, color, background, left, right, title }: { pct: number; color: string; background: string; left: ReactNode; right: ReactNode; title?: string }) {
   return (
-    <div
-      className="relative h-5 overflow-hidden rounded-[2px] border border-[#4a4a4a] bg-black/70 shadow-[inset_0_1px_2px_rgb(0_0_0/0.9)]"
-      title={title}
-    >
-      <div className="absolute inset-y-0 left-0" style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: color }} />
-      <div className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.07]" />
-      <div className="relative flex h-full items-center justify-between gap-2 px-2 text-xs text-white [text-shadow:0_1px_1px_#000]">
+    <div className="relative mx-[3px] h-[15px]" title={title}>
+      <div className="absolute inset-0" style={{ backgroundColor: background }} />
+      <div
+        className="absolute inset-y-0 left-0 bg-[url(/ui/skill-bar.png)] bg-[length:100%_100%] bg-blend-multiply"
+        style={{ width: `${Math.max(0, Math.min(100, pct))}%`, backgroundColor: color }}
+      />
+      <span
+        className="pointer-events-none absolute -inset-[3px] border-[5px] border-solid"
+        style={{ borderImage: "url(/ui/skill-border.png) 5 / 5px stretch" }}
+      />
+      <div className="relative flex h-full items-center justify-between gap-2 px-2 text-xs leading-none text-white [text-shadow:0_1px_1px_#000]">
         <span className="truncate">{left}</span>
         <span className="shrink-0 tabular-nums">{right}</span>
       </div>
@@ -117,7 +125,11 @@ function Bar({ pct, color, left, right, title }: { pct: number; color: string; l
   );
 }
 
-const SKILL_BLUE = "linear-gradient(to bottom, #4a72d6, #1d3c94)";
+// Skill bars: the game's blue (SkillFrame.xml BarColor 0.25, 0.25, 0.75). The empty
+// part is the dark recess of the reputation bars rather than the game's 20%
+// white, which reads too light on these darker frames.
+const SKILL_BLUE = "rgb(64 64 191)";
+const BAR_RECESS = "rgb(0 0 0 / 0.5)";
 
 export function SkillsFrame({ a }: { a: AddonState }) {
   const t = useT();
@@ -130,9 +142,16 @@ export function SkillsFrame({ a }: { a: AddonState }) {
         {sections.map((s) => (
           <div key={s.name}>
             {s.name && <p className="wow-header mb-1.5 text-xs">{s.name}</p>}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               {s.skills.map((k) => (
-                <Bar key={k.name} pct={(k.rank / (k.max || 1)) * 100} color={SKILL_BLUE} left={k.name} right={`${k.rank}/${k.max}`} />
+                <Bar
+                  key={k.name}
+                  pct={(k.rank / (k.max || 1)) * 100}
+                  color={SKILL_BLUE}
+                  background={BAR_RECESS}
+                  left={k.name}
+                  right={`${k.rank}/${k.max}`}
+                />
               ))}
             </div>
           </div>
@@ -149,14 +168,15 @@ export function ReputationFrame({ a }: { a: AddonState }) {
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
       <span className="wow-title">{t.inGame.reputation}</span>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         {sortedReputations(a.reputations).map((r) => {
           const s = standing(r.standing);
           return (
             <Bar
               key={r.name}
               pct={(r.value / (r.max || 1)) * 100}
-              color={`linear-gradient(to bottom, ${s.color}, color-mix(in srgb, ${s.color} 55%, black))`}
+              color={s.color}
+              background={BAR_RECESS}
               left={r.name}
               right={lang === "fr" ? s.fr : s.en}
               title={`${r.value} / ${r.max}`}

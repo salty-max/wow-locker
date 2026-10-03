@@ -34,7 +34,12 @@ is not generated and keeps the points-per-tree view. Icons:
 `apps/web/public/slots/*.png` (empty equipment slots, FileDataIDs 136510–136530,
 plus `bag-empty.png` cut out of ContainerFrame/UI-Bag-4x4) and
 `apps/web/public/ui/cursor-point(@2x).png` (Cursor/Point, the gauntlet, used
-site-wide in index.css; text fields keep the text cursor). The render CDN only
+site-wide in index.css; text fields keep the text cursor).
+Bars use the game's too: `ui/xp-frame.png` (the 20-bubble frame, assembled from
+four strips of MainMenuBar/UI-MainMenuBar-Dwarf as Classic's StatusTrackingBar.xml
+does) over `ui/statusbar.png` tinted with the ExpBar colours, `ui/exhaustion-tick.png`
+for rested; skill/reputation bars = `ui/skill-bar.png` tinted + `ui/skill-border.png`
+(a 9-slice border-image). The render CDN only
 serves the icon library, so `apps/web/scripts/ui-textures.py` downloads the BLPs
 from wago.tools and converts them with Pillow (cursors are palettized with a
 1-bit mask that Pillow misreads: decoded by hand). Committed; re-run only if they

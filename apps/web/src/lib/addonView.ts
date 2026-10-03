@@ -91,10 +91,10 @@ export function skillSections(skills: AddonState["skills"]): SkillSection[] {
     .map(([name, list]) => ({ name, skills: [...list].sort((x, y) => y.rank - x.rank || x.name.localeCompare(y.name)) }));
 }
 
-/** Standing 1 (Hated) … 8 (Exalted): the game's labels and bar colours. */
+/** Standing 1 (Hated) … 8 (Exalted): the game's labels and bar colours (FACTION_BAR_COLORS). */
 export const STANDINGS: { en: string; fr: string; color: string }[] = [
-  { en: "Hated", fr: "Haï", color: "#cc3838" },
-  { en: "Hostile", fr: "Hostile", color: "#cc3838" },
+  { en: "Hated", fr: "Haï", color: "#cc4d38" },
+  { en: "Hostile", fr: "Hostile", color: "#cc4d38" },
   { en: "Unfriendly", fr: "Inamical", color: "#bf4500" },
   { en: "Neutral", fr: "Neutre", color: "#e6b300" },
   { en: "Friendly", fr: "Amical", color: "#009919" },

@@ -27,14 +27,13 @@ export function XpBar({
   const label = t.character.xp(fmt(xp), fmt(max));
   const isRested = rested != null && rested > 0;
   const restedEnd = isRested ? Math.min(100, ((xp + rested) / max) * 100) : pct;
+  // The game's bar colours (ExpBarOverrides.lua): (0.58, 0, 0.55) and, rested, (0, 0.39, 0.88).
+  const tint = isRested ? "0 99 224" : "148 0 140";
 
   return (
     <div className="w-full">
       <div
-        className={cn(
-          "relative w-full overflow-hidden rounded-[2px] border border-[#6b5a35] bg-[linear-gradient(to_bottom,#15141c,#0c0b12)] shadow-[inset_0_1px_2px_rgb(0_0_0/0.9)]",
-          compact ? "h-1.5" : "h-2.5",
-        )}
+        className={cn("relative w-full", compact ? "h-1.5" : "h-2.5")}
         title={label}
         role="progressbar"
         aria-valuemin={0}
@@ -42,26 +41,27 @@ export function XpBar({
         aria-valuenow={xp}
         aria-label={label}
       >
-        {/* the rested bonus: a dim blue band from the current XP on */}
+        {/* As in the game's ExpBar: a half-black background, the UI-StatusBar
+            texture tinted purple (blue while rested), the rested bonus as the
+            same colour at 15%, the frame with its 20 bubbles on top. */}
+        <div className="absolute inset-x-0 inset-y-px bg-black/50" />
         {isRested && (
-          <div
-            className="absolute inset-y-0 bg-[linear-gradient(to_bottom,#2a4c9c_0%,#17306b_100%)] opacity-70"
-            style={{ left: `${pct}%`, width: `${restedEnd - pct}%` }}
+          <div className="absolute inset-y-px" style={{ left: `${pct}%`, width: `${restedEnd - pct}%`, backgroundColor: `rgb(${tint} / 0.15)` }} />
+        )}
+        <div
+          className="absolute inset-y-px left-0 bg-[url(/ui/statusbar.png)] bg-[length:100%_100%] bg-blend-multiply"
+          style={{ width: `${pct}%`, backgroundColor: `rgb(${tint})` }}
+        />
+        <div className="absolute inset-0 bg-[url(/ui/xp-frame.png)] bg-[length:100%_100%]" />
+        {/* The rested marker, where the bonus ends. */}
+        {isRested && !compact && (
+          <img
+            src="/ui/exhaustion-tick.png"
+            alt=""
+            className="pointer-events-none absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${restedEnd}%` }}
           />
         )}
-        {/* fill: WoW's XP purple, blue while rested, with a glossy top half */}
-        <div
-          className={cn(
-            "absolute inset-y-0 left-0",
-            isRested
-              ? "bg-[linear-gradient(to_bottom,#5d8cff_0%,#1f4fd1_45%,#12318f_100%)]"
-              : "bg-[linear-gradient(to_bottom,#c64fd0_0%,#8e1c96_45%,#6a0d72_100%)]",
-          )}
-          style={{ width: `${pct}%` }}
-        />
-        {/* 20 bubbles: dividers in the frame's bronze, over empty and full alike */}
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(to_right,transparent_0,transparent_calc(5%-1.5px),#6b5a35_calc(5%-1.5px),#6b5a35_5%)]" />
-        <div className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.06]" />
       </div>
       {!compact && (
         <p className="mt-1 text-right text-[11px] text-ink-faint tabular-nums">
