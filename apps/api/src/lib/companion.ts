@@ -7,6 +7,7 @@ import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/li
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { deliverEvent } from "@/lib/push";
+import { capCharacter, withinRetention } from "@/lib/retention";
 import { addCharacter, addonItemIds, fillIcons } from "@/lib/tracker";
 import { waitUntil } from "@vercel/functions";
 
@@ -77,7 +78,7 @@ export async function completePairing(
   });
   // Exposed to the poll only once the link exists.
   if (!(await setTemp("pair", code, { ...p, result: { token, battletag: account.battletag, characters: account.owned.length } }))) return false;
-  log.info("companion.paired", { battletag: account.battletag, characters: account.owned.length });
+  log.info("companion.paired", { account: account.accountId, characters: account.owned.length });
   return true;
 }
 
@@ -168,8 +169,10 @@ async function applyAddon(c: CharacterRow, parsed: AddonCharacter): Promise<numb
   let added = 0;
   const fresh: { id: number; at: Date }[] = [];
   const stale: number[] = [];
-  for (let i = 0; i < parsed.events.length; i += 500) {
-    const chunk = parsed.events.slice(i, i + 500);
+  // Noise older than the timeline keeps it (see retention.ts) isn't stored again.
+  const incoming = withinRetention(parsed.events, now.getTime());
+  for (let i = 0; i < incoming.length; i += 500) {
+    const chunk = incoming.slice(i, i + 500);
     const rows = await db
       .insert(characterEvents)
       .values(
@@ -188,6 +191,8 @@ async function applyAddon(c: CharacterRow, parsed: AddonCharacter): Promise<numb
   // History, logins and accepted quests are never pushed.
   if (stale.length) await db.update(characterEvents).set({ notifiedAt: now }).where(inArray(characterEvents.id, stale));
   fresh.sort((a, b) => a.at.getTime() - b.at.getTime());
+
+  if (added) await capCharacter(c.id);
 
   const state = { ...parsed.state, syncedAt: now.toISOString() };
   const [updated] = await db.update(characters).set({ addon: state }).where(eq(characters.id, c.id)).returning();
