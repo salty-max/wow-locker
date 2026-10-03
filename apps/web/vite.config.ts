@@ -5,6 +5,10 @@ import { VitePWA } from "vite-plugin-pwa";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+// Served on every response in production (scripts/vercel-build.sh) and by
+// `vite preview`, so the policy can be tried locally before it ships.
+const securityHeaders = JSON.parse(readFileSync(new URL("./security-headers.json", import.meta.url), "utf8")) as Record<string, string>;
+
 // package.json is the single source of truth for the app version.
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as {
   version: string;
@@ -104,6 +108,11 @@ export default defineConfig(() => ({
     allowedHosts: [".trycloudflare.com"],
     port: 5174,
     strictPort: true,
+    proxy: { "/api": "http://localhost:3001" },
+  },
+  preview: {
+    port: 4174,
+    headers: securityHeaders,
     proxy: { "/api": "http://localhost:3001" },
   },
   build: { outDir: "dist" },

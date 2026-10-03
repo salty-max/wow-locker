@@ -22,6 +22,7 @@ import { runTick } from "@/lib/tick";
 import { handleUpload, pairingExists, pollPairing, startPairing } from "@/lib/companion";
 import { BnetError } from "@/lib/bnet";
 import { itemTooltip } from "@/lib/items";
+import { clientIp, hit, LIMITS, type Limit } from "@/lib/rateLimit";
 import { log } from "@/lib/log";
 import { asLang, DEFAULT_LANG } from "@/lib/notify";
 import { isAllowedPushEndpoint, removeSubscription, saveSubscription, sendWelcome, vapidPublicKey } from "@/lib/push";
@@ -48,6 +49,15 @@ const viewer = (c: Context<Env>) => {
 const sameOrigin = (c: Context<Env>) => {
   const origin = c.req.header("origin");
   return !origin || origin === appOrigin();
+};
+/** Over its limit, a client gets 429 + Retry-After (see lib/rateLimit.ts). */
+const limited = (limit: Limit) => async (c: Context<Env>, next: () => Promise<void>) => {
+  const wait = await hit(limit, clientIp(c.req.raw.headers));
+  if (wait) {
+    c.header("Retry-After", String(wait));
+    return c.json({ error: "too many requests" }, 429);
+  }
+  await next();
 };
 const sessionCookie = (c: Context<Env>, token: string) =>
   setCookie(c, SESSION_COOKIE, token, {
@@ -80,7 +90,7 @@ const ids = (v: string | undefined) =>
 
 app.get("/api/characters", async (c) => c.json(await getCharacters(ids(c.req.query("ids")), viewer(c))));
 
-app.post("/api/characters", async (c) => {
+app.post("/api/characters", limited(LIMITS.addCharacter), async (c) => {
   const body = (await c.req.json().catch(() => null)) as Partial<AddCharacterRequest> | null;
   if (!body || typeof body.realm !== "string" || typeof body.name !== "string") throw new InputError("realm and name required");
   return c.json(await addCharacter(body as AddCharacterRequest), 201);
@@ -88,11 +98,13 @@ app.post("/api/characters", async (c) => {
 
 // An item's tooltip (bags, bank): /api/item-tooltip/eu/classic1x/5195. Items
 // never change, so the CDN may keep the answer for a long time.
-app.get("/api/item-tooltip/:region/:flavour/:id", async (c) => {
+// Item ids stop well under 300 000 in every Classic flavour (Season of Discovery's are the highest).
+const MAX_ITEM_ID = 300_000;
+app.get("/api/item-tooltip/:region/:flavour/:id", limited(LIMITS.tooltip), async (c) => {
   const region = c.req.param("region") as Region;
   const flavour = c.req.param("flavour") as Flavour;
   const id = Number(c.req.param("id"));
-  if (!REGIONS.includes(region) || !FLAVOURS.includes(flavour) || !Number.isInteger(id) || id <= 0 || id > 10_000_000) {
+  if (!REGIONS.includes(region) || !FLAVOURS.includes(flavour) || !Number.isInteger(id) || id <= 0 || id > MAX_ITEM_ID) {
     return c.json({ error: "bad item" }, 400);
   }
   const tooltip = await itemTooltip(region, flavour, id);
@@ -101,7 +113,7 @@ app.get("/api/item-tooltip/:region/:flavour/:id", async (c) => {
 });
 
 // An item across a device's characters: /api/items?ids=1,2&q=linen
-app.get("/api/items", async (c) => c.json(await searchItems(ids(c.req.query("ids")), c.req.query("q") ?? "", viewer(c))));
+app.get("/api/items", limited(LIMITS.items), async (c) => c.json(await searchItems(ids(c.req.query("ids")), c.req.query("q") ?? "", viewer(c))));
 
 // The fallen of a roster and its dangers: /api/memorial?ids=1,2
 app.get("/api/memorial", async (c) => c.json(await getMemorial(ids(c.req.query("ids")), viewer(c))));
@@ -187,7 +199,7 @@ app.delete("/api/me", async (c) => {
 
 // ── Log in with Battle.net (account import) ─────────────────────────────────
 
-app.get("/api/auth/login", async (c) => {
+app.get("/api/auth/login", limited(LIMITS.login), async (c) => {
   const region = (c.req.query("region") ?? "eu") as Region;
   if (!REGIONS.includes(region)) return c.json({ error: "bad region" }, 400);
   // ?pair=CODE: this login also pairs a companion app.
@@ -221,7 +233,7 @@ app.get("/api/auth/import/:k", async (c) => {
 
 // ── companion app ────────────────────────────────────────────────────────────
 
-app.post("/api/companion/pair/start", async (c) => c.json(await startPairing(appOrigin())));
+app.post("/api/companion/pair/start", limited(LIMITS.pair), async (c) => c.json(await startPairing(appOrigin())));
 
 app.get("/api/companion/pair/:code", async (c) => c.json({ pending: await pairingExists(c.req.param("code")) }));
 
@@ -233,6 +245,7 @@ app.post("/api/companion/pair/poll", async (c) => {
 
 app.post(
   "/api/companion/upload",
+  limited(LIMITS.upload),
   // A whole SavedVariables file, as JSON: ~1 MB for 5000 events. 4 MB keeps
   // under Vercel's 4.5 MB request limit.
   bodyLimit({ maxSize: 4 * 1024 * 1024, onError: (c) => c.json({ error: "upload too large" }, 413) }),
@@ -251,7 +264,7 @@ app.post(
 
 app.get("/api/push/key", (c) => c.json({ key: vapidPublicKey() }));
 
-app.post("/api/push/subscribe", async (c) => {
+app.post("/api/push/subscribe", limited(LIMITS.push), async (c) => {
   const b = (await c.req.json().catch(() => null)) as Partial<SubscribeRequest> | null;
   const sub = b?.subscription;
   const events = Array.isArray(b?.events) ? b.events.filter((e): e is EventType => NOTIFIABLE_EVENTS.includes(e as EventType)) : null;

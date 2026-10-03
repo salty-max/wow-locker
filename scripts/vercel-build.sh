@@ -28,24 +28,29 @@ cat > "$OUT/functions/api.func/.vc-config.json" <<JSON
 }
 JSON
 
-cat > "$OUT/config.json" <<'JSON'
-{
-  "version": 3,
-  "crons": [{ "path": "/api/admin/tick", "schedule": "*/2 * * * *" }],
-  "routes": [
-    { "src": "^/api(/.*)?$", "dest": "/api" },
+# Routing + headers: the security headers (apps/web/security-headers.json,
+# also used by `vite preview`) go on every response.
+bun -e '
+const headers = await Bun.file("apps/web/security-headers.json").json();
+const config = {
+  version: 3,
+  crons: [{ path: "/api/admin/tick", schedule: "*/2 * * * *" }],
+  routes: [
+    { src: "^/(.*)$", headers, continue: true },
+    { src: "^/api(/.*)?$", dest: "/api" },
     {
-      "src": "^/character/\\d+/?$",
-      "has": [{ "type": "header", "key": "user-agent", "value": { "re": "Discordbot|Twitterbot|Slackbot|facebookexternalhit|Facebot|TelegramBot|WhatsApp|LinkedInBot|redditbot|SkypeUriPreview|Mastodon|Bluesky|Embedly|iframely|Pinterest" } }],
-      "dest": "/api"
+      src: "^/character/\\d+/?$",
+      has: [{ type: "header", key: "user-agent", value: { re: "Discordbot|Twitterbot|Slackbot|facebookexternalhit|Facebot|TelegramBot|WhatsApp|LinkedInBot|redditbot|SkypeUriPreview|Mastodon|Bluesky|Embedly|iframely|Pinterest" } }],
+      dest: "/api",
     },
-    { "src": "^/assets/(.*)$", "headers": { "cache-control": "public, max-age=31536000, immutable" }, "continue": true },
-    { "src": "^/(sw\\.js|push-sw\\.js|workbox-[^/]+\\.js|manifest\\.webmanifest|index\\.html)?$", "headers": { "cache-control": "no-cache" }, "continue": true },
-    { "handle": "filesystem" },
-    { "src": "^/(.*)$", "dest": "/index.html" }
-  ]
-}
-JSON
+    { src: "^/assets/(.*)$", headers: { "cache-control": "public, max-age=31536000, immutable" }, continue: true },
+    { src: "^/(sw\\.js|push-sw\\.js|workbox-[^/]+\\.js|manifest\\.webmanifest|index\\.html)?$", headers: { "cache-control": "no-cache" }, continue: true },
+    { handle: "filesystem" },
+    { src: "^/(.*)$", dest: "/index.html" },
+  ],
+};
+await Bun.write(process.argv[1], JSON.stringify(config, null, 2));
+' "$OUT/config.json"
 
 # Migrations on production deploys only (previews share the same database).
 if [ "${VERCEL_ENV:-}" = "production" ]; then
