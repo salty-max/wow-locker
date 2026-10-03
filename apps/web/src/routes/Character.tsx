@@ -68,26 +68,24 @@ function Slot({ slot, item, relic = false }: { slot: string; item?: EquippedItem
     item ? <ItemTooltip item={item} /> : <p className="text-ink-dim">{label}</p>,
   );
   const texture = slot === "RANGED" && relic ? "relic" : (SLOT_TEXTURE[slot] ?? "bag");
+  // The slot is the game's texture (its own bevelled frame); an equipped
+  // item's icon fills it, as in game, with a thin ring from Uncommon up.
+  const ringed = item && item.quality !== "poor" && item.quality !== "common";
   return (
     <span
       {...tip.anchor}
       tabIndex={0}
       aria-label={item ? item.name : label}
-      className={cn(
-        "outline-none focus-visible:ring-2 focus-visible:ring-[#ffd100]",
-        // An empty slot is the game's texture alone: it has its own bevelled frame.
-        item ? "wow-slot q qb" : "relative block size-[42px] shrink-0 rounded-[3px]",
-      )}
-      data-q={item?.quality}
-      style={item ? { boxShadow: "0 0 0 1px #000, 0 0 6px -1px currentColor" } : undefined}
+      className="relative block size-[42px] shrink-0 rounded-[4px] bg-cover outline-none focus-visible:ring-2 focus-visible:ring-[#ffd100]"
+      style={{ backgroundImage: `url(/slots/${texture}.png)` }}
     >
-      {item?.iconUrl ? (
-        <img src={item.iconUrl} alt="" loading="lazy" />
-      ) : item ? (
-        <span className="block size-full bg-stone-3" />
-      ) : (
-        <img src={`/slots/${texture}.png`} alt="" className="size-full" />
-      )}
+      {item &&
+        (item.iconUrl ? (
+          <img src={item.iconUrl} alt="" loading="lazy" className="absolute inset-px size-[calc(100%-2px)] rounded-[3px]" />
+        ) : (
+          <span className="absolute inset-px rounded-[3px] bg-stone-3" />
+        ))}
+      {ringed && <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={item.quality} />}
       {tip.node}
     </span>
   );

@@ -172,11 +172,12 @@ export function ReputationFrame({ a }: { a: AddonState }) {
 export function MailFrame({ a }: { a: AddonState }) {
   const t = useT();
   const T = t.inGame;
-  const letters = a.mail?.letters ?? [];
+  const now = Date.now();
+  // Letters past their expiry are gone in game (returned or deleted).
+  const letters = (a.mail?.letters ?? []).filter((l) => new Date(l.expiresAt).getTime() > now);
   const cooldowns = a.cooldowns;
   const showMail = a.mail && (letters.length > 0 || a.mail.hasNew || a.mail.readAt);
   if (!showMail && !cooldowns.length) return null;
-  const now = Date.now();
 
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">

@@ -8,8 +8,8 @@ import { When } from "@/components/When";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useRoster } from "@/lib/roster";
+import { createStore } from "@/lib/store";
 import { useTooltip } from "@/lib/useTooltip";
-import { cn } from "@/lib/utils";
 
 /**
  * The bags and the bank, drawn like the game's bag windows (one per bag, a
@@ -59,22 +59,27 @@ function Slot({ item, icon, realm }: { item: BagItem | undefined; icon: string |
   const tip = useTooltip(() =>
     item ? <BagItemTip itemId={item.itemId} name={item.name} quality={item.quality} count={item.count} realm={realm} /> : null,
   );
-  if (!item) return <span className="wow-slot !size-10" aria-hidden />;
+  // Every slot is the game's bag slot (cut out of the bag window texture); an
+  // item's icon fills it, as in game.
+  if (!item) return <img src="/slots/bag-empty.png" alt="" aria-hidden className="size-10" />;
   const q = qualityName(item.quality);
   return (
     <button
       {...tip.anchor}
       type="button"
       aria-label={`${item.name}${item.count > 1 ? ` ×${item.count}` : ""}`}
-      className={cn("wow-slot qb !size-10 overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-parchment/70")}
-      data-q={item.quality != null && item.quality >= 2 ? q : undefined}
+      className="relative size-10 rounded-[4px] bg-[url(/slots/bag-empty.png)] bg-cover outline-none focus-visible:ring-2 focus-visible:ring-parchment/70"
     >
       {icon ? (
-        <img src={icon} alt="" loading="lazy" className="size-full" />
+        <img src={icon} alt="" loading="lazy" className="absolute inset-px size-[calc(100%-2px)] rounded-[3px]" />
       ) : (
-        <span className="q flex size-full items-center justify-center text-[9px] leading-tight" data-q={q}>
-          {item.name.slice(0, 8)}
+        <span className="q absolute inset-0 flex items-center justify-center p-0.5 text-center text-[9px] leading-tight" data-q={q}>
+          {item.name.slice(0, 12)}
         </span>
+      )}
+      {/* Uncommon and better: a thin quality-coloured ring. */}
+      {item.quality != null && item.quality >= 2 && (
+        <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={q} />
       )}
       {item.count > 1 && (
         <span className="absolute right-0.5 bottom-0 text-[11px] font-bold text-white tabular-nums [text-shadow:0_0_2px_#000,0_1px_1px_#000]">
@@ -107,27 +112,95 @@ function BagWindow({ box, icons, realm }: { box: Container; icons: CharacterDeta
   );
 }
 
+/** All of a set of bags in one window, in bag order (like Bagnon's combined view). */
+function CombinedWindow({
+  title,
+  boxes,
+  icons,
+  realm,
+}: {
+  title: string;
+  boxes: Container[];
+  icons: CharacterDetail["itemIcons"];
+  realm: Realm;
+}) {
+  const [used, total] = usedOf(boxes);
+  return (
+    <div className="rounded border border-[#3a3a3a] bg-black/40 p-2 shadow-[inset_0_1px_4px_rgb(0_0_0/0.9)]">
+      <p className="mb-1.5 flex items-baseline justify-between gap-2 text-xs">
+        <span className="truncate text-[#ffd100] [text-shadow:0_1px_1px_#000]">{title}</span>
+        <span className="shrink-0 text-ink-faint tabular-nums">
+          {used}/{total}
+        </span>
+      </p>
+      <div className="grid grid-cols-[repeat(auto-fill,2.5rem)] gap-1">
+        {boxes.flatMap((box) => {
+          const bySlot = new Map(box.items.map((i) => [i.slot, i]));
+          return Array.from({ length: box.size }, (_, i) => {
+            const item = bySlot.get(i + 1);
+            return <Slot key={`${box.bag}:${i}`} item={item} icon={item ? icons[item.itemId] : undefined} realm={realm} />;
+          });
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Separate bag windows or one combined window: remembered on this device.
+const bagView = createStore<{ combined: boolean }>("wow-locker:bags-view", { combined: false });
+
+function ViewSwitch() {
+  const t = useT();
+  const { combined } = bagView.use();
+  const option = (value: boolean, label: string) => (
+    <button
+      type="button"
+      aria-pressed={combined === value}
+      onClick={() => bagView.set({ combined: value })}
+      className={combined === value ? "wow-btn wow-btn-sm" : "wow-btn wow-btn-sm wow-btn-dark"}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex gap-1" role="group" aria-label={t.bags.view}>
+      {option(false, t.bags.separate)}
+      {option(true, t.bags.combined)}
+    </div>
+  );
+}
+
 function usedOf(boxes: Container[]): [number, number] {
   return boxes.reduce<[number, number]>((n, b) => [n[0] + b.items.length, n[1] + b.size], [0, 0]);
 }
 
 export function BagsFrame({ c }: { c: CharacterDetail }) {
   const t = useT();
+  const { combined } = bagView.use();
   const a = c.addon;
   if (!a || (!a.bags.length && !a.bank)) return null;
   const [used, total] = usedOf(a.bags);
+  const windows = (boxes: Container[], title: string) =>
+    combined ? (
+      <CombinedWindow title={title} boxes={boxes} icons={c.itemIcons} realm={c} />
+    ) : (
+      <div className="flex flex-wrap gap-2">
+        {boxes.map((b) => (
+          <BagWindow key={b.bag} box={b} icons={c.itemIcons} realm={c} />
+        ))}
+      </div>
+    );
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
       <span className="wow-title">{t.bags.title}</span>
       <ItemSearch current={c.id} />
       {a.bags.length > 0 && (
         <>
-          <p className="mb-2 text-xs text-ink-faint">{t.bags.used(used, total)}</p>
-          <div className="flex flex-wrap gap-2">
-            {a.bags.map((b) => (
-              <BagWindow key={b.bag} box={b} icons={c.itemIcons} realm={c} />
-            ))}
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-ink-faint">{t.bags.used(used, total)}</p>
+            <ViewSwitch />
           </div>
+          {windows(a.bags, t.bags.title)}
         </>
       )}
       {a.bank && (
@@ -136,11 +209,7 @@ export function BagsFrame({ c }: { c: CharacterDetail }) {
           <p className="mb-2 text-xs text-ink-faint">
             {t.bags.used(...usedOf(a.bank.containers))} · {t.bags.lastVisit} <When iso={a.bank.at} />
           </p>
-          <div className="flex flex-wrap gap-2">
-            {a.bank.containers.map((b) => (
-              <BagWindow key={b.bag} box={b} icons={c.itemIcons} realm={c} />
-            ))}
-          </div>
+          {windows(a.bank.containers, t.bags.bank)}
         </div>
       )}
       {!a.bank && a.bags.length > 0 && <p className="mt-3 text-xs text-ink-faint">{t.bags.noBank}</p>}
