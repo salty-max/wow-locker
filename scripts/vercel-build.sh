@@ -2,7 +2,8 @@
 # Vercel build (Build Output API v3): writes .vercel/output with
 #   static/            the PWA (apps/web/dist), served by Vercel's CDN
 #   functions/api.func the whole API (apps/api/src/vercel.ts) as one Node function
-#   config.json        routing (/api/* → the function, files, then the SPA
+#   config.json        routing (/api/* → the function, link-preview crawlers on
+#                      /character/:id → the function too, files, then the SPA
 #                      fallback) and the cron calling /api/admin/tick (Pro plan)
 # and applies database migrations on production deploys.
 set -euo pipefail
@@ -33,6 +34,11 @@ cat > "$OUT/config.json" <<'JSON'
   "crons": [{ "path": "/api/admin/tick", "schedule": "*/2 * * * *" }],
   "routes": [
     { "src": "^/api(/.*)?$", "dest": "/api" },
+    {
+      "src": "^/character/\\d+/?$",
+      "has": [{ "type": "header", "key": "user-agent", "value": { "re": "Discordbot|Twitterbot|Slackbot|facebookexternalhit|Facebot|TelegramBot|WhatsApp|LinkedInBot|redditbot|SkypeUriPreview|Mastodon|Bluesky|Embedly|iframely|Pinterest" } }],
+      "dest": "/api"
+    },
     { "src": "^/assets/(.*)$", "headers": { "cache-control": "public, max-age=31536000, immutable" }, "continue": true },
     { "src": "^/(sw\\.js|push-sw\\.js|workbox-[^/]+\\.js|manifest\\.webmanifest|index\\.html)?$", "headers": { "cache-control": "no-cache" }, "continue": true },
     { "handle": "filesystem" },

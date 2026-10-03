@@ -64,7 +64,8 @@ Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:
 11509, 20506`). Writes `WowLockerDB` (SavedVariables, per character GUID:
 `events` + `state`) — addons have no network access; the Go companion uploads
 the file (see Companion). Simulate a session with `luajit addon/test/sim.lua` (it
-asserts every recording). Event types: login, logout, gear, level (+played),
+asserts every recording). Event types: login, logout (both with level, xp, money: the
+site's session recaps), gear, level (+played),
 talent, respec, guild, death (killer, zone, coords, instance), quest (title,
 xp, money), close_call (<15% health, reset above 50%), dungeon_enter /
 dungeon_leave (group, duration, deaths, close calls), loot (green+, own only,
@@ -106,6 +107,20 @@ a DB lease prevents overlap, a 45 s budget fits the 60 s function limit.
 Never keep request-spanning state in memory: use `lib/ephemeral.ts`
 (Postgres, TTL'd, swept by the tick). Background work after a response goes
 through `waitUntil` (@vercel/functions; a no-op elsewhere).
+Link previews: crawlers' user agents (Discordbot, Slackbot…) on
+`/character/:id` are routed to the function, which answers an OpenGraph page
+(`lib/og.ts`); people get the SPA.
+
+## Derived views (pure, tested)
+
+- Session recaps (`lib/sessions.ts`): first login → last logout, a login within
+  3 min of a logout is a /reload. Shown in the timeline; pushed (event type
+  `session`, opt-in) by the tick once the reload gap is over
+  (`pushSessionRecaps`), never straight from an upload.
+- Dangers (`lib/dangers.ts`): close calls / deaths by foe, place, dungeon, on
+  the character page and the memorial (`/api/memorial`, whole roster).
+- Today (`lib/today.ts` → `CharacterSummary.today`, `web/lib/todayView.ts`):
+  cooldowns, rested, mail and bags across the roster.
 
 ## Battle.net API facts (verified live, see spike/FINDINGS.md)
 

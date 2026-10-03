@@ -1,17 +1,13 @@
 import type { CharacterDetail, EquippedItem, Stats, TalentGroup } from "@wow-locker/shared";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link, useRouter } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Share2, Skull, Trash2 } from "lucide-react";
 import { StatusBadges } from "@/components/Badges";
 import { CharacterRender } from "@/components/CharacterRender";
 import { AddonStatus, LevellingFrame, MailFrame, PetFrame, ReputationFrame, SkillsFrame } from "@/components/AddonPanels";
 import { BagsFrame } from "@/components/Bags";
 import { ChatLog } from "@/components/ChatLog";
+import { DangersFrame } from "@/components/Dangers";
 import { StatBox } from "@/components/StatBox";
 import { ItemTooltip } from "@/components/ItemTooltip";
 import { TalentTrees } from "@/components/TalentTrees";
@@ -21,6 +17,7 @@ import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { moveInRoster, removeFromRoster, useRoster } from "@/lib/roster";
 import { hasTalentTrees } from "@/lib/talentData";
+import { toast } from "@/lib/toast";
 import { useTooltip } from "@/lib/useTooltip";
 import { xpView } from "@/lib/addonView";
 import { cn } from "@/lib/utils";
@@ -180,6 +177,32 @@ function TalentPoints({ groups }: { groups: TalentGroup[] }) {
   );
 }
 
+/**
+ * Share the page: the system share sheet where there is one (phones), else the
+ * link copied. Chats show a preview (OpenGraph, served to their crawlers).
+ */
+function ShareButton({ c }: { c: CharacterDetail }) {
+  const t = useT();
+  const share = async () => {
+    const url = `${location.origin}/character/${c.id}`;
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+      await navigator.share({ title: t.share.text(c.name), url }).catch(() => {});
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: t.share.copied, body: t.share.copiedHint }, 4000);
+    } catch {
+      window.prompt(t.share.share, url);
+    }
+  };
+  return (
+    <button type="button" className="wow-btn wow-btn-dark wow-btn-sm" onClick={() => void share()}>
+      <Share2 className="size-3.5" /> {t.share.share}
+    </button>
+  );
+}
+
 export function Character() {
   const t = useT();
   const router = useRouter();
@@ -194,9 +217,18 @@ export function Character() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link to="/" className="wow-btn wow-btn-dark wow-btn-sm mb-6">
-        <ArrowLeft className="size-3.5" /> {t.character.back}
-      </Link>
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <Link to="/" className="wow-btn wow-btn-dark wow-btn-sm">
+          <ArrowLeft className="size-3.5" /> {t.character.back}
+        </Link>
+        <span className="ml-auto" />
+        {c.isGhost && (
+          <Link to="/memorial" className="wow-btn wow-btn-dark wow-btn-sm">
+            <Skull className="size-3.5" /> {t.today.memorial}
+          </Link>
+        )}
+        <ShareButton c={c} />
+      </div>
 
       <div className={cn("wow-frame px-3 pt-8 pb-4 sm:px-5", c.isGhost && "[filter:saturate(0.6)]")}>
         <span className="wow-title text-base sm:text-lg">
@@ -288,6 +320,7 @@ export function Character() {
           <BagsFrame c={c} />
           <MailFrame a={c.addon} />
           <LevellingFrame a={c.addon} />
+          <DangersFrame d={c.dangers} />
         </>
       )}
 

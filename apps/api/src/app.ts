@@ -1,6 +1,6 @@
 import type { AddCharacterRequest, SubscribeRequest } from "@wow-locker/shared";
-import { FLAVOURS, NOTIFIABLE_EVENTS, REGIONS, type EventType, type Flavour, type Region } from "@wow-locker/shared";
-import { Hono } from "hono";
+import { FLAVOURS, isHardcoreRealm, NOTIFIABLE_EVENTS, REGIONS, type EventType, type Flavour, type Region } from "@wow-locker/shared";
+import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { appOrigin, finishLogin, getImport, startLogin } from "@/lib/account";
 import { authorizeCron } from "@/lib/auth";
@@ -12,7 +12,8 @@ import { log } from "@/lib/log";
 import { asLang, DEFAULT_LANG } from "@/lib/notify";
 import { isAllowedPushEndpoint, removeSubscription, saveSubscription, sendWelcome, vapidPublicKey } from "@/lib/push";
 import { listRealms } from "@/lib/realms";
-import { addCharacter, getCharacter, getCharacters, InputError, NotFoundError, refreshDue, searchItems } from "@/lib/tracker";
+import { ogPage } from "@/lib/og";
+import { addCharacter, getCharacter, getCharacters, getMemorial, InputError, NotFoundError, refreshDue, searchItems } from "@/lib/tracker";
 
 export const app = new Hono();
 
@@ -60,6 +61,33 @@ app.get("/api/item-tooltip/:region/:flavour/:id", async (c) => {
 
 // An item across a device's characters: /api/items?ids=1,2&q=linen
 app.get("/api/items", async (c) => c.json(await searchItems(ids(c.req.query("ids")), c.req.query("q") ?? "")));
+
+// The fallen of a roster and its dangers: /api/memorial?ids=1,2
+app.get("/api/memorial", async (c) => c.json(await getMemorial(ids(c.req.query("ids")))));
+
+// Link previews: crawlers (Discord, Slack…) asking for a character page are
+// routed to this function by user agent (scripts/vercel-build.sh), with the
+// path unchanged; /api/og/… is the same page, for testing. Cached briefly: a
+// preview should follow the level.
+const preview = async (c: Context) => {
+  const id = Number(c.req.param("id"));
+  const ch = Number.isInteger(id) && id > 0 ? await getCharacter(id, { touch: false }) : null;
+  if (!ch) return c.redirect("/");
+  const death = ch.events.find((e) => e.data.type === "death" && e.source === "addon") ?? ch.events.find((e) => e.data.type === "death");
+  const html = ogPage(
+    {
+      c: ch,
+      hardcore: ch.addon?.hardcore ?? isHardcoreRealm({ region: ch.region, slug: ch.realmSlug }),
+      playedTotal: ch.addon?.playedTotal ?? null,
+      death: death?.data.type === "death" ? death.data : null,
+    },
+    appOrigin(),
+  );
+  c.header("Cache-Control", "public, max-age=600, s-maxage=600");
+  return c.html(html);
+};
+app.get("/character/:id", preview);
+app.get("/api/og/character/:id", preview);
 
 app.get("/api/characters/:id", async (c) => {
   const id = Number(c.req.param("id"));

@@ -1,4 +1,15 @@
-import type { AccountImport, AddCharacterRequest, CharacterDetail, CharacterSummary, Flavour, ItemMatch, ItemTooltip, Realm, Region } from "@wow-locker/shared";
+import type {
+  AccountImport,
+  AddCharacterRequest,
+  CharacterDetail,
+  CharacterSummary,
+  Flavour,
+  ItemMatch,
+  ItemTooltip,
+  Memorial,
+  Realm,
+  Region,
+} from "@wow-locker/shared";
 
 export class ApiError extends Error {
   constructor(
@@ -22,6 +33,7 @@ export const api = {
   realms: (region: Region) => req<Realm[]>(`/api/realms?region=${region}`),
   characters: (ids: number[]) => req<CharacterSummary[]>(`/api/characters?ids=${ids.join(",")}`),
   character: (id: number) => req<CharacterDetail>(`/api/characters/${id}`),
+  memorial: (ids: number[]) => req<Memorial>(`/api/memorial?ids=${ids.join(",")}`),
   itemTooltip: (region: Region, flavour: Flavour, id: number) =>
     req<{ tooltip: ItemTooltip | null }>(`/api/item-tooltip/${region}/${flavour}/${id}`).then((r) => r.tooltip),
   items: (ids: number[], q: string) => req<ItemMatch[]>(`/api/items?ids=${ids.join(",")}&q=${encodeURIComponent(q)}`),

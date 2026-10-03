@@ -1,15 +1,27 @@
-import type { AddCharacterRequest, AddonState, CharacterDetail, CharacterEvent, CharacterSummary, EventData, ItemMatch } from "@wow-locker/shared";
+import type {
+  AddCharacterRequest,
+  AddonState,
+  CharacterDetail,
+  CharacterEvent,
+  CharacterSummary,
+  EventData,
+  ItemMatch,
+  Memorial,
+} from "@wow-locker/shared";
 import { FLAVOURS, REGIONS } from "@wow-locker/shared";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { characterEvents, characters, itemIcons, type CharacterRow, type EventRow } from "@/db/schema";
 import { api, BnetError } from "@/lib/bnet";
 import { xpToNext } from "@/lib/classic";
+import { dangerStats } from "@/lib/dangers";
 import { availabilityStep, diffSnapshots } from "@/lib/diff";
 import { log } from "@/lib/log";
 import { fromEquipment, fromSpecializations, fromStatistics, fromSummary } from "@/lib/normalize";
 import { deliverEvent } from "@/lib/push";
 import { realmCategory } from "@/lib/realms";
+import { RELOAD_GAP_MS, sessionRecaps } from "@/lib/sessions";
+import { todayInfo } from "@/lib/today";
 
 /** How often a tracked character is re-checked. Profiles only change on logout,
  *  and a check costs 1 request when nothing changed (summary only). */
@@ -88,6 +100,7 @@ export function toSummary(c: CharacterRow, lastEventAt: Date | null = null): Cha
     fetchedAt: c.fetchedAt?.toISOString() ?? null,
     lastEventAt: lastEventAt?.toISOString() ?? null,
     addonSyncedAt: c.addon?.syncedAt ?? null,
+    today: todayInfo(c.addon),
   };
 }
 
@@ -113,10 +126,11 @@ export async function getCharacters(ids: number[]): Promise<CharacterSummary[]> 
   return rows.map((r) => toSummary(r, lastEvent.get(r.id) ?? null));
 }
 
-export async function getCharacter(id: number): Promise<CharacterDetail | null> {
+/** `touch: false`: a link-preview crawler, which shouldn't keep it polled. */
+export async function getCharacter(id: number, { touch = true } = {}): Promise<CharacterDetail | null> {
   const [c] = await db.select().from(characters).where(eq(characters.id, id));
   if (!c) return null;
-  await db.update(characters).set({ requestedAt: new Date() }).where(eq(characters.id, id));
+  if (touch) await db.update(characters).set({ requestedAt: new Date() }).where(eq(characters.id, id));
   const events = await db
     .select()
     .from(characterEvents)
@@ -128,15 +142,77 @@ export async function getCharacter(id: number): Promise<CharacterDetail | null> 
     ? { ...c.addon, bags: c.addon.bags ?? [], bank: c.addon.bank ?? null, mapId: c.addon.mapId ?? null, pet: c.addon.pet ?? null, stable: c.addon.stable ?? null }
     : null;
   const icons = await cachedIcons(c, addonItemIds(addon));
+  // Recaps for sessions whose logout was stored before recaps (or not pushed yet).
+  const recaps = sessionRecaps([...events].reverse(), c.flavour);
+  const withRecaps = events.map((e) => {
+    const r = recaps.get(e.id);
+    return r && e.data.type === "session" && !e.data.recap ? { ...e, data: { ...e.data, recap: r } } : e;
+  });
   return {
     ...toSummary(c, events[0]?.at ?? null),
     equipment: c.equipment,
     talents: c.talents,
     stats: c.stats,
-    events: events.map(toEvent),
+    events: withRecaps.map(toEvent),
     addon,
     itemIcons: Object.fromEntries(icons),
+    dangers: addon ? dangerStats(await dangerEvents([id])) : null,
   };
+}
+
+const DANGER_TYPES = ["closeCall", "death", "dungeon", "pet"] as const;
+
+/** Every close call, death, dungeon run and pet event of these characters. */
+async function dangerEvents(ids: number[]): Promise<EventData[]> {
+  if (!ids.length) return [];
+  const rows = await db
+    .select({ data: characterEvents.data })
+    .from(characterEvents)
+    .where(and(inArray(characterEvents.characterId, ids), inArray(characterEvents.type, [...DANGER_TYPES])));
+  return rows.map((r) => r.data);
+}
+
+/** How long before a death its "last moments" go back. */
+const LAST_MOMENTS_MS = 3600_000;
+
+/** The fallen of a roster (with how they fell) and the dangers across all of it. */
+export async function getMemorial(ids: number[]): Promise<Memorial> {
+  if (!ids.length) return { fallen: [], dangers: dangerStats([]) };
+  const rows = await db.select().from(characters).where(inArray(characters.id, ids));
+  const fallen: Memorial["fallen"] = [];
+  for (const c of rows.filter((r) => r.isGhost).sort((a, b) => (b.deadAt?.getTime() ?? 0) - (a.deadAt?.getTime() ?? 0))) {
+    const deaths = await db
+      .select()
+      .from(characterEvents)
+      .where(and(eq(characterEvents.characterId, c.id), eq(characterEvents.type, "death")))
+      .orderBy(desc(characterEvents.at));
+    // The addon's record (killer, place) over the API's bare "it happened".
+    const death = deaths.find((d) => d.source === "addon") ?? deaths[0] ?? null;
+    const before = death
+      ? await db
+          .select()
+          .from(characterEvents)
+          .where(
+            and(
+              eq(characterEvents.characterId, c.id),
+              gt(characterEvents.at, new Date(death.at.getTime() - LAST_MOMENTS_MS)),
+              lt(characterEvents.at, new Date(death.at.getTime() + 1000)),
+              sql`${characterEvents.id} <> ${death.id}`,
+              sql`${characterEvents.type} not in ('session', 'death')`,
+            ),
+          )
+          .orderBy(desc(characterEvents.at), desc(characterEvents.id))
+          .limit(8)
+      : [];
+    fallen.push({
+      character: toSummary(c),
+      death: death ? toEvent(death) : null,
+      lastMoments: before.map(toEvent),
+      played: c.addon?.playedTotal ?? null,
+      questsCompleted: c.addon?.questsCompleted ?? null,
+    });
+  }
+  return { fallen, dangers: dangerStats(await dangerEvents(rows.map((r) => r.id))) };
 }
 
 /**
@@ -425,13 +501,65 @@ export async function notifyPending(): Promise<{ fired: number }> {
     .select({ e: characterEvents, c: characters })
     .from(characterEvents)
     .innerJoin(characters, eq(characters.id, characterEvents.characterId))
-    .where(and(isNull(characterEvents.notifiedAt), gt(characterEvents.at, new Date(Date.now() - 86400_000))))
+    .where(
+      and(
+        isNull(characterEvents.notifiedAt),
+        gt(characterEvents.at, new Date(Date.now() - 86400_000)),
+        // Logouts wait for pushSessionRecaps (was it a /reload?).
+        sql`${characterEvents.type} <> 'session'`,
+      ),
+    )
     .limit(30);
   let fired = 0;
   for (const { e, c } of pending) {
     const r = await deliverEvent(c, e);
     if (r.sent > 0 || r.targets === 0) await db.update(characterEvents).set({ notifiedAt: new Date() }).where(eq(characterEvents.id, e.id));
     if (r.sent > 0) fired++;
+  }
+  return { fired };
+}
+
+/**
+ * Session recaps: a logout is only the end of a session once no login
+ * followed it within the reload gap. Then its recap is stored on the event
+ * and pushed (to devices that asked for session recaps); a /reload's logout
+ * is closed quietly.
+ */
+export async function pushSessionRecaps(now = Date.now()): Promise<{ fired: number }> {
+  const pending = await db
+    .select({ e: characterEvents, c: characters })
+    .from(characterEvents)
+    .innerJoin(characters, eq(characters.id, characterEvents.characterId))
+    .where(
+      and(
+        isNull(characterEvents.notifiedAt),
+        eq(characterEvents.type, "session"),
+        gt(characterEvents.at, new Date(now - 86400_000)),
+        lt(characterEvents.at, new Date(now - RELOAD_GAP_MS)),
+      ),
+    )
+    .limit(30);
+  let fired = 0;
+  const byCharacter = new Map<number, { c: CharacterRow; events: EventRow[] }>();
+  for (const { e, c } of pending) (byCharacter.get(c.id) ?? byCharacter.set(c.id, { c, events: [] }).get(c.id)!).events.push(e);
+  for (const { c, events } of byCharacter.values()) {
+    const history = await db
+      .select()
+      .from(characterEvents)
+      .where(eq(characterEvents.characterId, c.id))
+      .orderBy(desc(characterEvents.at), desc(characterEvents.id))
+      .limit(1000);
+    const recaps = sessionRecaps(history.reverse(), c.flavour, now);
+    for (const e of events) {
+      const recap = recaps.get(e.id);
+      if (recap && e.data.type === "session") {
+        const data = { ...e.data, recap };
+        await db.update(characterEvents).set({ data }).where(eq(characterEvents.id, e.id));
+        const r = await deliverEvent(c, { ...e, data });
+        if (r.sent > 0) fired++;
+      }
+      await db.update(characterEvents).set({ notifiedAt: new Date() }).where(eq(characterEvents.id, e.id));
+    }
   }
   return { fired };
 }

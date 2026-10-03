@@ -1,17 +1,6 @@
-import type { Flavour, Region } from "@wow-locker/shared";
+import { isHardcoreRealm, type Flavour, type Region } from "@wow-locker/shared";
 
-/**
- * Hardcore realms. The API files them under plain "Classic Era", so the UI
- * labels the ones we know (Era Hardcore 2023 + Anniversary Hardcore 2024).
- */
-const HARDCORE: Record<string, string[]> = {
-  eu: ["soulseeker", "stitches", "nekrosh"],
-  us: ["doomhowl", "defias-pillager", "skull-rock"],
-};
-
-export function isHardcoreRealm(r: { region: Region; slug: string }): boolean {
-  return HARDCORE[r.region]?.includes(r.slug) ?? false;
-}
+export { isHardcoreRealm };
 
 /** The game version a realm belongs to, as players name them. */
 export type Version = "hardcore" | "era" | "sod" | "anniversary" | "mop";

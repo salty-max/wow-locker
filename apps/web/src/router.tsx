@@ -5,7 +5,9 @@ import { Character } from "@/routes/Character";
 import { Import } from "@/routes/Import";
 import { Pair } from "@/routes/Pair";
 import { Locker } from "@/routes/Locker";
+import { Memorial } from "@/routes/Memorial";
 import { Settings } from "@/routes/Settings";
+import { Today } from "@/routes/Today";
 
 const rootRoute = createRootRoute({ component: Layout });
 const lockerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: Locker });
@@ -32,8 +34,10 @@ const pairRoute = createRoute({
 });
 const addonRoute = createRoute({ getParentRoute: () => rootRoute, path: "/addon", component: Addon });
 const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: Settings });
+const todayRoute = createRoute({ getParentRoute: () => rootRoute, path: "/today", component: Today });
+const memorialRoute = createRoute({ getParentRoute: () => rootRoute, path: "/memorial", component: Memorial });
 
-const routeTree = rootRoute.addChildren([lockerRoute, characterRoute, importRoute, pairRoute, addonRoute, settingsRoute]);
+const routeTree = rootRoute.addChildren([lockerRoute, characterRoute, todayRoute, memorialRoute, importRoute, pairRoute, addonRoute, settingsRoute]);
 
 export const router = createRouter({ routeTree, scrollRestoration: true, defaultPreload: "intent" });
 

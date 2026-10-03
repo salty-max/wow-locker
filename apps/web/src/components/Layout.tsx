@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Download, Package, Settings } from "lucide-react";
+import { CalendarClock, Download, Package, Settings } from "lucide-react";
 import { useEffect } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -30,6 +30,7 @@ export function Layout() {
 
   const tabs = [
     { to: "/", label: t.nav.locker, icon: Package, active: path === "/" || path.startsWith("/character") },
+    { to: "/today", label: t.nav.today, icon: CalendarClock, active: path === "/today" || path === "/memorial" },
     { to: "/addon", label: t.nav.addon, icon: Download, active: path === "/addon" },
     { to: "/settings", label: t.nav.settings, icon: Settings, active: path === "/settings" },
   ] as const;
@@ -65,7 +66,7 @@ export function Layout() {
 
       {/* Phones: navigation as the action bar — square bevelled slots. */}
       <nav className="pb-safe bar-layer fixed inset-x-0 bottom-0 z-30 border-t border-black bg-[linear-gradient(180deg,#1c1c22,#09090c)] shadow-[0_-1px_0_#5c5c5c] sm:hidden">
-        <div className="mx-auto flex max-w-md justify-center gap-6 px-4 py-2">
+        <div className="mx-auto flex max-w-md justify-center gap-5 px-4 py-2">
           {tabs.map((tab) => (
             <Link key={tab.to} to={tab.to} className="flex flex-col items-center gap-1">
               <span

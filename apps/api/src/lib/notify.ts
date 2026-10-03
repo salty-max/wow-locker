@@ -1,4 +1,4 @@
-import type { EventData, Lang } from "@wow-locker/shared";
+import type { EventData, Lang, SessionRecap } from "@wow-locker/shared";
 
 /**
  * Notification copy, rendered per recipient language (en/fr) at delivery time.
@@ -58,6 +58,7 @@ export function renderEvent(character: string, e: EventData, lang: Lang): Render
     case "tracked":
       return { title: character, body: t("Now tracked", "Suivi activé") };
     case "session":
+      if (e.recap) return { title: `🏁 ${character}`, body: recapLine(e.recap, lang) };
       return { title: character, body: e.action === "login" ? t("Logged in", "Connecté·e") : t("Logged out", "Déconnecté·e") };
     case "talent":
       return { title: character, body: `✨ ${t("Talents", "Talents")}: ${e.trees.map((x) => x.points).join("/")}` };
@@ -115,6 +116,30 @@ export function renderEvent(character: string, e: EventData, lang: Lang): Render
           return { title: `⏳ ${character}`, body: t(`${e.detail ?? "Cooldown"} is ready`, `${e.detail ?? "Recharge"} est prêt`) };
       }
   }
+}
+
+/** "1 h 12 min · Level 21 → 23 · 14 quests · +2g 40s · 1 close call (12%)" */
+export function recapLine(r: SessionRecap, lang: Lang): string {
+  const t = (en: string, fr: string) => (lang === "fr" ? fr : en);
+  const n = (v: number) => v.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB");
+  const plural = (v: number, en: string, fr: string) => `${n(v)} ${t(en, fr)}${v > 1 ? "s" : ""}`;
+  const mins = Math.max(1, Math.round(r.duration / 60));
+  const parts = [mins >= 60 ? `${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, "0")}` : `${mins} min`];
+  if (r.levelTo > r.levelFrom) parts.push(t(`Level ${r.levelFrom} → ${r.levelTo}`, `Niveau ${r.levelFrom} → ${r.levelTo}`));
+  else if (r.xp) parts.push(`+${n(r.xp)} XP`);
+  if (r.quests) parts.push(plural(r.quests, "quest", "quête"));
+  if (r.money) {
+    const abs = Math.abs(r.money);
+    const g = Math.floor(abs / 10000);
+    const s = Math.floor(abs / 100) % 100;
+    const coins = g ? `${g}g ${s}s` : s ? `${s}s ${abs % 100}c` : `${abs % 100}c`;
+    parts.push(`${r.money > 0 ? "+" : "−"}${coins}`);
+  }
+  if (r.dungeons.length) parts.push(r.dungeons.join(", "));
+  if (r.loot.length) parts.push(r.loot.map((l) => `[${l.name}]`).join(" "));
+  if (r.deaths) parts.push(`💀 ${plural(r.deaths, "death", "mort")}`);
+  else if (r.closeCalls) parts.push(`⚠️ ${plural(r.closeCalls, "close call", "frayeur")}${r.lowest != null ? ` (${r.lowest}%)` : ""}`);
+  return parts.join(" · ");
 }
 
 export function renderWelcome(lang: Lang): Rendered {

@@ -90,9 +90,11 @@ export async function linkFor(token: string) {
 
 // ── uploads ──────────────────────────────────────────────────────────────────
 
-/** Timeline only, never pushed: logins/logouts, quests being accepted. */
+/** Timeline only, never pushed: logins, quests being accepted, pet levels. */
 const quiet = (d: EventData) =>
-  d.type === "session" || (d.type === "quest" && d.action === "accept") || (d.type === "pet" && d.action === "level");
+  (d.type === "session" && d.action === "login") || (d.type === "quest" && d.action === "accept") || (d.type === "pet" && d.action === "level");
+/** Logouts: pushed as a session recap by the scheduler, once it's not a /reload. */
+const deferred = (d: EventData) => d.type === "session" && d.action === "logout";
 
 /** Events older than this at upload time are history: stored, not pushed. */
 const PUSH_WINDOW_MS = 24 * 3600_000;
@@ -164,11 +166,13 @@ async function applyAddon(c: CharacterRow, parsed: AddonCharacter): Promise<numb
       .returning({ id: characterEvents.id, at: characterEvents.at, type: characterEvents.type, data: characterEvents.data });
     for (const row of rows) {
       added++;
-      if (now.getTime() - row.at.getTime() < PUSH_WINDOW_MS && !quiet(row.data)) fresh.push(row);
+      const recent = now.getTime() - row.at.getTime() < PUSH_WINDOW_MS;
+      if (recent && deferred(row.data)) continue; // left un-notified for pushSessionRecaps
+      if (recent && !quiet(row.data)) fresh.push(row);
       else stale.push(row.id);
     }
   }
-  // History and sessions are never pushed.
+  // History, logins and accepted quests are never pushed.
   if (stale.length) await db.update(characterEvents).set({ notifiedAt: now }).where(inArray(characterEvents.id, stale));
   fresh.sort((a, b) => a.at.getTime() - b.at.getTime());
 

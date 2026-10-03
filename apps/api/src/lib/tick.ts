@@ -2,11 +2,11 @@ import { fireReminders } from "@/lib/companion";
 import { acquireLease, releaseLease, sweepTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { setState } from "@/lib/state";
-import { notifyPending, refreshDue } from "@/lib/tracker";
+import { notifyPending, pushSessionRecaps, refreshDue } from "@/lib/tracker";
 
 /**
  * One scheduler tick: refresh the characters that are due (each at most every
- * 10 min), retry failed pushes, fire due reminders, drop expired temp rows.
+ * 10 min), retry failed pushes, push session recaps, fire due reminders, drop expired temp rows.
  *
  * Called every 2 minutes, either by the in-process scheduler (Bun server) or
  * by an external cron hitting /api/admin/tick (serverless). The lease keeps
@@ -28,7 +28,9 @@ export async function runTick(budgetMs = TICK_BUDGET_MS): Promise<TickResult> {
   try {
     const deadline = started + budgetMs;
     const r = await refreshDue(60, deadline);
-    const { fired: pushed } = await notifyPending();
+    const { fired: retried } = await notifyPending();
+    const { fired: recaps } = await pushSessionRecaps();
+    const pushed = retried + recaps;
     const { fired: reminders } = await fireReminders();
     const swept = await sweepTemp();
     if (r.checked) await setState("lastRefreshAt", new Date().toISOString());

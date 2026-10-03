@@ -1,4 +1,4 @@
-import type { CharacterDetail, CharacterEvent, EquippedItem, Quality } from "@wow-locker/shared";
+import type { CharacterDetail, CharacterEvent, EquippedItem, Quality, SessionRecap } from "@wow-locker/shared";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { ItemTooltip } from "@/components/ItemTooltip";
 import { MapPin } from "lucide-react";
@@ -8,6 +8,7 @@ import { mapFor, type MapMarker } from "@/lib/maps";
 import { Money } from "@/components/Money";
 import { fullDate } from "@/lib/time";
 import { useLang, useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { useTooltip } from "@/lib/useTooltip";
 
 /**
@@ -62,7 +63,51 @@ function ItemLink({ name, quality, equipped }: { name: string; quality: Quality 
   );
 }
 
-function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
+/** Who the lines are about: the timeline's character, or a fallen one on the memorial. */
+type Who = Pick<CharacterDetail, "name" | "race" | "className" | "equipment">;
+
+/** A session's summary, after its last logout: one line, like a system message. */
+function RecapText({ r }: { r: SessionRecap }) {
+  const t = useT();
+  const lang = useLang();
+  const R = t.recap;
+  const num = (n: number) => n.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB");
+  const parts: ReactNode[] = [duration(r.duration, lang)];
+  if (r.levelTo > r.levelFrom) parts.push(R.levels(r.levelFrom, r.levelTo));
+  if (r.xp) parts.push(R.xp(num(r.xp)));
+  if (r.quests) parts.push(R.quests(r.quests));
+  if (r.money)
+    parts.push(
+      <>
+        {r.money > 0 ? "+" : "−"}
+        <Money {...coins(Math.abs(r.money))} />
+      </>,
+    );
+  for (const d of r.dungeons) parts.push(d);
+  for (const l of r.loot)
+    parts.push(
+      <>
+        <ItemLink name={l.name} quality={l.quality} />
+        {l.count > 1 ? `x${l.count}` : ""}
+      </>,
+    );
+  if (r.skillUps) parts.push(R.skillUps(r.skillUps));
+  if (r.deaths) parts.push(<span style={{ color: DEATH }}>{R.deaths(r.deaths)}</span>);
+  if (r.closeCalls) parts.push(<span style={{ color: DANGER }}>{R.closeCalls(r.closeCalls, r.lowest)}</span>);
+  return (
+    <>
+      {R.label}{" "}
+      {parts.map((p, i) => (
+        <span key={i}>
+          {i > 0 && " · "}
+          {p}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function Line({ e, c }: { e: CharacterEvent; c: Who }) {
   const t = useT();
   const lang = useLang();
   const d = e.data;
@@ -129,7 +174,10 @@ function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
       lines = [{ color: SYSTEM, text: msg.online(name) }];
       break;
     case "session":
-      lines = [{ color: SYSTEM, text: d.action === "login" ? msg.online(name) : msg.offline(name) }];
+      lines = [
+        { color: SYSTEM, text: d.action === "login" ? msg.online(name) : msg.offline(name) },
+        ...(d.recap ? [{ color: SYSTEM, text: <RecapText r={d.recap} /> }] : []),
+      ];
       break;
     case "talent":
       lines = [{ color: SYSTEM, text: msg.talentPoints(d.trees.map((x) => `${x.name} ${x.points}`).join(" / ")) }];
@@ -264,25 +312,31 @@ function MapButton({ mapId, title, marker }: { mapId: number; title: string; mar
   );
 }
 
-export function ChatLog({ c }: { c: CharacterDetail }) {
+/** Events (newest first, as the API sends them) as chat lines, oldest at the top. */
+export function ChatFrame({ events, who, className }: { events: CharacterEvent[]; who: Who; className?: string }) {
   const box = useRef<HTMLDivElement>(null);
-  const events = [...c.events].reverse(); // the API sends newest first; chat reads oldest → newest
+  const lines = [...events].reverse();
 
   useLayoutEffect(() => {
     // Like the chat frame: always showing the latest line.
     if (box.current) box.current.scrollTop = box.current.scrollHeight;
-  }, [c.events.length]);
+  }, [events.length]);
 
   return (
-    <div>
-      <div
-        ref={box}
-        className="max-h-72 overflow-y-auto rounded border border-[#3a3a3a] bg-black/55 px-3 py-2 font-[Arial_Narrow,Roboto_Condensed,Arial,sans-serif] text-[14px] leading-[1.35] tracking-[0.01em] [text-shadow:1px_1px_0_#000,-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000] [scrollbar-color:#5a5a5a_transparent]"
-      >
-        {events.map((e) => (
-          <Line key={e.id} e={e} c={c} />
-        ))}
-      </div>
+    <div
+      ref={box}
+      className={cn(
+        "overflow-y-auto rounded border border-[#3a3a3a] bg-black/55 px-3 py-2 font-[Arial_Narrow,Roboto_Condensed,Arial,sans-serif] text-[14px] leading-[1.35] tracking-[0.01em] [text-shadow:1px_1px_0_#000,-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000] [scrollbar-color:#5a5a5a_transparent]",
+        className,
+      )}
+    >
+      {lines.map((e) => (
+        <Line key={e.id} e={e} c={who} />
+      ))}
     </div>
   );
+}
+
+export function ChatLog({ c }: { c: CharacterDetail }) {
+  return <ChatFrame events={c.events} who={c} className="max-h-72" />;
 }

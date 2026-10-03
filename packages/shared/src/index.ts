@@ -15,6 +15,16 @@ export const REGIONS: Region[] = ["eu", "us"];
 export type Flavour = "classic1x" | "classicann" | "classic";
 export const FLAVOURS: Flavour[] = ["classic1x", "classicann", "classic"];
 
+/**
+ * Hardcore realms. The API files them under plain "Classic Era", so we label
+ * the ones we know (Era Hardcore 2023 + Anniversary Hardcore 2024).
+ */
+const HARDCORE_REALMS: Record<Region, string[]> = {
+  eu: ["soulseeker", "stitches", "nekrosh"],
+  us: ["doomhowl", "defias-pillager", "skull-rock"],
+};
+export const isHardcoreRealm = (r: { region: Region; slug: string }): boolean => HARDCORE_REALMS[r.region]?.includes(r.slug) ?? false;
+
 export type ClassKey =
   | "warrior"
   | "paladin"
@@ -78,6 +88,24 @@ export type CharacterSummary = {
   lastEventAt: string | null;
   /** Last companion upload of addon data (ISO). */
   addonSyncedAt: string | null;
+  /** The addon's latest numbers, for the Today overview (null: no addon data). */
+  today: TodayInfo | null;
+};
+
+/** What the Today overview needs from a character's last addon save. */
+export type TodayInfo = {
+  savedAt: string | null; // ISO, last refresh in game
+  xp: number | null;
+  xpMax: number | null;
+  rested: number | null;
+  resting: boolean | null;
+  money: number | null; // copper
+  played: number | null; // seconds
+  zone: string | null;
+  bags: { used: number; total: number } | null;
+  /** Letters still in the mailbox (expired ones dropped), the next to expire first. */
+  mail: { letters: number; hasNew: boolean; nextExpiry: string | null; nextOnExpiry: "returned" | "deleted" | null } | null;
+  cooldowns: { name: string | null; readyAt: string }[];
 };
 
 /** What the in-game item tooltip shows, mostly as Blizzard's own display text. */
@@ -166,6 +194,7 @@ export const NOTIFIABLE_EVENTS: EventType[] = [
   "loot",
   "skill",
   "pet",
+  "session",
   "selfFoundLost",
   "missing",
 ];
@@ -215,7 +244,16 @@ export type EventData =
   /** A missing character answering again. */
   | { type: "found" }
   // ── addon ──
-  | { type: "session"; action: "login" | "logout"; level: number }
+  | {
+      type: "session";
+      action: "login" | "logout";
+      level: number;
+      /** XP into the level and gold (copper) at that moment (addon 0.3.7+). */
+      xp?: number | null;
+      money?: number | null;
+      /** Logouts that end a session (not a /reload): what the session brought. */
+      recap?: SessionRecap;
+    }
   | { type: "talent"; trees: TalentTree[] }
   | {
       type: "quest";
@@ -274,6 +312,41 @@ export type EventData =
       count?: number;
       onExpiry?: "returned" | "deleted";
     };
+
+/** What a play session brought: first login → last logout, /reloads merged. */
+export type SessionRecap = {
+  start: string; // ISO
+  end: string; // ISO
+  duration: number; // seconds
+  levelFrom: number;
+  levelTo: number;
+  /** XP earned (null: an end without it, before addon 0.3.7). */
+  xp: number | null;
+  /** Gold won (negative: spent), copper (null: unknown). */
+  money: number | null;
+  quests: number;
+  /** Rare and better loot. */
+  loot: { itemId: number; name: string; quality: Quality; count: number }[];
+  deaths: number;
+  closeCalls: number;
+  /** Lowest health reached in a close call (%). */
+  lowest: number | null;
+  dungeons: string[];
+  skillUps: number;
+  reputations: number;
+};
+
+/** Close calls and deaths, by what caused them and where. */
+export type DangerStats = {
+  closeCalls: number;
+  deaths: number;
+  petDeaths: number;
+  /** Lowest health ever reached in a close call (%). */
+  lowest: number | null;
+  attackers: { name: string; closeCalls: number; deaths: number; lowest: number | null }[];
+  zones: { name: string; closeCalls: number; deaths: number }[];
+  dungeons: { name: string; runs: number; closeCalls: number; deaths: number }[];
+};
 
 export type EventSource = "api" | "addon" | "scheduled";
 export type CharacterEvent = { id: number; characterId: number; at: string; source: EventSource; data: EventData };
@@ -360,6 +433,23 @@ export type CharacterDetail = CharacterSummary & {
   addon: AddonState | null;
   /** Icon URL per item id, for the items in bags, bank and mail (null: none). */
   itemIcons: Record<string, string | null>;
+  /** From every close call, death and dungeon run the addon recorded (null: no addon). */
+  dangers: DangerStats | null;
+};
+
+/** GET /api/memorial?ids=… : the fallen of a roster, and what threatens them all. */
+export type Memorial = {
+  fallen: {
+    character: CharacterSummary;
+    /** The death as recorded (the addon's has killer and place). */
+    death: CharacterEvent | null;
+    /** What happened in the hour before, newest first. */
+    lastMoments: CharacterEvent[];
+    played: number | null;
+    questsCompleted: number | null;
+  }[];
+  /** Across every character of the roster, living or not. */
+  dangers: DangerStats;
 };
 
 /** GET /api/items?ids=…&q=… : an item across the given characters. */
