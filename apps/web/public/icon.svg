@@ -1,38 +1,205 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
-      <stop offset="0" stop-color="#1b2232"/>
-      <stop offset="1" stop-color="#0b0d12"/>
+    <radialGradient id="bg" cx="44%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#5a3c14"/>
+      <stop offset="0.35" stop-color="#2a1a0a"/>
+      <stop offset="0.75" stop-color="#0f0a08"/>
+      <stop offset="1" stop-color="#050406"/>
     </radialGradient>
-    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8a5228"/>
-      <stop offset="1" stop-color="#4a2810"/>
+    <filter id="noise" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.7 -0.2" result="dark"/>
+      <feComposite in="dark" in2="SourceGraphic" operator="in" result="d"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="d"/></feMerge>
+    </filter>
+    <radialGradient id="aura" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffd25a" stop-opacity="0.6"/>
+      <stop offset="0.45" stop-color="#ff9c1e" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ff8a00" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- wood: lit front, darker side, lid top catches the light -->
+    <linearGradient id="front" x1="0" y1="0" x2="1" y2="0.3">
+      <stop offset="0" stop-color="#b06a2c"/>
+      <stop offset="0.6" stop-color="#7a4116"/>
+      <stop offset="1" stop-color="#4e260a"/>
     </linearGradient>
-    <linearGradient id="iron" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#9aa3b2"/>
-      <stop offset="1" stop-color="#4b5261"/>
+    <linearGradient id="side" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4a2309"/>
+      <stop offset="1" stop-color="#22100a"/>
     </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffe08a"/>
-      <stop offset="0.5" stop-color="#f8b700"/>
-      <stop offset="1" stop-color="#a86f00"/>
+    <linearGradient id="lidTop" x1="0" y1="1" x2="0.2" y2="0">
+      <stop offset="0" stop-color="#7a4216"/>
+      <stop offset="0.55" stop-color="#c47e3a"/>
+      <stop offset="0.8" stop-color="#e2a05a"/>
+      <stop offset="1" stop-color="#8a4c1c"/>
+    </linearGradient>
+    <linearGradient id="lidEnd" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5a2c0c"/>
+      <stop offset="1" stop-color="#26120a"/>
+    </linearGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01 0.22" numOctaves="3" seed="5" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0.16  0 0 0 0 0.06  0 0 0 0 0.01  0 0 0 1.3 -0.55" result="l"/>
+      <feComposite in="l" in2="SourceGraphic" operator="in" result="c"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="c"/></feMerge>
+    </filter>
+
+    <linearGradient id="gold" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#fff7c8"/>
+      <stop offset="0.16" stop-color="#ffd040"/>
+      <stop offset="0.4" stop-color="#b8780c"/>
+      <stop offset="0.58" stop-color="#f0bc3c"/>
+      <stop offset="0.8" stop-color="#7e5004"/>
+      <stop offset="1" stop-color="#3e2602"/>
+    </linearGradient>
+    <linearGradient id="goldDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c88e1a"/>
+      <stop offset="1" stop-color="#4a2c02"/>
+    </linearGradient>
+    <linearGradient id="iron" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22262e"/>
+      <stop offset="0.35" stop-color="#7c8494"/>
+      <stop offset="0.55" stop-color="#4a505c"/>
+      <stop offset="1" stop-color="#15181e"/>
+    </linearGradient>
+    <linearGradient id="ironSide" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2c3038"/>
+      <stop offset="1" stop-color="#101216"/>
+    </linearGradient>
+    <filter id="metal" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="b"/>
+      <feSpecularLighting in="b" surfaceScale="5" specularConstant="1" specularExponent="18" lighting-color="#fff2c8" result="s">
+        <feDistantLight azimuth="225" elevation="42"/>
+      </feSpecularLighting>
+      <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="2" result="t"/>
+      <feColorMatrix in="t" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 -0.1" result="pit"/>
+      <feComposite in="pit" in2="SourceAlpha" operator="in" result="pits"/>
+      <feComposite in="SourceGraphic" in2="sp" operator="arithmetic" k2="1" k3="0.7" result="lit"/>
+      <feMerge><feMergeNode in="lit"/><feMergeNode in="pits"/></feMerge>
+    </filter>
+    <radialGradient id="keyGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff4b0"/>
+      <stop offset="0.35" stop-color="#ffbe2a" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff7a00" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur8" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="drop" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="6" dy="14" stdDeviation="12" flood-color="#000" flood-opacity="0.8"/>
+    </filter>
+    <!-- frame -->
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff2b0"/>
+      <stop offset="0.2" stop-color="#e2aa2c"/>
+      <stop offset="0.45" stop-color="#7e5208"/>
+      <stop offset="0.7" stop-color="#e8b444"/>
+      <stop offset="1" stop-color="#4a3002"/>
+    </linearGradient>
+    <clipPath id="tile"><rect width="512" height="512" rx="96"/></clipPath>
+    <!-- one corner ornament (top-left), rotated for the others -->
+    <g id="orn">
+      <path d="M22 96 C22 52 52 22 96 22 C76 34 62 46 56 62 C70 58 82 62 88 72 C74 72 64 78 60 90 C54 80 44 82 40 94 C34 86 28 90 22 96 Z" fill="url(#gold)" stroke="#2a1800" stroke-width="2.5"/>
+      <circle cx="58" cy="58" r="7" fill="#9e1e14" stroke="#ffd25a" stroke-width="2.5"/>
+    </g>
+  
+    <linearGradient id="bodyShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0.45"/>
+      <stop offset="0.25" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#000" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="lidShade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity="0.25"/>
+      <stop offset="0.35" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0.75" stop-color="#000" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.45"/>
+    </linearGradient>
+    <radialGradient id="vig" cx="50%" cy="48%" r="72%">
+      <stop offset="0.6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="ibg" cx="38%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#5b4a2a"/>
+      <stop offset="0.35" stop-color="#2c2416"/>
+      <stop offset="0.7" stop-color="#14120e"/>
+      <stop offset="1" stop-color="#060506"/>
+    </radialGradient>
+    <filter id="paint" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="4" seed="21" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.10  0 0 0 0 0.14  0 0 0 0 0.18  0 0 0 0.5 -0.18" result="cool"/>
+      <feComposite in="cool" in2="SourceGraphic" operator="in" result="c"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="c"/></feMerge>
+    </filter>
+    <linearGradient id="bevel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8a8f99"/>
+      <stop offset="0.3" stop-color="#3c4048"/>
+      <stop offset="0.7" stop-color="#1c1e24"/>
+      <stop offset="1" stop-color="#4a4e58"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <rect x="14" y="14" width="484" height="484" rx="100" fill="none" stroke="#5a4a2a" stroke-width="6"/>
-  <!-- lid -->
-  <path d="M96 236 V196 C96 130 160 104 256 104 C352 104 416 130 416 196 V236 Z" fill="url(#wood)" stroke="#2a1608" stroke-width="8"/>
-  <!-- body -->
-  <rect x="96" y="236" width="320" height="176" rx="14" fill="url(#wood)" stroke="#2a1608" stroke-width="8"/>
-  <!-- iron bands -->
-  <rect x="88" y="224" width="336" height="26" rx="6" fill="url(#iron)"/>
-  <path d="M136 112 C130 140 128 170 128 196 V404" stroke="url(#iron)" stroke-width="22" fill="none"/>
-  <path d="M376 112 C382 140 384 170 384 196 V404" stroke="url(#iron)" stroke-width="22" fill="none"/>
-  <circle cx="128" cy="300" r="7" fill="#2a1608"/><circle cx="128" cy="360" r="7" fill="#2a1608"/>
-  <circle cx="384" cy="300" r="7" fill="#2a1608"/><circle cx="384" cy="360" r="7" fill="#2a1608"/>
-  <!-- padlock -->
-  <path d="M224 252 V226 C224 204 288 204 288 226 V252" stroke="url(#gold)" stroke-width="16" fill="none" stroke-linecap="round"/>
-  <rect x="204" y="248" width="104" height="88" rx="16" fill="url(#gold)" stroke="#6b4500" stroke-width="5"/>
-  <circle cx="256" cy="284" r="12" fill="#3a2600"/>
-  <path d="M250 290 L262 290 L266 318 L246 318 Z" fill="#3a2600"/>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="url(#ibg)" filter="url(#paint)"/>
+    <ellipse cx="256" cy="268" rx="240" ry="215" fill="url(#aura)"/>
+
+    <g transform="translate(256 258) scale(1.16) translate(-256 -273)">
+    <g filter="url(#drop)">
+      <!-- body -->
+      <rect x="100" y="262" width="312" height="160" rx="8" fill="url(#front)" filter="url(#grain)"/>
+      <g stroke="#1e0e04" stroke-width="3" opacity="0.75">
+        <line x1="100" y1="316" x2="412" y2="316"/><line x1="100" y1="370" x2="412" y2="370"/>
+      </g>
+      <!-- shade under the lid and toward the bottom -->
+      <rect x="100" y="262" width="312" height="160" rx="8" fill="url(#bodyShade)"/>
+      <!-- lid: front face, with the top of the curve catching the light -->
+      <path d="M100 264 V214 C100 146 170 116 256 116 C342 116 412 146 412 214 V264 Z" fill="url(#lidTop)" filter="url(#grain)"/>
+      <path d="M120 206 C128 158 184 136 256 136 C328 136 384 158 392 206" fill="none" stroke="#ffd8a0" stroke-opacity="0.5" stroke-width="6" stroke-linecap="round"/>
+      <path d="M100 264 V214 C100 146 170 116 256 116 C342 116 412 146 412 214 V264 Z" fill="url(#lidShade)"/>
+
+      <!-- gold rim -->
+      <rect x="90" y="250" width="332" height="28" rx="5" fill="url(#gold)" filter="url(#metal)"/>
+      <!-- bottom trim -->
+      <rect x="94" y="412" width="324" height="16" rx="4" fill="url(#goldDark)" filter="url(#metal)"/>
+
+      <!-- iron straps, following the lid's curve -->
+      <g filter="url(#metal)">
+        <path d="M150 124 C138 150 132 182 132 214 V426 H166 V214 C166 186 172 160 182 138 Z" fill="url(#iron)"/>
+        <path d="M362 124 C374 150 380 182 380 214 V426 H346 V214 C346 186 340 160 330 138 Z" fill="url(#iron)"/>
+      </g>
+      <g fill="url(#gold)" filter="url(#metal)">
+        <circle cx="149" cy="298" r="6.5"/><circle cx="149" cy="346" r="6.5"/><circle cx="149" cy="394" r="6.5"/>
+        <circle cx="363" cy="298" r="6.5"/><circle cx="363" cy="346" r="6.5"/><circle cx="363" cy="394" r="6.5"/>
+        <circle cx="152" cy="178" r="5.5"/><circle cx="360" cy="178" r="5.5"/>
+      </g>
+      <!-- gold corner guards -->
+      <g fill="url(#gold)" filter="url(#metal)">
+        <path d="M94 376 H124 V430 H102 Q94 430 94 422 Z"/>
+        <path d="M418 376 H388 V430 H410 Q418 430 418 422 Z"/>
+        <path d="M92 214 C94 172 112 144 140 128 L146 154 C126 166 120 188 120 214 Z"/>
+        <path d="M420 214 C418 172 400 144 372 128 L366 154 C386 166 392 188 392 214 Z"/>
+      </g>
+
+      <!-- lock: a big gold shield plate, filigree, glowing keyhole -->
+      <circle cx="256" cy="320" r="62" fill="url(#keyGlow)" filter="url(#blur8)"/>
+      <path d="M206 240 H306 V314 C306 352 284 374 256 388 C228 374 206 352 206 314 Z" fill="url(#gold)" stroke="#3a2200" stroke-width="3.5" filter="url(#metal)"/>
+      <path d="M218 252 H294 V314 C294 344 276 362 256 374 C236 362 218 344 218 314 Z" fill="none" stroke="#6a3e02" stroke-width="2.5"/>
+      <path d="M226 262 C238 270 246 270 256 262 C266 270 274 270 286 262" fill="none" stroke="#6a3e02" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="256" cy="302" r="12" fill="#1e0e00"/>
+      <path d="M248.5 308 H263.5 L268 342 H244 Z" fill="#1e0e00"/>
+      <ellipse cx="256" cy="312" rx="4.5" ry="11" fill="#ffcf4a" opacity="0.9" filter="url(#blur8)"/>
+      <circle cx="256" cy="372" r="5" fill="#9e1e14" stroke="#ffd25a" stroke-width="2"/>
+    </g>
+
+    </g>
+    <g fill="#fffbe2" transform="translate(256 258) scale(1.16) translate(-256 -273)">
+      <path d="M318 122 l4.5 -16 l4.5 16 l16 4.5 l-16 4.5 l-4.5 16 l-4.5 -16 l-16 -4.5 Z"/>
+      <path d="M100 250 l3 -10 l3 10 l10 3 l-10 3 l-3 10 l-3 -10 l-10 -3 Z" opacity="0.8"/>
+    </g>
+    <rect width="512" height="512" fill="url(#vig)"/>
+  </g>
+
+  <!-- bag-slot bevel: black edge, steel bevel lit from the top left, dark inner line -->
+  <rect x="5" y="5" width="502" height="502" rx="92" fill="none" stroke="#000" stroke-width="10"/>
+  <rect x="13" y="13" width="486" height="486" rx="85" fill="none" stroke="url(#bevel)" stroke-width="10"/>
+  <rect x="20" y="20" width="472" height="472" rx="79" fill="none" stroke="#000" stroke-opacity="0.85" stroke-width="3"/>
 </svg>
