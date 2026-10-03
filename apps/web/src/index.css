@@ -147,6 +147,11 @@ html *:not(input:not([type="checkbox"], [type="radio"], [type="range"], [type="c
   cursor: image-set(url("/ui/cursor-point.png") 1x, url("/ui/cursor-point@2x.png") 2x) 0 0, auto !important;
 }
 
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* The top and bottom bars on their own compositing layer: during momentum
    scrolling, iOS WebKit can otherwise paint transformed or stacked content
    (frame titles, frames) over a sticky/fixed bar for a few frames. */

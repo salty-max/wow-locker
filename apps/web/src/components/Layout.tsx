@@ -3,6 +3,7 @@ import { Download, Package, Settings } from "lucide-react";
 import { useEffect } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { CharacterWatcher, Toaster } from "@/components/Toaster";
 import { Logo } from "@/components/Logo";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { useT } from "@/lib/i18n";
@@ -83,6 +84,8 @@ export function Layout() {
 
       {import.meta.env.PROD && <UpdatePrompt />}
       <InstallPrompt />
+      <CharacterWatcher />
+      <Toaster />
     </div>
   );
 }

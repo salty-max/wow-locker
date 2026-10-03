@@ -206,6 +206,12 @@ const en = {
     xp: (cur: string, max: string) => `XP: ${cur} / ${max}`,
     rested: (n: string, pct: number) => `Rested ${n} (${pct}%)`,
   },
+  toast: {
+    updated: (name: string) => `${name} updated`,
+    newEvents: "New events in the timeline",
+    synced: "Synced from the game",
+    close: "Close",
+  },
   map: {
     close: "Close",
     show: "Show on the map",
@@ -605,6 +611,12 @@ const fr: Messages = {
     },
     xp: (cur: string, max: string) => `XP: ${cur} / ${max}`,
     rested: (n: string, pct: number) => `Repos ${n} (${pct} %)`,
+  },
+  toast: {
+    updated: (name: string) => `${name} mis à jour`,
+    newEvents: "Nouveaux événements dans l'historique",
+    synced: "Synchronisé depuis le jeu",
+    close: "Fermer",
   },
   map: {
     close: "Fermer",
