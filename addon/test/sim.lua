@@ -97,7 +97,13 @@ function GetItemCount() return 0 end
 SlashCmdList = {}
 function print() end
 
-dofile("addon/WowLocker/WowLocker.lua")
+-- Load the way the game does: both files share the addon namespace.
+local printed = {}
+function print(...) printed[#printed + 1] = table.concat({ ... }, " ") end
+function GetLocale() return "enUS" end
+date = os.date
+local ns = {}
+assert(loadfile("addon/WowLocker/WowLocker.lua"))("WowLocker", ns)
 
 -- ── the session ──
 fire("PLAYER_LOGIN")
@@ -116,8 +122,9 @@ state.hp = 25; fire("UNIT_HEALTH", "player")
 state.hp = 300; fire("UNIT_HEALTH", "player")
 tick(30); state.hp = 50; fire("UNIT_HEALTH", "player")
 state.hp = 380; fire("UNIT_HEALTH", "player")
--- quest turned in (title remembered from the log), XP + gold
-tick(120); fire("QUEST_LOG_UPDATE"); fire("QUEST_TURNED_IN", 155, 1650, 3500)
+-- quest accepted (Classic passes the log index + id), then turned in: XP + gold
+tick(60); fire("QUEST_ACCEPTED", 2, 155)
+tick(60); fire("QUEST_LOG_UPDATE"); fire("QUEST_TURNED_IN", 155, 1650, 3500)
 -- level up: /played answer stamps the level event
 tick(10); state.level = 23; fire("PLAYER_LEVEL_UP", 23); fire("TIME_PLAYED_MSG", 90000, 0)
 -- skill milestone (24 → 26 crosses 25) + new skill; weapon skill +1 is not a milestone
@@ -166,6 +173,10 @@ check(count.gear == 2, "both glove swaps recorded")
 check(count.loot == 1, "only your own green-or-better loot")
 check(count.close_call == 3, "three close calls (a recovery separates them)")
 check(count.quest == 1 and me.events[#me.events].type == "logout", "quest turn-in recorded")
+local accepted
+for _, e in ipairs(me.events) do if e.type == "quest_accept" then accepted = e end end
+check(count.quest_accept == 1 and accepted.title == "The Defias Brotherhood" and accepted.level == 18,
+  "quest accepted, with its title and level from the log")
 check(count.skill == 2, "skill milestone + new skill, not every weapon point")
 check(count.reputation == 1, "reputation: Friendly with Stormwind")
 check(count.dungeon_enter == 1 and count.dungeon_leave == 1, "one dungeon run despite the /reload")
@@ -209,6 +220,93 @@ if dump then
   fh:write(enc(WowLockerDB))
   fh:close()
   io.write("wrote " .. dump .. "\n")
+end
+
+-- ── settings: what to record ──
+check(printed[1] and printed[1]:find("recording Namzie") ~= nil, "login message in chat")
+local before = #me.events
+WowLockerSettings.record.loot = false
+fire("CHAT_MSG_LOOT", "You receive loot: |cff0070dd|Hitem:5:0|h[Blue Thing]|h|r.")
+check(#me.events == before, "loot not recorded when turned off")
+WowLockerSettings.record.loot, WowLockerSettings.lootQuality = true, 3
+fire("CHAT_MSG_LOOT", "You receive loot: |cff1eff00|Hitem:6:0|h[Green Thing]|h|r.")
+fire("CHAT_MSG_LOOT", "You receive loot: |cff0070dd|Hitem:5:0|h[Blue Thing]|h|r.")
+check(#me.events == before + 1 and me.events[#me.events].name == "Blue Thing", "loot from Rare up: green skipped, blue kept")
+WowLockerSettings.closeCall, WowLockerSettings.chatConfirm = 0.25, true
+local nprinted = #printed
+state.dead = false; state.hp = 76; fire("UNIT_HEALTH", "player") -- 20%
+check(me.events[#me.events].type == "close_call" and #printed == nprinted + 1, "close call at 20% with a 25% threshold, confirmed in chat")
+state.hp = 380; fire("UNIT_HEALTH", "player")
+WowLockerSettings.chatConfirm, WowLockerSettings.lootQuality, WowLockerSettings.closeCall = false, 2, 0.15
+for _ = 1, #me.events - before do table.remove(me.events) end -- keep the dumps below unchanged
+
+-- every event reads as a line (event log, chat confirmations)
+for _, e in ipairs(me.events) do
+  local text = ns.formatEvent(e)
+  assert(type(text) == "string" and text ~= "" and not text:find("nil"), "bad line for " .. e.type)
+end
+check(true, "every recorded event formats as a log line")
+
+-- ── Options.lua against a permissive fake UI: builds, fills, refreshes ──
+do
+  local function mock()
+    local m = { scripts = {}, lines = {}, text = "" }
+    return setmetatable(m, { __index = function(t, k)
+      if not k:match("^%u") or k == "TitleText" or k == "Text" then return nil end -- WoW methods are capitalised
+      local f = function(self, ...)
+        if k == "SetScript" then local name, fn = ...; self.scripts[name] = fn
+        elseif k == "AddMessage" then self.lines[#self.lines + 1] = ...
+        elseif k == "Clear" then self.lines = {}
+        elseif k == "SetText" then self.text = ...
+        elseif k == "GetStringWidth" then return 40
+        elseif k == "GetChecked" then return self.checked
+        elseif k == "SetChecked" then self.checked = ...
+        elseif k == "GetID" then return 1
+        elseif k == "IsShown" then return self.shown
+        elseif k == "Show" then self.shown = true; if self.scripts.OnShow then self.scripts.OnShow(self) end
+        elseif k == "Hide" then self.shown = false
+        elseif k == "CreateFontString" then return mock()
+        end
+        return nil
+      end
+      rawset(t, k, f)
+      return f
+    end })
+  end
+  local made = {}
+  CreateFrame = function(kind, name, parent, template)
+    local m = mock()
+    m.kind, m.template = kind, template
+    made[#made + 1] = m
+    if name then _G[name] = m end
+    return m
+  end
+  UIParent, ChatFontNormal, GameTooltip, UISpecialFrames = mock(), mock(), mock(), {}
+  local registered
+  Settings = {
+    RegisterCanvasLayoutCategory = function(frame, title) registered = { frame = frame, title = title }; return mock() end,
+    RegisterAddOnCategory = function() end,
+    OpenToCategory = function() registered.opened = true end,
+  }
+  function InCombatLockdown() return false end
+  function IsShiftKeyDown() return false end
+  assert(loadfile("addon/WowLocker/Options.lua"))("WowLocker", ns)
+  check(registered and registered.title == "wow-locker", "settings panel registered under AddOns")
+
+  ns.toggleLog()
+  local log
+  for _, m in ipairs(made) do if m.kind == "ScrollingMessageFrame" then log = m end end
+  check(log and #log.lines == #me.events, "event log window lists every event")
+  fire("CHAT_MSG_LOOT", "You receive loot: |cffa335ee|Hitem:7:0|h[Purple Thing]|h|r.")
+  check(#log.lines == #me.events, "a new event appears in the open log")
+  table.remove(me.events)
+
+  registered.frame.scripts.OnShow(registered.frame) -- open the panel: builds and refreshes widgets
+  local boxes = 0
+  for _, m in ipairs(made) do if m.kind == "CheckButton" then boxes = boxes + 1 end end
+  check(boxes == 2 + 9 + 4 + 3, "options panel: 2 chat, 9 record, 4 threshold, 3 loot quality checkboxes")
+  SlashCmdList.WOWLOCKER("options")
+  check(registered.opened, "/wowlocker options opens the panel")
 end
 
 -- WL_SV=path: write WowLockerDB the way the game writes SavedVariables (keys

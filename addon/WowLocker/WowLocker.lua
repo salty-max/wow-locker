@@ -24,10 +24,14 @@
 --   }
 --
 -- Event types: login, logout, gear, level, talent, respec, guild, death,
--- quest, close_call, dungeon_enter, dungeon_leave, loot, skill, reputation.
+-- quest_accept, quest, close_call, dungeon_enter, dungeon_leave, loot, skill,
+-- reputation.
+
+-- Shared with Options.lua (the settings panel and the event log window).
+local _, ns = ...
+ns = ns or {}
 
 local MAX_EVENTS = 5000 -- per character; the companion uploads long before this matters
-local CLOSE_CALL = 0.15 -- health fraction that counts as a Hardcore close call
 local CLOSE_CALL_RESET = 0.5 -- …and has to be climbed back above before the next one
 local SKILL_STEP = 25 -- skill milestones (weapon skills rise constantly)
 -- Timed crafts worth a "ready" notification. Durations are read from the game
@@ -44,7 +48,170 @@ local COOLDOWN_ITEMS = { 15846 } -- Salt Shaker
 local COOLDOWN_SPELL_SET = {}
 for _, id in ipairs(COOLDOWN_SPELLS) do COOLDOWN_SPELL_SET[id] = true end
 
-local LOOT_COLORS = { ["1eff00"] = true, ["0070dd"] = true, ["a335ee"] = true, ["ff8000"] = true } -- uncommon+
+-- Item quality by link colour (loot is recorded from the "Loot quality from" setting up).
+local QUALITY_BY_COLOR = { ["9d9d9d"] = 0, ["ffffff"] = 1, ["1eff00"] = 2, ["0070dd"] = 3, ["a335ee"] = 4, ["ff8000"] = 5 }
+
+-- ── settings (WowLockerSettings: account-wide, never uploaded) ──────────────
+
+local DEFAULTS = {
+  loginMessage = true, -- one line in chat at login
+  chatConfirm = false, -- print each event in chat as it's recorded
+  closeCall = 0.15, -- health fraction that counts as a close call
+  lootQuality = 2, -- 2 uncommon, 3 rare, 4 epic
+  record = {
+    gear = true, quests = true, loot = true, closeCalls = true, dungeons = true,
+    skills = true, reputation = true, mail = true, cooldowns = true,
+  },
+}
+-- Event type → its "record" toggle. Levels, deaths, talents, guild and
+-- sessions are always recorded.
+local CATEGORY = {
+  gear = "gear", quest = "quests", quest_accept = "quests", loot = "loot",
+  close_call = "closeCalls", dungeon_enter = "dungeons", dungeon_leave = "dungeons",
+  skill = "skills", reputation = "reputation",
+}
+
+local settings
+local function loadSettings()
+  WowLockerSettings = WowLockerSettings or {}
+  local s = WowLockerSettings
+  for k, v in pairs(DEFAULTS) do
+    if s[k] == nil then s[k] = type(v) == "table" and {} or v end
+  end
+  for k, v in pairs(DEFAULTS.record) do
+    if s.record[k] == nil then s.record[k] = v end
+  end
+  settings = s
+  return s
+end
+
+-- ── text (English, or French on a French client) ────────────────────────────
+
+local FR = (GetLocale and GetLocale() or ""):sub(1, 2) == "fr"
+local L = FR and {
+  login = "Connexion (niveau %d)", logout = "Déconnexion",
+  equipped = "Équipé %s (%s)", unequipped = "Retiré : %s",
+  level = "Niveau %d atteint", played = " (temps de jeu %s)",
+  talents = "Talents : %s", respec = "Réinitialisation des talents : %s",
+  joined = "A rejoint <%s>", left = "A quitté <%s>",
+  died = "Mort au niveau %d", by = " face à %s", where = " · %s",
+  questAccepted = "Quête acceptée : %s", questDone = "Quête terminée : %s",
+  closeCall = "Frôlé la mort : %d%% de vie",
+  entered = "Entrée : %s", with = " avec %s",
+  leftRun = "Sortie : %s après %s", deaths = ", %d mort(s)", calls = ", %d frôlement(s)",
+  loot = "Butin : %s", received = "Reçu : %s", created = "Créé : %s",
+  learned = "Appris : %s", skillUp = "%s : %d/%d", reputation = "%s auprès de %s",
+  loaded = "%s · enregistre %s · %s pour le journal et les options",
+} or {
+  login = "Logged in (level %d)", logout = "Logged out",
+  equipped = "Equipped %s (%s)", unequipped = "Unequipped: %s",
+  level = "Reached level %d", played = " (played %s)",
+  talents = "Talents: %s", respec = "Respec: %s",
+  joined = "Joined <%s>", left = "Left <%s>",
+  died = "Died at level %d", by = " to %s", where = " · %s",
+  questAccepted = "Quest accepted: %s", questDone = "Quest completed: %s",
+  closeCall = "Close call: %d%% health",
+  entered = "Entered %s", with = " with %s",
+  leftRun = "Left %s after %s", deaths = ", %d death(s)", calls = ", %d close call(s)",
+  loot = "Looted %s", received = "Received %s", created = "Created %s",
+  learned = "Learned %s", skillUp = "%s %d/%d", reputation = "%s with %s",
+  loaded = "%s · recording %s · %s for the event log and options",
+}
+ns.L, ns.FR = L, FR
+
+local PREFIX = "|cffffd100wow-locker|r "
+local SLOT_LABELS = {
+  HEAD = "Head", NECK = "Neck", SHOULDER = "Shoulder", SHIRT = "Shirt", CHEST = "Chest", WAIST = "Waist",
+  LEGS = "Legs", FEET = "Feet", WRIST = "Wrist", HANDS = "Hands", FINGER_1 = "Finger", FINGER_2 = "Finger",
+  TRINKET_1 = "Trinket", TRINKET_2 = "Trinket", BACK = "Back", MAIN_HAND = "Main hand", OFF_HAND = "Off hand",
+  RANGED = "Ranged", TABARD = "Tabard",
+}
+
+local function color(hex, text) return "|cff" .. hex .. text .. "|r" end
+
+local function itemLink(id, name, hex)
+  if not name then return "?" end
+  if not id then return color(hex or "ffffff", "[" .. name .. "]") end
+  return ("|cff%s|Hitem:%d|h[%s]|h|r"):format(hex or "ffffff", id, name)
+end
+
+local function duration(seconds)
+  seconds = seconds or 0
+  local d, h, m = math.floor(seconds / 86400), math.floor(seconds % 86400 / 3600), math.floor(seconds % 3600 / 60)
+  if d > 0 then return ("%dd %dh"):format(d, h) end
+  if h > 0 then return ("%dh %02dm"):format(h, m) end
+  return ("%d min"):format(m)
+end
+
+local function coins(copper)
+  if GetCoinTextureString then return GetCoinTextureString(copper) end
+  return ("%dg %ds %dc"):format(math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100)
+end
+
+local function trees(list)
+  local out = {}
+  for _, t in ipairs(list or {}) do out[#out + 1] = ("%s %d"):format(t.name or "?", t.points or 0) end
+  return table.concat(out, " / ")
+end
+
+-- One recorded event as a chat-style line (the event log, chat confirmations).
+local SYSTEM, DANGER, DEATH, SKILL, FACTION, MUTED = "ffff00", "ff8000", "ff2020", "5555ff", "8080ff", "a0a0a0"
+function ns.formatEvent(e)
+  local t = e.type
+  if t == "login" then return color(MUTED, L.login:format(e.level or 0)) end
+  if t == "logout" then return color(MUTED, L.logout) end
+  if t == "gear" then
+    local slot = SLOT_LABELS[e.slot] or e.slot or "?"
+    if not e.name then return color(MUTED, L.unequipped:format(slot)) end
+    return L.equipped:format(itemLink(e.itemId, e.name, e.color), slot)
+  end
+  if t == "level" then
+    return color(SYSTEM, L.level:format(e.level or 0) .. (e.played and L.played:format(duration(e.played)) or ""))
+  end
+  if t == "talent" then return color(SYSTEM, L.talents:format(trees(e.trees))) end
+  if t == "respec" then return color(SYSTEM, L.respec:format(trees(e.trees))) end
+  if t == "guild" then
+    return color("40ff40", e.to and L.joined:format(e.to) or L.left:format(e.from or "?"))
+  end
+  if t == "death" then
+    local place = e.instance or e.zone
+    return color(DEATH, L.died:format(e.level or 0) .. (e.killer and L.by:format(e.killer) or "")
+      .. (e.spell and (" (" .. e.spell .. ")") or "") .. (place and L.where:format(place) or ""))
+  end
+  if t == "quest_accept" then return color(SYSTEM, L.questAccepted:format(e.title or ("#" .. tostring(e.questId)))) end
+  if t == "quest" then
+    local extra = {}
+    if (e.xp or 0) > 0 then extra[#extra + 1] = ("+%d XP"):format(e.xp) end
+    if (e.money or 0) > 0 then extra[#extra + 1] = coins(e.money) end
+    return color(SYSTEM, L.questDone:format(e.title or ("#" .. tostring(e.questId))))
+      .. (#extra > 0 and (" (" .. table.concat(extra, ", ") .. ")") or "")
+  end
+  if t == "close_call" then
+    local place = e.instance or e.zone
+    return color(DANGER, L.closeCall:format(e.pct or 0) .. (e.attacker and L.by:format(e.attacker) or "")
+      .. (place and L.where:format(place) or ""))
+  end
+  if t == "dungeon_enter" then
+    local group = e.group and #e.group > 0 and L.with:format(table.concat(e.group, ", ")) or ""
+    return color(SYSTEM, L.entered:format(e.name or "?") .. group)
+  end
+  if t == "dungeon_leave" then
+    return color(SYSTEM, L.leftRun:format(e.name or "?", duration(e.duration))
+      .. ((e.deaths or 0) > 0 and L.deaths:format(e.deaths) or "")
+      .. ((e.closeCalls or 0) > 0 and L.calls:format(e.closeCalls) or ""))
+  end
+  if t == "loot" then
+    local how = e.how == "received" and L.received or e.how == "created" and L.created or L.loot
+    return color("00aa00", how:format(itemLink(e.itemId, e.name, e.color) .. ((e.count or 1) > 1 and ("x" .. e.count) or "")))
+  end
+  if t == "skill" then
+    return color(SKILL, e.learned and L.learned:format(e.name or "?") or L.skillUp:format(e.name or "?", e.rank or 0, e.max or 0))
+  end
+  if t == "reputation" then
+    return color(FACTION, L.reputation:format(e.label or tostring(e.standing), e.faction or "?"))
+  end
+  return color(MUTED, t or "?")
+end
 
 local f = CreateFrame("Frame")
 local me -- this character's record
@@ -88,9 +255,15 @@ end
 
 local function record(event)
   if not me then return end
+  local category = CATEGORY[event.type]
+  if category and settings and settings.record[category] == false then return end
   event.t = time()
   table.insert(me.events, event)
   if #me.events > MAX_EVENTS then table.remove(me.events, 1) end
+  if settings and settings.chatConfirm and event.type ~= "login" and event.type ~= "logout" then
+    print(PREFIX .. ns.formatEvent(event))
+  end
+  if ns.onRecord then ns.onRecord(event) end -- the event log window, when open
   return event
 end
 
@@ -257,6 +430,10 @@ end
 -- Readable only while a mailbox is open. On expiry, mail a player sent with
 -- items goes back to them; returned mail and system mail are deleted.
 local function readMailbox()
+  if settings and settings.record.mail == false then
+    me.state.mail = nil -- no expiry reminders either
+    return
+  end
   local letters = {}
   local now = time()
   for i = 1, GetInboxNumItems() do
@@ -302,6 +479,10 @@ local function knows(id)
 end
 
 local function readCooldowns()
+  if settings and settings.record.cooldowns == false then
+    me.state.cooldowns = {}
+    return
+  end
   local list = {}
   for _, id in ipairs(COOLDOWN_SPELLS) do
     if knows(id) then
@@ -362,7 +543,13 @@ end
 
 -- ── init ─────────────────────────────────────────────────────────────────────
 
+local function version()
+  local get = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+  return get and get("WowLocker", "Version") or "?"
+end
+
 local function init()
+  loadSettings()
   playerGUID = UnitGUID("player")
   WowLockerDB = WowLockerDB or {}
   WowLockerDB.format = 1
@@ -390,13 +577,26 @@ local function init()
   storeSkillsAndReps()
   learnQuestTitles()
   me.state.questsCompleted = completedQuests()
-  me.state.mail = me.state.mail or {}
-  me.state.mail.hasNew = HasNewMail() and true or false
+  if settings.record.mail ~= false then
+    me.state.mail = me.state.mail or {}
+    me.state.mail.hasNew = HasNewMail() and true or false
+  else
+    me.state.mail = nil
+  end
   snapshot()
   record({ type = "login", level = me.state.level })
   requestPlayedQuietly()
   ready = true
+  if settings.loginMessage then
+    print(PREFIX .. L.loaded:format(color("a0a0a0", "v" .. version()), me.name, color("ffd100", "/wowlocker")))
+  end
 end
+
+-- For Options.lua.
+ns.version = version
+ns.settings = function() return settings end
+ns.defaults = DEFAULTS
+ns.character = function() return me end
 
 -- ── events ───────────────────────────────────────────────────────────────────
 
@@ -464,7 +664,7 @@ function handlers.UNIT_HEALTH(unit)
     elseif pct < closeCall.pct then
       closeCall.pct = pct -- deeper into the same one
     end
-  elseif frac > 0 and frac < CLOSE_CALL then
+  elseif frac > 0 and frac < (settings and settings.closeCall or DEFAULTS.closeCall) then
     location()
     local attacker = lastAttacker and time() - lastAttacker.t < 10 and lastAttacker or nil
     closeCall = record({
@@ -516,6 +716,18 @@ function handlers.QUEST_LOG_UPDATE()
   learnQuestTitles()
 end
 
+-- Classic passes (questLogIndex, questId); newer clients just the id.
+function handlers.QUEST_ACCEPTED(a, b)
+  local questId, index = b or a, b and a or nil
+  local title, level
+  if index then
+    local t, l, _, isHeader, _, _, _, id = GetQuestLogTitle(index)
+    if not isHeader and (id == nil or id == questId) then title, level = t, l end
+  end
+  learnQuestTitles()
+  record({ type = "quest_accept", questId = questId, title = title or questTitles[questId], level = level })
+end
+
 function handlers.QUEST_TURNED_IN(questId, xp, money)
   record({ type = "quest", questId = questId, title = questTitles[questId], xp = xp, money = money })
   local done = me.state.questsCompleted
@@ -527,7 +739,8 @@ function handlers.CHAT_MSG_LOOT(text)
     local link, count = text:match(entry[1])
     if link then
       local id, name, color = parseItemLink(link)
-      if id and LOOT_COLORS[color] then
+      local quality = QUALITY_BY_COLOR[color and color:lower()]
+      if id and quality and quality >= (settings and settings.lootQuality or DEFAULTS.lootQuality) then
         record({ type = "loot", itemId = id, name = name, color = color, count = tonumber(count) or 1, how = entry[2] })
       end
       return
@@ -624,14 +837,12 @@ for event in pairs(handlers) do
 end
 
 -- /wowlocker: a quick look at what's recorded for this character.
+-- /wowlocker: the event log window (Options.lua); "/wowlocker options" opens the settings.
 SLASH_WOWLOCKER1 = "/wowlocker"
-SlashCmdList.WOWLOCKER = function()
+SlashCmdList.WOWLOCKER = function(msg)
   if not me then return end
-  local s = me.state
-  print(("|cffffd100wow-locker|r: %d events recorded for %s. Level %d, %d/%d XP (+%d rested), %s, in %s."):format(
-    #me.events, me.name, s.level or 0, s.xp or 0, s.xpMax or 0, s.rested or 0,
-    GetCoinTextureString and GetCoinTextureString(s.money or 0) or tostring(s.money), s.zone or "?"))
-  print(("|cffffd100wow-locker|r: %d quests completed%s."):format(
-    s.questsCompleted and #s.questsCompleted or 0, s.run and (", in " .. s.run.name) or ""))
-  print("|cffffd100wow-locker|r: data is written to disk on logout or /reload; the companion app uploads it.")
+  msg = (msg or ""):lower()
+  if (msg == "options" or msg == "config") and ns.openOptions then return ns.openOptions() end
+  if ns.toggleLog then return ns.toggleLog() end
+  print(PREFIX .. ("%d events recorded for %s. Saved on logout or /reload, then uploaded by the companion."):format(#me.events, me.name))
 end
