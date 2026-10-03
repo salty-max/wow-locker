@@ -2,7 +2,7 @@
 ## Title: WoWLocker
 ## Notes: Records your characters' journey (gear, levels, quests, loot, dungeons, Hardcore deaths and close calls) for wow-locker.app. /wowlocker for the event log and options.
 ## Author: salty-max
-## Version: 0.3.6
+## Version: 0.3.7
 ## SavedVariables: WowLockerDB, WowLockerSettings
 ## IconTexture: Interface\Icons\INV_Box_02
 

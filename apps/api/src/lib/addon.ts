@@ -73,7 +73,13 @@ export function mapEvent(raw: Record<string, unknown>): EventData | null {
   switch (raw.type) {
     case "login":
     case "logout":
-      return { type: "session", action: raw.type, level: int(raw.level) ?? 0 };
+      return {
+        type: "session",
+        action: raw.type,
+        level: int(raw.level) ?? 0,
+        ...(int(raw.xp) != null ? { xp: int(raw.xp) } : {}),
+        ...(int(raw.money) != null ? { money: int(raw.money) } : {}),
+      };
     case "gear": {
       const slot = str(raw.slot, 20);
       if (!slot) return null;

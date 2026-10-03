@@ -760,7 +760,8 @@ local function init()
     me.state.mail = nil
   end
   snapshot()
-  record({ type = "login", level = me.state.level })
+  -- XP and gold at both ends of a session: the site's session recap.
+  record({ type = "login", level = me.state.level, xp = me.state.xp, money = me.state.money })
   requestPlayedQuietly()
   ready = true
   if settings.loginMessage then
@@ -1025,7 +1026,7 @@ handlers.UPDATE_EXHAUSTION = refresh
 function handlers.PLAYER_LOGOUT()
   snapshot(true)
   if me.state.run then me.state.run.loggedOutAt = time() end
-  record({ type = "logout", level = me.state.level })
+  record({ type = "logout", level = me.state.level, xp = me.state.xp, money = me.state.money })
 end
 
 f:SetScript("OnEvent", function(_, event, ...)

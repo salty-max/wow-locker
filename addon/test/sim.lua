@@ -223,6 +223,9 @@ local count = {}
 for _, e in ipairs(me.events) do count[e.type] = (count[e.type] or 0) + 1 end
 local function check(cond, msg) assert(cond, msg); io.write("✓ " .. msg .. "\n") end
 check(s.xpMax == 27300 and s.money == 12345, "logout kept the last good XP and money")
+local first, last = me.events[1], me.events[#me.events]
+check(first.type == "login" and first.money ~= nil and first.xp ~= nil, "login records XP and gold")
+check(last.type == "logout" and last.money == 12345 and last.xp == s.xp, "logout records the last good XP and gold")
 check(count.gear == 2, "both glove swaps recorded")
 check(count.loot == 1, "only your own green-or-better loot")
 check(count.close_call == 3, "three close calls (a recovery separates them)")
