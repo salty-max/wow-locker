@@ -31,6 +31,7 @@ describe("parseAddonCharacter", () => {
       "closeCall",
       "closeCall",
       "quest",
+      "quest",
       "level",
       "skill",
       "skill",
@@ -48,6 +49,11 @@ describe("parseAddonCharacter", () => {
     });
     expect(c.events.find((e) => e.data.type === "level")!.data).toEqual({ type: "level", from: 22, to: 23, played: 90000 });
     expect(c.events.find((e) => e.data.type === "loot")!.data).toMatchObject({ name: "Defias Mask", quality: "uncommon", count: 2 });
+    const quests = c.events.filter((e) => e.data.type === "quest").map((e) => e.data);
+    expect(quests).toMatchObject([
+      { action: "accept", questId: 155, title: "The Defias Brotherhood", level: 18, xp: 0 },
+      { action: "complete", questId: 155, title: "The Defias Brotherhood", xp: 1650, money: 3500 },
+    ]);
   });
 
   it("gives every event a stable key, so re-uploads dedupe", () => {

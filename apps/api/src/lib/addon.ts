@@ -110,7 +110,12 @@ export function mapEvent(raw: Record<string, unknown>): EventData | null {
     case "quest": {
       const questId = int(raw.questId);
       if (questId == null) return null;
-      return { type: "quest", questId, title: str(raw.title, 120), xp: int(raw.xp) ?? 0, money: int(raw.money) ?? 0 };
+      return { type: "quest", action: "complete", questId, title: str(raw.title, 120), xp: int(raw.xp) ?? 0, money: int(raw.money) ?? 0 };
+    }
+    case "quest_accept": {
+      const questId = int(raw.questId);
+      if (questId == null) return null;
+      return { type: "quest", action: "accept", questId, title: str(raw.title, 120), xp: 0, money: 0, level: int(raw.level) };
     }
     case "close_call":
       return {

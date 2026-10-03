@@ -1,4 +1,4 @@
-import type { Flavour, PairPoll, PairStart, Region, UploadResult } from "@wow-locker/shared";
+import type { EventData, Flavour, PairPoll, PairStart, Region, UploadResult } from "@wow-locker/shared";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
@@ -89,6 +89,9 @@ export async function linkFor(token: string) {
 
 // ── uploads ──────────────────────────────────────────────────────────────────
 
+/** Timeline only, never pushed: logins/logouts, quests being accepted. */
+const quiet = (d: EventData) => d.type === "session" || (d.type === "quest" && d.action === "accept");
+
 /** Events older than this at upload time are history: stored, not pushed. */
 const PUSH_WINDOW_MS = 24 * 3600_000;
 
@@ -149,18 +152,17 @@ async function applyAddon(c: CharacterRow, parsed: AddonCharacter): Promise<numb
   const fresh: { id: number; at: Date }[] = [];
   const stale: number[] = [];
   for (let i = 0; i < parsed.events.length; i += 500) {
+    const chunk = parsed.events.slice(i, i + 500);
     const rows = await db
       .insert(characterEvents)
       .values(
-        parsed.events
-          .slice(i, i + 500)
-          .map((e) => ({ characterId: c.id, type: e.data.type, data: e.data, source: "addon" as const, dedupeKey: e.key, at: e.at })),
+        chunk.map((e) => ({ characterId: c.id, type: e.data.type, data: e.data, source: "addon" as const, dedupeKey: e.key, at: e.at })),
       )
       .onConflictDoNothing()
-      .returning({ id: characterEvents.id, at: characterEvents.at, type: characterEvents.type });
+      .returning({ id: characterEvents.id, at: characterEvents.at, type: characterEvents.type, data: characterEvents.data });
     for (const row of rows) {
       added++;
-      if (now.getTime() - row.at.getTime() < PUSH_WINDOW_MS && row.type !== "session") fresh.push(row);
+      if (now.getTime() - row.at.getTime() < PUSH_WINDOW_MS && !quiet(row.data)) fresh.push(row);
       else stale.push(row.id);
     }
   }

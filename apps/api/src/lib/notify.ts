@@ -62,7 +62,13 @@ export function renderEvent(character: string, e: EventData, lang: Lang): Render
     case "talent":
       return { title: character, body: `✨ ${t("Talents", "Talents")}: ${e.trees.map((x) => x.points).join("/")}` };
     case "quest":
-      return { title: character, body: `📜 ${t("Quest completed", "Quête terminée")}: ${e.title ?? `#${e.questId}`}` };
+      return {
+        title: character,
+        body:
+          e.action === "accept"
+            ? `📜 ${t("Quest accepted", "Quête acceptée")}: ${e.title ?? `#${e.questId}`}`
+            : `📜 ${t("Quest completed", "Quête terminée")}: ${e.title ?? `#${e.questId}`}`,
+      };
     case "closeCall": {
       const by = e.attacker ? t(` vs ${e.attacker}`, ` face à ${e.attacker}`) : "";
       const where = e.instance ?? e.zone;

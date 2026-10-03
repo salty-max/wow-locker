@@ -208,7 +208,16 @@ export type EventData =
   // ── addon ──
   | { type: "session"; action: "login" | "logout"; level: number }
   | { type: "talent"; trees: TalentTree[] }
-  | { type: "quest"; questId: number; title: string | null; xp: number; money: number }
+  | {
+      type: "quest";
+      /** Absent: completed (older uploads). Accepted ones have no xp / money. */
+      action?: "accept" | "complete";
+      questId: number;
+      title: string | null;
+      xp: number;
+      money: number;
+      level?: number | null;
+    }
   | {
       type: "closeCall";
       pct: number;
