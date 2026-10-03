@@ -1,7 +1,8 @@
 import { AlertTriangle, Skull, X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { MapMarker } from "@/lib/maps";
+import { useDialog } from "@/lib/useDialog";
 import { useT } from "@/lib/i18n";
 
 /**
@@ -28,6 +29,7 @@ function Marker({ m }: { m: MapMarker }) {
     );
   return (
     <span
+      role="img"
       className="absolute -translate-x-1/2 -translate-y-1/2"
       style={{ left: `${m.x}%`, top: `${m.y}%` }}
       title={m.label}
@@ -40,11 +42,8 @@ function Marker({ m }: { m: MapMarker }) {
 
 export function MapPopup({ mapId, title, markers, onClose }: { mapId: number; title: string; markers: MapMarker[]; onClose: () => void }) {
   const t = useT();
-  useEffect(() => {
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", esc);
-    return () => window.removeEventListener("keydown", esc);
-  }, [onClose]);
+  const box = useRef<HTMLDivElement>(null);
+  useDialog(box, onClose);
 
   return createPortal(
     <div
@@ -54,8 +53,8 @@ export function MapPopup({ mapId, title, markers, onClose }: { mapId: number; ti
       aria-label={title}
       onClick={onClose}
     >
-      <div className="wow-frame w-full max-w-[1002px] px-2 pt-8 pb-2 sm:px-3" onClick={(e) => e.stopPropagation()}>
-        <span className="wow-title">{title}</span>
+      <div ref={box} className="wow-frame w-full max-w-[1002px] px-2 pt-8 pb-2 sm:px-3" onClick={(e) => e.stopPropagation()}>
+        <h2 className="wow-title">{title}</h2>
         <button
           type="button"
           onClick={onClose}

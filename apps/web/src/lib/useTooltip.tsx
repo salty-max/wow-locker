@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,7 @@ let lastClosedAt = 0;
 const fadingOut = new Set<() => void>();
 
 export function useTooltip(render: () => ReactNode) {
+  const id = useId();
   const anchorRef = useRef<HTMLElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -125,6 +126,7 @@ export function useTooltip(render: () => ReactNode) {
 
   const lastPointer = useRef<string>("mouse");
   const anchor = {
+    "aria-describedby": open ? id : undefined,
     ref: (el: HTMLElement | null) => {
       anchorRef.current = el;
     },
@@ -168,6 +170,7 @@ export function useTooltip(render: () => ReactNode) {
     ? createPortal(
         <div
           ref={tipRef}
+          id={id}
           role="tooltip"
           className={cn(
             "fixed z-[60] w-max max-w-72 rounded-[5px] border border-[#5a6275] bg-[#070a18]/95 px-3 py-2 text-[13px] leading-snug text-white shadow-[0_0_0_1px_#000,0_8px_24px_rgb(0_0_0/0.7)] backdrop-blur-sm motion-reduce:transition-none",

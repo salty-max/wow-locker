@@ -3,17 +3,19 @@ import { Download, Laptop, Monitor, Package } from "lucide-react";
 import type { ReactNode } from "react";
 import { ADDON_VERSION, COMPANION_VERSION, detectPlatform, download, FILES, RELEASES_URL } from "@/lib/downloads";
 import { useT } from "@/lib/i18n";
+import { useTitle } from "@/lib/useTitle";
 
 /** Get started: what the addon + companion add, downloads, setup, FAQ. */
 export function Addon() {
   const t = useT();
+  useTitle(t.nav.addon);
   const a = t.addon;
   const platform = detectPlatform();
 
   return (
     <div className="flex flex-col gap-10">
       <section className="wow-frame px-4 pt-9 pb-6 sm:px-6">
-        <span className="wow-title">{a.title}</span>
+        <h1 className="wow-title">{a.title}</h1>
         <p className="text-ink">{a.intro}</p>
         <ul className="mt-3 grid gap-x-6 gap-y-1.5 text-sm text-ink-dim sm:grid-cols-2">
           {a.features.map((f) => (
@@ -27,7 +29,7 @@ export function Addon() {
       </section>
 
       <section className="wow-frame px-4 pt-9 pb-6 sm:px-6">
-        <span className="wow-title">{a.downloads}</span>
+        <h2 className="wow-title">{a.downloads}</h2>
         {platform === "other" && <p className="mb-4 text-sm text-ink-dim">{a.onComputer}</p>}
         <div className="grid gap-3 sm:grid-cols-3">
           <DownloadCard
@@ -77,7 +79,7 @@ export function Addon() {
       </section>
 
       <section className="wow-frame px-4 pt-9 pb-6 sm:px-6">
-        <span className="wow-title">{a.setup}</span>
+        <h2 className="wow-title">{a.setup}</h2>
         <ol className="flex flex-col gap-5">
           {a.steps.map((s, i) => (
             <li key={s.title} className="flex gap-3.5">
@@ -107,7 +109,7 @@ export function Addon() {
       </section>
 
       <section className="wow-frame px-4 pt-9 pb-6 sm:px-6">
-        <span className="wow-title">{a.faq}</span>
+        <h2 className="wow-title">{a.faq}</h2>
         <dl className="flex flex-col gap-4">
           {a.questions.map((q) => (
             <div key={q.q}>

@@ -8,6 +8,7 @@ import { played } from "@/lib/addonView";
 import { api } from "@/lib/api";
 import { hasDangers } from "@/lib/dangers";
 import { useLang, useT } from "@/lib/i18n";
+import { useTitle } from "@/lib/useTitle";
 import { useRoster } from "@/lib/roster";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
  */
 export function Memorial() {
   const t = useT();
+  useTitle(t.memorial.title);
   const lang = useLang();
   const M = t.memorial;
   const { ids } = useRoster();
@@ -31,9 +33,24 @@ export function Memorial() {
       </Link>
 
       <section className="wow-frame px-3 pt-8 pb-4 sm:px-5">
-        <span className="wow-title">{M.fallen}</span>
+        <h1 className="wow-title">{M.fallen}</h1>
         {!m ? (
-          <div className={cn("h-40", q.isPending && ids.length > 0 && "animate-pulse")} />
+          q.isError ? (
+            <div role="alert" className="flex flex-col items-center gap-3 py-4 text-center">
+              <p className="text-sm text-ink-dim">{t.common.loadError}</p>
+              <button type="button" className="wow-btn wow-btn-sm" onClick={() => void q.refetch()}>
+                {t.common.retry}
+              </button>
+            </div>
+          ) : (
+            <div aria-busy="true" className={cn("space-y-3 py-2", ids.length > 0 && "animate-pulse")}>
+              <span className="sr-only" role="status">
+                {t.common.loading}
+              </span>
+              <span className="block h-16 rounded bg-stone-2/60" />
+              <span className="block h-28 rounded bg-stone-2/60" />
+            </div>
+          )
         ) : m.fallen.length === 0 ? (
           <p className="py-4 text-center text-sm text-ink-dim">{M.none}</p>
         ) : (
@@ -104,7 +121,7 @@ export function Memorial() {
 
       {m && (
         <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-          <span className="wow-title">{M.dangers}</span>
+          <h2 className="wow-title">{M.dangers}</h2>
           <p className="mb-3 text-xs text-ink-faint">{M.dangersHint}</p>
           {hasDangers(m.dangers) ? <DangersView d={m.dangers} /> : <p className="text-sm text-ink-dim">{t.dangers.none}</p>}
         </section>

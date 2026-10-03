@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BnetLogin } from "@/components/BnetLogin";
 import { api, ApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { useTitle } from "@/lib/useTitle";
 import { addToRoster, useRoster } from "@/lib/roster";
 import { cn } from "@/lib/utils";
 import { flavourLabel, VERSION_LABEL, VERSIONS, versionOf, type Version } from "@/lib/wow";
@@ -16,6 +17,7 @@ const versionOfChar = (c: AccountCharacter) => versionOf({ region: c.region, slu
 
 export function Import() {
   const t = useT();
+  useTitle(t.import.title);
   const qc = useQueryClient();
   const { k, error } = route.useSearch();
   const { ids } = useRoster();
@@ -89,7 +91,7 @@ export function Import() {
   if (problem || !k) {
     return (
       <div className="wow-frame mx-auto flex max-w-md flex-col items-center gap-4 px-6 pt-9 pb-7 text-center">
-        <span className="wow-title">{t.import.title}</span>
+        <h1 className="wow-title">{t.import.title}</h1>
         <p className="text-sm text-ink-dim">{problem ?? t.import.expired}</p>
         <BnetLogin />
       </div>
@@ -101,7 +103,7 @@ export function Import() {
 
   return (
     <div className="wow-frame mx-auto max-w-2xl space-y-3 px-3 pt-9 pb-4 sm:px-5">
-      <span className="wow-title">{t.import.title}</span>
+      <h1 className="wow-title">{t.import.title}</h1>
       {q.isPending ? (
         <div className="animate-pulse p-8 text-center text-sm text-ink-dim">{t.import.loading}</div>
       ) : (

@@ -3,8 +3,14 @@ import { useSettings } from "@/lib/settings";
 
 /** Every visible string. `fr` is typed on the exact shape of `en`. */
 const en = {
-  app: { tagline: "WoW Classic characters" },
-  nav: { locker: "Locker", today: "Today", addon: "Addon", settings: "Settings" },
+  common: {
+    loading: "Loading…",
+    loadError: "Couldn't load this page. Check your connection, then try again.",
+    retry: "Try again",
+    notFound: "This character isn't on WoWLocker (or no longer exists).",
+    toLocker: "Back to my characters",
+  },
+  nav: { locker: "Locker", today: "Today", addon: "Addon", settings: "Settings", skip: "Skip to content" },
   addon: {
     title: "Get started",
     intro:
@@ -238,6 +244,7 @@ const en = {
     nothingNow: "Nothing waiting for you.",
     nothingSoon: "Nothing in the next 7 days.",
     characters: "Characters",
+    character: "Character",
     noAddon: "This overview comes from the in-game addon: crafting cooldowns, rested XP, mail and bags of every character, in one place.",
     getAddon: "Get the addon",
     cooldownReady: (what: string) => `${what} is ready`,
@@ -533,8 +540,14 @@ const en = {
 export type Messages = typeof en;
 
 const fr: Messages = {
-  app: { tagline: "Personnages WoW Classic" },
-  nav: { locker: "Casier", today: "Aujourd'hui", addon: "Addon", settings: "Réglages" },
+  common: {
+    loading: "Chargement…",
+    loadError: "Impossible de charger cette page. Vérifiez votre connexion, puis réessayez.",
+    retry: "Réessayer",
+    notFound: "Ce personnage n'est pas sur WoWLocker (ou n'existe plus).",
+    toLocker: "Retour à mes personnages",
+  },
+  nav: { locker: "Casier", today: "Aujourd'hui", addon: "Addon", settings: "Réglages", skip: "Aller au contenu" },
   addon: {
     title: "Bien démarrer",
     intro:
@@ -769,6 +782,7 @@ const fr: Messages = {
     nothingNow: "Rien ne vous attend.",
     nothingSoon: "Rien dans les 7 prochains jours.",
     characters: "Personnages",
+    character: "Personnage",
     noAddon: "Cette vue vient de l'addon en jeu : recharges d'artisanat, XP de repos, courrier et sacs de tous vos personnages, au même endroit.",
     getAddon: "Installer l'addon",
     cooldownReady: (what: string) => `${what} est prêt`,

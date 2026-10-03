@@ -397,3 +397,12 @@ html *:not(input:not([type="checkbox"], [type="radio"], [type="range"], [type="c
     background: linear-gradient(90deg, transparent, #8a7330, transparent);
   }
 }
+
+/* Reduced motion: no pulsing skeletons, no pinging map marker. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-ping,
+  .animate-spin {
+    animation: none !important;
+  }
+}

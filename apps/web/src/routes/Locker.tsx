@@ -12,6 +12,7 @@ import { When } from "@/components/When";
 import { XpBar } from "@/components/XpBar";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { useTitle } from "@/lib/useTitle";
 import { dropIndex, moveInRoster, moveTo, setRosterOrder, useRoster } from "@/lib/roster";
 import { cn } from "@/lib/utils";
 import { realmLabel } from "@/lib/wow";
@@ -22,6 +23,7 @@ import { realmLabel } from "@/lib/wow";
  */
 export function Locker() {
   const t = useT();
+  useTitle(null);
   const navigate = useNavigate();
   const { ids } = useRoster();
   const [adding, setAdding] = useState(false);
@@ -91,7 +93,7 @@ export function Locker() {
   if (ids.length === 0) {
     return (
       <div className="wow-frame mx-auto mt-6 flex max-w-md flex-col items-center gap-4 px-6 pt-10 pb-7 text-center">
-        <span className="wow-title">{t.locker.title}</span>
+        <h1 className="wow-title">{t.locker.title}</h1>
         <Logo size={64} />
         <p className="text-sm text-ink-dim">{t.locker.empty}</p>
         <BnetLogin />
@@ -150,7 +152,7 @@ export function Locker() {
 
       {/* The character list. */}
       <section className="wow-frame flex min-h-0 flex-col px-2 pt-7 pb-3">
-        <span className="wow-title">{t.locker.title}</span>
+        <h1 className="wow-title">{t.locker.title}</h1>
         {q.isError ? (
           <div className="p-4 text-center">
             <p className="text-sm text-ink-dim">{t.locker.error}</p>
@@ -159,7 +161,7 @@ export function Locker() {
             </button>
           </div>
         ) : (
-          <ul role="listbox" aria-label={t.locker.title} className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+          <ul aria-label={t.locker.title} className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
             {(q.isPending ? [] : list).map((c) => (
               <li
                 key={c.id}
@@ -170,8 +172,7 @@ export function Locker() {
                 className={cn("group relative", drag?.id === c.id && "z-10 rounded bg-black/50 shadow-[0_6px_18px_rgb(0_0_0/0.7)] ring-1 ring-[#ffd100]/60")}
               >
                 <button
-                  role="option"
-                  aria-selected={selected?.id === c.id}
+                  aria-current={selected?.id === c.id ? "true" : undefined}
                   onClick={() => (window.matchMedia("(min-width: 768px)").matches ? setSelectedId(c.id) : open(c))}
                   onDoubleClick={() => open(c)}
                   className={cn("wow-row flex w-full items-center gap-3 px-2.5 py-2 text-left", list.length > 1 && "pr-10")}

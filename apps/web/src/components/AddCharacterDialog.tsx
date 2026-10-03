@@ -1,9 +1,10 @@
 import { REGIONS, type Realm, type Region } from "@wow-locker/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { api, ApiError } from "@/lib/api";
+import { useDialog } from "@/lib/useDialog";
 import { useT } from "@/lib/i18n";
 import { addToRoster } from "@/lib/roster";
 import { createStore } from "@/lib/store";
@@ -45,11 +46,8 @@ export function AddCharacterDialog({ onClose }: { onClose: () => void }) {
     },
   });
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const box = useRef<HTMLFormElement>(null);
+  useDialog(box, onClose);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -77,8 +75,8 @@ export function AddCharacterDialog({ onClose }: { onClose: () => void }) {
       aria-label={t.add.title}
       onClick={onClose}
     >
-      <form className="wow-frame flex max-h-[90dvh] w-full max-w-md flex-col px-5 pt-8 pb-5" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <span className="wow-title">{t.add.title}</span>
+      <form ref={box} className="wow-frame flex max-h-[90dvh] w-full max-w-md flex-col px-5 pt-8 pb-5" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
+        <h2 className="wow-title">{t.add.title}</h2>
         <button type="button" className="icon-btn absolute top-1.5 right-1.5" onClick={onClose} aria-label={t.add.cancel}>
           <X className="size-5" />
         </button>

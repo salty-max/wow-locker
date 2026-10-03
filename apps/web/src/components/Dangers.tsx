@@ -76,7 +76,7 @@ export function DangersFrame({ d }: { d: DangerStats | null }) {
   if (!hasDangers(d)) return null;
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-      <span className="wow-title">{t.dangers.title}</span>
+      <h2 className="wow-title">{t.dangers.title}</h2>
       <DangersView d={d} />
     </section>
   );

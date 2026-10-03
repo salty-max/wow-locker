@@ -165,7 +165,7 @@ export function PetFrame({ c }: { c: CharacterDetail }) {
   if (!pet && !stable?.pets.length) return null;
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-      <span className="wow-title">{P.title}</span>
+      <h2 className="wow-title">{P.title}</h2>
       {pet && (
         <div>
           <div className="flex items-center gap-3">
@@ -273,7 +273,7 @@ export function SkillsFrame({ a }: { a: AddonState }) {
   if (!sections.length) return null;
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-      <span className="wow-title">{t.inGame.skills}</span>
+      <h2 className="wow-title">{t.inGame.skills}</h2>
       <div className="flex flex-col gap-4">
         {sections.map((s) => (
           <div key={s.name}>
@@ -303,7 +303,7 @@ export function ReputationFrame({ a }: { a: AddonState }) {
   if (!a.reputations.length) return null;
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-      <span className="wow-title">{t.inGame.reputation}</span>
+      <h2 className="wow-title">{t.inGame.reputation}</h2>
       <div className="flex flex-col gap-2">
         {sortedReputations(a.reputations).map((r) => {
           const s = standing(r.standing);
@@ -337,7 +337,7 @@ export function MailFrame({ a }: { a: AddonState }) {
 
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-      <span className="wow-title">{cooldowns.length && !showMail ? T.cooldowns : T.mailbox}</span>
+      <h2 className="wow-title">{cooldowns.length && !showMail ? T.cooldowns : T.mailbox}</h2>
       {showMail && (
         <div>
           <p className="mb-2 text-xs text-ink-faint">
@@ -420,7 +420,7 @@ export function LevellingFrame({ a }: { a: AddonState }) {
   if (rows.length < 2) return null;
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-      <span className="wow-title">{t.inGame.levelling}</span>
+      <h2 className="wow-title">{t.inGame.levelling}</h2>
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-ink-faint">

@@ -14,7 +14,9 @@ import { ItemTooltip } from "@/components/ItemTooltip";
 import { TalentTrees } from "@/components/TalentTrees";
 import { When } from "@/components/When";
 import { XpBar } from "@/components/XpBar";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
+import { CharacterSkeleton, LoadError } from "@/components/PageState";
+import { useTitle } from "@/lib/useTitle";
 import { useT } from "@/lib/i18n";
 import { removeFromRoster, useRoster } from "@/lib/roster";
 import { hasTalentTrees } from "@/lib/talentData";
@@ -71,9 +73,9 @@ function Slot({ slot, item, relic = false, small = false }: { slot: string; item
   // item's icon fills it, as in game, inside a thin ring in its quality colour
   // (grey for poor and common: without it the icon's edge looks cut).
   return (
-    <span
+    <button
       {...tip.anchor}
-      tabIndex={0}
+      type="button"
       aria-label={item ? item.name : label}
       className={cn(
         "relative block shrink-0 rounded-[4px] bg-cover outline-none focus-visible:ring-2 focus-visible:ring-[#ffd100]",
@@ -89,7 +91,7 @@ function Slot({ slot, item, relic = false, small = false }: { slot: string; item
         ))}
       {item && <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={item.quality} />}
       {tip.node}
-    </span>
+    </button>
   );
 }
 
@@ -238,11 +240,21 @@ export function Character() {
   const router = useRouter();
   const id = Number(route.useParams().id);
   const { ids } = useRoster();
-  const q = useQuery({ queryKey: ["character", id], queryFn: () => api.character(id), refetchInterval: 60_000 });
+  const q = useQuery({
+    queryKey: ["character", id],
+    queryFn: () => api.character(id),
+    refetchInterval: 60_000,
+    retry: (n, err) => !(err instanceof ApiError && err.status === 404) && n < 2,
+  });
   const c = q.data;
   const inRoster = ids.includes(id);
 
-  if (!c) return <div className={cn("wow-frame h-96", q.isPending && "animate-pulse")} />;
+  useTitle(c?.name);
+
+  if (!c) {
+    if (q.isError) return <LoadError notFound={q.error instanceof ApiError && q.error.status === 404} onRetry={() => void q.refetch()} />;
+    return <CharacterSkeleton />;
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -261,11 +273,11 @@ export function Character() {
       </div>
 
       <div className={cn("wow-frame px-3 pt-8 pb-4 sm:px-5", c.isGhost && "[filter:saturate(0.6)]")}>
-        <span className="wow-title text-base sm:text-lg">
+        <h1 className="wow-title text-base sm:text-lg">
           <span className="cc" data-c={c.classKey ?? undefined}>
             {c.name}
           </span>
-        </span>
+        </h1>
 
         {/* Header: portrait + identity, like the top of the game's Character frame. */}
         <div className="flex items-center gap-3">
@@ -341,7 +353,7 @@ export function Character() {
       </div>
 
       <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-        <span className="wow-title">{t.character.talents}</span>
+        <h2 className="wow-title">{t.character.talents}</h2>
         {hasTalentTrees(c.flavour) ? <TalentTrees c={{ ...c, flavour: c.flavour }} /> : <TalentPoints groups={c.talents} />}
       </section>
 
@@ -360,7 +372,7 @@ export function Character() {
       )}
 
       <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-        <span className="wow-title">{t.character.timeline}</span>
+        <h2 className="wow-title">{t.character.timeline}</h2>
         <ChatLog c={c} />
         {!c.addon && (
           <p className="mt-3 text-xs text-ink-faint">

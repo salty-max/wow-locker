@@ -6,6 +6,7 @@ import { BnetLogin } from "@/components/BnetLogin";
 import { useLogout, useMe } from "@/lib/account";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { useTitle } from "@/lib/useTitle";
 import { toast } from "@/lib/toast";
 import { canInstall, openInstallGuide } from "@/lib/install";
 import { currentSubscription, disablePush, enablePush, pushSupport, resyncPush, type EnableResult } from "@/lib/notifications";
@@ -186,10 +187,11 @@ function Account() {
 
 export function Settings() {
   const t = useT();
+  useTitle(t.settings.title);
   const { lang } = useSettings();
   return (
     <div className="wow-frame mx-auto max-w-2xl px-4 pt-9 pb-6 sm:px-6">
-      <span className="wow-title">{t.settings.title}</span>
+      <h1 className="wow-title">{t.settings.title}</h1>
       <Section title={t.settings.language}>
         <div className="flex gap-2">
           {(["en", "fr"] as Lang[]).map((l) => (

@@ -1,6 +1,7 @@
 import { Share, SquarePlus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { useDialog } from "@/lib/useDialog";
 import { useT } from "@/lib/i18n";
 import { INSTALL_EVENT, canInstall, dismissInstall, installDismissed } from "@/lib/install";
 
@@ -12,7 +13,6 @@ const AUTO_DELAY = 20_000;
  * from Settings via INSTALL_EVENT.
  */
 export function InstallPrompt() {
-  const t = useT();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -27,6 +27,13 @@ export function InstallPrompt() {
   }, []);
 
   if (!open) return null;
+  return <InstallDialog onClose={() => setOpen(false)} />;
+}
+
+function InstallDialog({ onClose }: { onClose: () => void }) {
+  const t = useT();
+  const box = useRef<HTMLDivElement>(null);
+  useDialog(box, onClose);
 
   const steps = [
     { icon: <Share className="size-4" />, text: t.install.step1 },
@@ -40,13 +47,13 @@ export function InstallPrompt() {
       role="dialog"
       aria-modal="true"
       aria-label={t.install.title}
-      onClick={() => setOpen(false)}
+      onClick={onClose}
     >
-      <div className="wow-frame w-full max-w-sm px-5 pt-5 pb-5" onClick={(e) => e.stopPropagation()}>
+      <div ref={box} className="wow-frame w-full max-w-sm px-5 pt-5 pb-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3">
           <Logo size={32} />
           <h2 className="title-display flex-1 text-lg text-gold">{t.install.title}</h2>
-          <button className="icon-btn -mr-2" onClick={() => setOpen(false)} aria-label={t.update.close}>
+          <button className="icon-btn -mr-2" onClick={onClose} aria-label={t.update.close}>
             <X className="size-5" />
           </button>
         </div>
@@ -65,7 +72,7 @@ export function InstallPrompt() {
             className="wow-btn wow-btn-dark"
             onClick={() => {
               dismissInstall();
-              setOpen(false);
+              onClose();
             }}
           >
             {t.install.later}

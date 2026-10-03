@@ -190,7 +190,7 @@ export function BagsFrame({ c }: { c: CharacterDetail }) {
     );
   return (
     <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-      <span className="wow-title">{t.bags.title}</span>
+      <h2 className="wow-title">{t.bags.title}</h2>
       <ItemSearch current={c.id} />
       {a.bags.length > 0 && (
         <>
@@ -221,10 +221,10 @@ function ResultIcon({ match, realm }: { match: ItemMatch; realm: Realm | undefin
     realm ? <BagItemTip itemId={match.itemId} name={match.name} quality={match.quality} count={1} realm={realm} /> : null,
   );
   return (
-    <span {...tip.anchor} tabIndex={0} className="wow-slot !size-8 shrink-0 overflow-hidden outline-none">
+    <button {...tip.anchor} type="button" aria-label={match.name} className="wow-slot !size-8 shrink-0 overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-parchment/70">
       {match.icon && <img src={match.icon} alt="" loading="lazy" className="size-full" />}
       {tip.node}
-    </span>
+    </button>
   );
 }
 

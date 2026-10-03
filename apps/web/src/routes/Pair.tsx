@@ -4,6 +4,7 @@ import { getRouteApi, Link } from "@tanstack/react-router";
 import { CheckCircle2, LogIn } from "lucide-react";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { useTitle } from "@/lib/useTitle";
 
 const route = getRouteApi("/pair");
 
@@ -13,6 +14,7 @@ const route = getRouteApi("/pair");
  */
 export function Pair() {
   const t = useT();
+  useTitle(t.pair.title);
   const { code, done, error, k } = route.useSearch();
   const pending = useQuery({
     queryKey: ["pair", code],
@@ -26,7 +28,7 @@ export function Pair() {
 
   return (
     <div className="wow-frame mx-auto mt-6 flex max-w-md flex-col items-center gap-4 px-6 pt-9 pb-7 text-center">
-      <span className="wow-title">{t.pair.title}</span>
+      <h1 className="wow-title">{t.pair.title}</h1>
       {done ? (
         <>
           <CheckCircle2 className="size-12 text-q-uncommon" />

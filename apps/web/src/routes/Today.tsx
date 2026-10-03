@@ -8,7 +8,9 @@ import { StatBox } from "@/components/StatBox";
 import { When } from "@/components/When";
 import { played } from "@/lib/addonView";
 import { api } from "@/lib/api";
+import { LoadError, PageSkeleton } from "@/components/PageState";
 import { useLang, useT } from "@/lib/i18n";
+import { useTitle } from "@/lib/useTitle";
 import { useRoster } from "@/lib/roster";
 import { restedShare, todayView, type TodayItem } from "@/lib/todayView";
 import { cn } from "@/lib/utils";
@@ -106,7 +108,9 @@ function CharactersTable({ list }: { list: CharacterSummary[] }) {
     <table className="w-full text-sm">
       <thead>
         <tr className="text-left text-[11px] text-ink-faint">
-          <th className="pb-1 font-normal" />
+          <th className="pb-1 font-normal">
+            <span className="sr-only">{T.character}</span>
+          </th>
           <th className="pb-1 pl-3 text-right font-normal">{T.rested}</th>
           <th className="pb-1 pl-3 text-right font-normal">{T.bags}</th>
           <th className="hidden pb-1 pl-3 text-right font-normal sm:table-cell">{T.gold}</th>
@@ -156,6 +160,7 @@ function CharactersTable({ list }: { list: CharacterSummary[] }) {
 
 export function Today() {
   const t = useT();
+  useTitle(t.today.title);
   const lang = useLang();
   const T = t.today;
   const { ids } = useRoster();
@@ -177,7 +182,7 @@ export function Today() {
   if (ids.length === 0 || (q.data && v.tracked === 0)) {
     return (
       <div className="wow-frame mx-auto mt-6 flex max-w-md flex-col items-center gap-4 px-6 pt-10 pb-7 text-center">
-        <span className="wow-title">{T.title}</span>
+        <h1 className="wow-title">{T.title}</h1>
         <p className="text-sm text-ink-dim">{ids.length === 0 ? t.locker.empty : T.noAddon}</p>
         <Link to={ids.length === 0 ? "/" : "/addon"} className="wow-btn">
           {ids.length === 0 ? t.locker.add : T.getAddon}
@@ -186,7 +191,7 @@ export function Today() {
       </div>
     );
   }
-  if (!q.data) return <div className={cn("wow-frame mx-auto h-96 max-w-3xl", q.isPending && "animate-pulse")} />;
+  if (!q.data) return q.isError ? <LoadError onRetry={() => void q.refetch()} /> : <PageSkeleton />;
 
   const totals: [string, ReactNode][] = [];
   if (v.gold != null) totals.push([T.gold, <Money {...coins(v.gold)} />]);
@@ -196,7 +201,7 @@ export function Today() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex justify-end">{memorialLink}</div>
       <section className="wow-frame px-3 pt-8 pb-4 sm:px-5">
-        <span className="wow-title">{T.title}</span>
+        <h1 className="wow-title">{T.title}</h1>
         <div className="grid gap-5 md:grid-cols-2">
           <List title={T.needsYou} items={v.needsYou} empty={T.nothingNow} byId={byId} />
           <List title={T.upcoming} items={v.upcoming} empty={T.nothingSoon} byId={byId} />
@@ -208,7 +213,7 @@ export function Today() {
         )}
       </section>
       <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
-        <span className="wow-title">{T.characters}</span>
+        <h2 className="wow-title">{T.characters}</h2>
         <CharactersTable list={list} />
       </section>
     </div>
