@@ -5,7 +5,7 @@
  */
 export const RELEASES_URL = "https://github.com/salty-max/wow-locker/releases";
 export const ADDON_VERSION = "0.3.7";
-export const COMPANION_VERSION = "0.1.2";
+export const COMPANION_VERSION = "0.1.3";
 
 export const download = (file: string) => `${RELEASES_URL}/latest/download/${file}`;
 
