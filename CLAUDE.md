@@ -129,6 +129,31 @@ through it (summaries, detail, item search, memorial, pushes of personal
 events). Deleting an account wipes its characters' addon data, since they
 would otherwise turn public.
 
+## Security and retention
+
+- Supabase also serves `public` over its REST API: `db/migrate.ts` enables RLS
+  (no policies) on every table and revokes the `anon`/`authenticated` grants
+  after each migration run. The app connects as the owner (RLS doesn't apply).
+- Rate limits per IP (`lib/rateLimit.ts`, counted in `ephemeral`) on whatever
+  costs a Battle.net call or a stored row: tooltips (item ids ≤ 300 000),
+  adding a character, logins, pairings, push subscriptions, item search,
+  uploads. Add one to any new endpoint of that kind.
+- Security headers (CSP, frame-ancestors, nosniff…) live in
+  `apps/web/security-headers.json`: on every response in prod, and in
+  `vite preview` (port 4174) to try a policy before shipping it.
+- Retention (`lib/retention.ts`): noise (logins, /reload logouts, accepted
+  quests, skill-ups, reminders) pruned after 90 days by the tick (recaps saved
+  onto logouts first) and skipped at upload; 20 000 events max per character;
+  a `db.size` warning past 400 MB.
+
+## CurseForge
+
+`.github/workflows/curseforge.yml` uploads the release's `WowLocker-addon.zip`
+when a GitHub release is published and the TOC version changed (variable
+`CURSEFORGE_PROJECT_ID`, secret `CURSEFORGE_TOKEN`); game versions come from
+the TOC's Interface list (`scripts/curseforge-upload.sh`). Project page text:
+`addon/CURSEFORGE.md`.
+
 ## Derived views (pure, tested)
 
 - Session recaps (`lib/sessions.ts`): first login → last logout, a login within

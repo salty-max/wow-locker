@@ -5,6 +5,8 @@
 ## Version: 0.3.7
 ## SavedVariables: WowLockerDB, WowLockerSettings
 ## IconTexture: Interface\Icons\INV_Box_02
+## X-Website: https://wow-locker.app
+## X-License: MIT
 
 WowLocker.lua
 Options.lua
