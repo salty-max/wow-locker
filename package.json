@@ -1,6 +1,6 @@
 {
   "name": "wow-locker",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": true,
   "description": "WoW Classic character tracker (Hardcore-friendly) \u2014 PWA with push notifications",
   "license": "MIT",
