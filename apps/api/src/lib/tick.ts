@@ -37,6 +37,7 @@ export async function runTick(budgetMs = TICK_BUDGET_MS): Promise<TickResult> {
     const swept = (await sweepTemp()) + (await sweepSessions());
     if (Date.now() < deadline) await pruneTimeline();
     if (r.checked) await setState("lastRefreshAt", new Date().toISOString());
+    await setState("lastTickAt", new Date().toISOString()); // read by /api/status
     const result = { ran: true, checked: r.checked, pushed, reminders, swept, ms: Date.now() - started };
     if (r.checked || pushed || reminders) log.info("tick", result);
     return result;

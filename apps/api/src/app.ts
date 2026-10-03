@@ -18,6 +18,7 @@ import {
 } from "@/lib/accounts";
 import { appOrigin, finishLogin, getImport, startLogin } from "@/lib/account";
 import { authorizeCron } from "@/lib/auth";
+import { getState } from "@/lib/state";
 import { runTick } from "@/lib/tick";
 import { handleUpload, pairingExists, pollPairing, startPairing } from "@/lib/companion";
 import { BnetError } from "@/lib/bnet";
@@ -77,6 +78,17 @@ app.onError((err, c) => {
 });
 
 app.get("/api/health", (c) => c.json({ ok: true }));
+
+// For the uptime check (.github/workflows/monitor.yml): the database answers
+// and the scheduler ran recently (every 2 min). 503 otherwise.
+const TICK_STALE_MS = 10 * 60_000;
+app.get("/api/status", async (c) => {
+  c.header("Cache-Control", "no-store");
+  const last = await getState("lastTickAt").catch(() => null);
+  const age = last ? Math.round((Date.now() - Date.parse(last)) / 1000) : null;
+  const ok = age != null && age * 1000 < TICK_STALE_MS;
+  return c.json({ ok, lastTickAt: last, tickAgeSeconds: age }, ok ? 200 : 503);
+});
 
 app.get("/api/realms", async (c) => {
   const region = (c.req.query("region") ?? "eu") as Region;
