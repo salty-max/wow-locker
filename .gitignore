@@ -39,3 +39,6 @@ spike/out/
 
 # vercel build output
 .vercel
+
+# go-winres output (companion/scripts/build.sh)
+*.syso
