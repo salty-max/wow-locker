@@ -165,14 +165,15 @@ html *:not(input:not([type="checkbox"], [type="radio"], [type="range"], [type="c
 .q[data-q="legendary"] { color: var(--color-q-legendary); }
 .q[data-q="artifact"],
 .q[data-q="heirloom"] { color: var(--color-q-artifact); }
-.qb[data-q="poor"] { border-color: var(--color-q-poor); }
-.qb[data-q="common"] { border-color: #8a8a8a; }
-.qb[data-q="uncommon"] { border-color: var(--color-q-uncommon); }
-.qb[data-q="rare"] { border-color: #3b8cff; }
-.qb[data-q="epic"] { border-color: #b866ff; }
-.qb[data-q="legendary"] { border-color: var(--color-q-legendary); }
-.qb[data-q="artifact"],
-.qb[data-q="heirloom"] { border-color: var(--color-q-artifact); }
+/* Item rings (equipment, bags): the game's exact quality colours (ITEM_QUALITY_COLORS). */
+.qb[data-q="poor"] { border-color: #9d9d9d; }
+.qb[data-q="common"] { border-color: #ffffff; }
+.qb[data-q="uncommon"] { border-color: #1eff00; }
+.qb[data-q="rare"] { border-color: #0070dd; }
+.qb[data-q="epic"] { border-color: #a335ee; }
+.qb[data-q="legendary"] { border-color: #ff8000; }
+.qb[data-q="artifact"] { border-color: #e6cc80; }
+.qb[data-q="heirloom"] { border-color: #00ccff; }
 
 /* The fallen (Hardcore): desaturated, with a cold grey frame. */
 .fallen img {
