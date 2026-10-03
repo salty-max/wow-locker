@@ -1,8 +1,8 @@
 import type { CharacterSummary } from "@wow-locker/shared";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus, Skull } from "lucide-react";
-import { useMemo, useState } from "react";
+import { GripVertical, Plus, Skull } from "lucide-react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AddCharacterDialog } from "@/components/AddCharacterDialog";
 import { StatusBadges } from "@/components/Badges";
 import { BnetLogin } from "@/components/BnetLogin";
@@ -12,7 +12,7 @@ import { When } from "@/components/When";
 import { XpBar } from "@/components/XpBar";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
-import { useRoster } from "@/lib/roster";
+import { dropIndex, moveInRoster, moveTo, setRosterOrder, useRoster } from "@/lib/roster";
 import { cn } from "@/lib/utils";
 import { realmLabel } from "@/lib/wow";
 
@@ -31,11 +31,60 @@ export function Locker() {
     queryFn: () => api.characters(ids),
     enabled: ids.length > 0,
     refetchInterval: 60_000,
+    // Reordering changes the key: keep the rows (and their focus) meanwhile.
+    placeholderData: keepPreviousData,
   });
+  // Reordering: drag a row by its grip (mouse or touch), or arrow keys on it.
+  // While dragging, rows jump to where they'd land; the order is saved on release.
+  // The drag lives in a ref (the window listeners read it) mirrored in state
+  // (for rendering); listeners on the window end it wherever the pointer is
+  // released, even outside the grip.
+  const [drag, setDrag] = useState<{ id: number; order: number[] } | null>(null);
+  const dragRef = useRef<{ id: number; order: number[] } | null>(null);
+  const rows = useRef(new Map<number, HTMLLIElement>());
+  const order = drag?.order ?? ids;
   const list = useMemo(() => {
     const byId = new Map((q.data ?? []).map((c) => [c.id, c]));
-    return ids.map((id) => byId.get(id)).filter((c) => c != null);
-  }, [q.data, ids]);
+    return order.map((id) => byId.get(id)).filter((c) => c != null);
+  }, [q.data, order]);
+  // Moving a row in the page drops its focus: give it back to the grip once
+  // the list has been re-rendered in its new order.
+  const refocus = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (refocus.current == null) return;
+    document.querySelector<HTMLElement>(`[data-grip="${refocus.current}"]`)?.focus();
+    refocus.current = null;
+  }, [order]);
+  const startDrag = (id: number) => {
+    dragRef.current = { id, order: ids };
+    setDrag(dragRef.current);
+    const move = (e: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const middles = d.order
+        .filter((x) => x !== d.id)
+        .map((x) => {
+          const r = rows.current.get(x)?.getBoundingClientRect();
+          return r ? r.top + r.height / 2 : 0;
+        });
+      const next = moveTo(d.order, d.id, dropIndex(middles, e.clientY));
+      if (next.join() !== d.order.join()) {
+        dragRef.current = { id: d.id, order: next };
+        setDrag(dragRef.current);
+      }
+    };
+    const end = () => {
+      if (dragRef.current) setRosterOrder(dragRef.current.order);
+      dragRef.current = null;
+      setDrag(null);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+  };
   const selected = list.find((c) => c.id === selectedId) ?? list[0];
   const open = (c: CharacterSummary) => void navigate({ to: "/character/$id", params: { id: String(c.id) } });
 
@@ -112,13 +161,20 @@ export function Locker() {
         ) : (
           <ul role="listbox" aria-label={t.locker.title} className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
             {(q.isPending ? [] : list).map((c) => (
-              <li key={c.id}>
+              <li
+                key={c.id}
+                ref={(el) => {
+                  if (el) rows.current.set(c.id, el);
+                  else rows.current.delete(c.id);
+                }}
+                className={cn("group relative", drag?.id === c.id && "z-10 rounded bg-black/50 shadow-[0_6px_18px_rgb(0_0_0/0.7)] ring-1 ring-[#ffd100]/60")}
+              >
                 <button
                   role="option"
                   aria-selected={selected?.id === c.id}
                   onClick={() => (window.matchMedia("(min-width: 768px)").matches ? setSelectedId(c.id) : open(c))}
                   onDoubleClick={() => open(c)}
-                  className="wow-row flex w-full items-center gap-3 px-2.5 py-2 text-left"
+                  className={cn("wow-row flex w-full items-center gap-3 px-2.5 py-2 text-left", list.length > 1 && "pr-10")}
                 >
                   <span className={cn("relative shrink-0", c.isGhost && "fallen")}>
                     {c.avatarUrl ? (
@@ -147,6 +203,30 @@ export function Locker() {
                     </span>
                   </span>
                 </button>
+                {list.length > 1 && (
+                  <button
+                    type="button"
+                    data-grip={c.id}
+                    aria-label={t.locker.reorder(c.name)}
+                    title={t.locker.reorderHint}
+                    className={cn(
+                      "absolute top-1/2 right-1 flex h-10 w-8 -translate-y-1/2 touch-none items-center justify-center rounded text-ink-faint outline-none hover:text-[#ffd100] focus-visible:text-[#ffd100] focus-visible:ring-2 focus-visible:ring-[#ffd100] md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100",
+                      drag?.id === c.id ? "cursor-grabbing text-[#ffd100] md:opacity-100" : "cursor-grab",
+                    )}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      startDrag(c.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+                      e.preventDefault();
+                      refocus.current = c.id;
+                      moveInRoster(c.id, e.key === "ArrowUp" ? -1 : 1);
+                    }}
+                  >
+                    <GripVertical className="size-4" />
+                  </button>
+                )}
               </li>
             ))}
             {q.isPending && ids.map((id) => <li key={id} className="mx-2 my-1 h-14 animate-pulse rounded bg-stone-2/50" />)}

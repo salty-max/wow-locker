@@ -22,6 +22,27 @@ export function removeFromRoster(id: number): void {
   roster.set((r) => ({ ids: r.ids.filter((x) => x !== id) }));
 }
 
+/** `ids` with `id` moved to position `to` (clamped). */
+export function moveTo(ids: number[], id: number, to: number): number[] {
+  const from = ids.indexOf(id);
+  if (from < 0) return ids;
+  const rest = ids.filter((x) => x !== id);
+  const at = Math.max(0, Math.min(rest.length, to));
+  return [...rest.slice(0, at), id, ...rest.slice(at)];
+}
+
+/**
+ * Where a dragged row lands: the number of other rows whose middle is above
+ * the pointer. `middles` are the other rows' vertical centres, in order.
+ */
+export function dropIndex(middles: number[], y: number): number {
+  return middles.filter((m) => m < y).length;
+}
+
+export function setRosterOrder(ids: number[]): void {
+  roster.set((r) => (ids.length === r.ids.length && ids.every((id) => r.ids.includes(id)) ? { ids } : r));
+}
+
 export function moveInRoster(id: number, delta: -1 | 1): void {
   roster.set((r) => {
     const i = r.ids.indexOf(id);

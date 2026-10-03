@@ -1,7 +1,7 @@
 import type { CharacterDetail, EquippedItem, Stats, TalentGroup } from "@wow-locker/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, ChevronDown, ChevronUp, Globe, Lock, Share2, Skull, Trash2 } from "lucide-react";
+import { ArrowLeft, Globe, Lock, Share2, Skull, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { StatusBadges } from "@/components/Badges";
 import { CharacterRender } from "@/components/CharacterRender";
@@ -16,7 +16,7 @@ import { When } from "@/components/When";
 import { XpBar } from "@/components/XpBar";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
-import { moveInRoster, removeFromRoster, useRoster } from "@/lib/roster";
+import { removeFromRoster, useRoster } from "@/lib/roster";
 import { hasTalentTrees } from "@/lib/talentData";
 import { toast } from "@/lib/toast";
 import { useTooltip } from "@/lib/useTooltip";
@@ -241,7 +241,6 @@ export function Character() {
   const q = useQuery({ queryKey: ["character", id], queryFn: () => api.character(id), refetchInterval: 60_000 });
   const c = q.data;
   const inRoster = ids.includes(id);
-  const idx = ids.indexOf(id);
 
   if (!c) return <div className={cn("wow-frame h-96", q.isPending && "animate-pulse")} />;
 
@@ -374,15 +373,9 @@ export function Character() {
       </section>
 
       {inRoster && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button className="wow-btn wow-btn-dark wow-btn-sm" disabled={idx <= 0} onClick={() => moveInRoster(id, -1)}>
-            <ChevronUp className="size-3.5" /> {t.locker.moveUp}
-          </button>
-          <button className="wow-btn wow-btn-dark wow-btn-sm" disabled={idx >= ids.length - 1} onClick={() => moveInRoster(id, 1)}>
-            <ChevronDown className="size-3.5" /> {t.locker.moveDown}
-          </button>
+        <div className="mt-4 flex justify-end">
           <button
-            className="wow-btn wow-btn-sm ml-auto"
+            className="wow-btn wow-btn-sm"
             onClick={() => {
               removeFromRoster(id);
               void router.navigate({ to: "/" });
