@@ -2,7 +2,7 @@ import type { AddonState, CharacterDetail } from "@wow-locker/shared";
 import { MapPin } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { MapPopup } from "@/components/MapPopup";
-import { hasMap, type MapMarker } from "@/lib/maps";
+import { mapFor, type MapMarker } from "@/lib/maps";
 import petIcons from "@/data/petIcons.json";
 import { iconUrl } from "@/lib/talentData";
 import { fullDate } from "@/lib/time";
@@ -69,9 +69,10 @@ export function AddonStatus({ c }: { c: CharacterDetail }) {
         )}
       </>
     );
+    const zoneMap = mapFor(a.mapId, a.zone);
     rows.push([
       T.location,
-      hasMap(a.mapId) && a.x != null && a.y != null ? (
+      zoneMap != null ? (
         <button type="button" onClick={() => setMapOpen(true)} title={t.map.show} className="inline-flex items-center gap-1 text-right hover:text-[#ffd100]">
           <MapPin className="size-3.5 shrink-0 text-[#ffd100]" />
           <span>{place}</span>
@@ -115,8 +116,13 @@ export function AddonStatus({ c }: { c: CharacterDetail }) {
   return (
     <div className="mt-3">
       <StatBox title={T.title} rows={rows} />
-      {mapOpen && hasMap(a.mapId) && (
-        <MapPopup mapId={a.mapId} title={a.zone ?? ""} markers={zoneMarkers(c, a.mapId, t, lang)} onClose={() => setMapOpen(false)} />
+      {mapOpen && mapFor(a.mapId, a.zone) != null && (
+        <MapPopup
+          mapId={mapFor(a.mapId, a.zone)!}
+          title={a.zone ?? ""}
+          markers={zoneMarkers(c, mapFor(a.mapId, a.zone)!, t, lang)}
+          onClose={() => setMapOpen(false)}
+        />
       )}
     </div>
   );
@@ -129,7 +135,8 @@ function zoneMarkers(c: CharacterDetail, mapId: number, t: ReturnType<typeof use
   for (const e of c.events) {
     const d = e.data;
     const placed = d.type === "death" || d.type === "closeCall" || (d.type === "pet" && d.action === "death");
-    if (!placed || d.mapId !== mapId || d.x == null || d.y == null) continue;
+    if (!placed || d.x == null || d.y == null) continue;
+    if (mapFor(d.mapId, d.zone) !== mapId) continue;
     const date = fullDate(e.at, lang);
     out.push(
       d.type === "death"

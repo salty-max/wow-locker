@@ -51,7 +51,8 @@ paladins/druids/shamans (as in FrameXML).
 `apps/web/public/maps/<uiMapID>.webp` (65 zones and cities, Classic Era +
 Anniversary, 1002×668, ~8 MB, not precached: cached once opened) are built by
 `apps/web/scripts/maps.py` from the UiMap / UiMapXMapArt / UiMapArtTile DB2
-tables (wago.tools) and the 12 tiles per map; `src/data/maps.json` lists them.
+tables (wago.tools) and the 12 tiles per map, fully explored (every
+WorldMapOverlay area composited on the base parchment); `src/data/maps.json` lists them.
 The addon's x/y are percentages of that map (`state.mapId`, and `mapId` on
 deaths, close calls, pet deaths). No dungeon maps (Era has none in game).
 `src/data/petIcons.json` (`scripts/pet-icons.py`): icon file id → icon name

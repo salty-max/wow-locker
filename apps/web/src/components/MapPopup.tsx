@@ -10,6 +10,9 @@ import { useT } from "@/lib/i18n";
  * gives them). Opened from the location and from deaths / close calls.
  */
 
+// Bump when scripts/maps.py output changes: opened maps are cached on devices.
+const MAPS_VERSION = 2;
+
 function Marker({ m }: { m: MapMarker }) {
   const icon: ReactNode =
     m.kind === "player" ? (
@@ -62,11 +65,12 @@ export function MapPopup({ mapId, title, markers, onClose }: { mapId: number; ti
           <X className="size-4" />
         </button>
         <div className="relative aspect-[1002/668] w-full overflow-hidden rounded-[3px] border border-black">
-          <img src={`/maps/${mapId}.webp`} alt="" className="size-full" />
+          <img src={`/maps/${mapId}.webp?v=${MAPS_VERSION}`} alt="" className="size-full" />
           {markers.map((m, i) => (
             <Marker key={i} m={m} />
           ))}
         </div>
+        {markers.length === 0 && <p className="mt-2 px-1 text-xs text-ink-faint">{t.map.noPosition}</p>}
         {markers.length > 0 && (
           <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1 text-xs text-ink-dim">
             {markers.map((m, i) => (

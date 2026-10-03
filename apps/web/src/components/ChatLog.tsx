@@ -4,7 +4,7 @@ import { ItemTooltip } from "@/components/ItemTooltip";
 import { MapPin } from "lucide-react";
 import { useState } from "react";
 import { MapPopup } from "@/components/MapPopup";
-import { hasMap, type MapMarker } from "@/lib/maps";
+import { mapFor, type MapMarker } from "@/lib/maps";
 import { Money } from "@/components/Money";
 import { fullDate } from "@/lib/time";
 import { useLang, useT } from "@/lib/i18n";
@@ -233,12 +233,14 @@ function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
 function mapPinFor(e: CharacterEvent, t: ReturnType<typeof useT>, lang: "en" | "fr"): { mapId: number; title: string; marker: MapMarker } | null {
   const d = e.data;
   const date = fullDate(e.at, lang);
-  if ((d.type === "death" || d.type === "closeCall" || (d.type === "pet" && d.action === "death")) && hasMap(d.mapId) && d.x != null && d.y != null) {
+  const placed = d.type === "death" || d.type === "closeCall" || (d.type === "pet" && d.action === "death");
+  const mapId = placed ? mapFor(d.mapId, d.zone) : null;
+  if (placed && mapId != null && d.x != null && d.y != null) {
     const kind = d.type === "closeCall" ? "closeCall" : "death";
     const label =
       d.type === "death" ? t.map.died(date) : d.type === "closeCall" ? t.map.closeCall(d.pct, date) : t.map.petDied(d.name, date);
     const title = (d.type === "pet" ? d.zone : (d.instance ?? d.zone)) ?? "";
-    return { mapId: d.mapId, title, marker: { x: d.x, y: d.y, kind, label } };
+    return { mapId, title, marker: { x: d.x, y: d.y, kind, label } };
   }
   return null;
 }
