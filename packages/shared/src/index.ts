@@ -74,6 +74,10 @@ export type CharacterSummary = {
   deadAt: string | null; // ISO, first time we saw it as a ghost
   status: CharacterStatus;
   fetchedAt: string | null; // ISO
+  /** Latest timeline event (ISO): the app toasts when it moves. */
+  lastEventAt: string | null;
+  /** Last companion upload of addon data (ISO). */
+  addonSyncedAt: string | null;
 };
 
 /** What the in-game item tooltip shows, mostly as Blizzard's own display text. */

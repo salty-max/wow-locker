@@ -41,7 +41,23 @@ export class NotFoundError extends Error {}
 
 const nameKey = (n: string) => n.trim().toLowerCase();
 
-export function toSummary(c: CharacterRow): CharacterSummary {
+/**
+ * Blizzard redraws a character's render (and avatar) at the same address, on
+ * its own schedule, hours after a logout. A version on the URL makes every
+ * cache (the browser's, the PWA's) fetch it again: the last login, and for
+ * a few days after it, also the current 6-hour window, so a redraw that lands
+ * hours after the login shows up within 6 hours.
+ */
+const RENDER_RECHECK_MS = 6 * 3600_000;
+export function versionedRender(url: string | null, lastLoginAt: Date | null, now = Date.now()): string | null {
+  if (!url) return null;
+  const login = lastLoginAt ? Math.floor(lastLoginAt.getTime() / 1000) : 0;
+  const recent = lastLoginAt != null && now - lastLoginAt.getTime() < RENDER_WAIT_MS;
+  const v = recent ? `${login}-${Math.floor(now / RENDER_RECHECK_MS)}` : `${login}`;
+  return `${url}${url.includes("?") ? "&" : "?"}v=${v}`;
+}
+
+export function toSummary(c: CharacterRow, lastEventAt: Date | null = null): CharacterSummary {
   return {
     id: c.id,
     region: c.region,
@@ -62,14 +78,16 @@ export function toSummary(c: CharacterRow): CharacterSummary {
     isGhost: c.isGhost,
     isSelfFound: c.isSelfFound,
     itemLevel: c.itemLevel,
-    avatarUrl: c.avatarUrl,
-    renderUrl: c.renderUrl,
+    avatarUrl: versionedRender(c.avatarUrl, c.lastLoginAt),
+    renderUrl: versionedRender(c.renderUrl, c.lastLoginAt),
     lastLoginAt: c.lastLoginAt?.toISOString() ?? null,
     deadAt: c.deadAt?.toISOString() ?? null,
     // A single "not found" may be a Blizzard blip: only a confirmed (reported)
     // disappearance shows as missing.
     status: c.status === "not_found" && !c.missingReportedAt ? "ok" : c.status,
     fetchedAt: c.fetchedAt?.toISOString() ?? null,
+    lastEventAt: lastEventAt?.toISOString() ?? null,
+    addonSyncedAt: c.addon?.syncedAt ?? null,
   };
 }
 
@@ -86,7 +104,13 @@ export async function getCharacters(ids: number[]): Promise<CharacterSummary[]> 
   const rows = await db.select().from(characters).where(inArray(characters.id, ids));
   // Being looked at keeps a character "hot" for the poller.
   await db.update(characters).set({ requestedAt: new Date() }).where(inArray(characters.id, ids));
-  return rows.map(toSummary);
+  const latest = await db
+    .select({ id: characterEvents.characterId, at: sql<string>`max(${characterEvents.at})` })
+    .from(characterEvents)
+    .where(inArray(characterEvents.characterId, ids))
+    .groupBy(characterEvents.characterId);
+  const lastEvent = new Map(latest.map((r) => [r.id, r.at ? new Date(r.at) : null]));
+  return rows.map((r) => toSummary(r, lastEvent.get(r.id) ?? null));
 }
 
 export async function getCharacter(id: number): Promise<CharacterDetail | null> {
@@ -105,7 +129,7 @@ export async function getCharacter(id: number): Promise<CharacterDetail | null> 
     : null;
   const icons = await cachedIcons(c, addonItemIds(addon));
   return {
-    ...toSummary(c),
+    ...toSummary(c, events[0]?.at ?? null),
     equipment: c.equipment,
     talents: c.talents,
     stats: c.stats,

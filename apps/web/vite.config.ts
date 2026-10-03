@@ -65,12 +65,24 @@ export default defineConfig(() => ({
             },
           },
           {
+            // Character renders and avatars: Blizzard redraws them at the same
+            // address, so show the cached one at once and refresh it behind.
+            urlPattern: ({ url }) => url.hostname === "render.worldofwarcraft.com" && url.pathname.includes("/character/"),
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "character-renders",
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 60, maxAgeSeconds: 14 * 86400 },
+            },
+          },
+          {
+            // Item, talent and pet icons never change.
             urlPattern: ({ url }) => url.hostname === "render.worldofwarcraft.com",
             handler: "CacheFirst",
             options: {
               cacheName: "renders",
               cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 86400 },
+              expiration: { maxEntries: 400, maxAgeSeconds: 30 * 86400 },
             },
           },
           {
