@@ -85,6 +85,31 @@ describe("parseAddonCharacter", () => {
     expect(c.state.cooldowns[0]).toMatchObject({ name: "Mooncloth", spellId: 18560 });
   });
 
+  it("keeps the bags and the bank visit", () => {
+    expect(c.state.bags.map((b) => [b.name, b.size, b.items.length])).toEqual([
+      ["Backpack", 16, 3],
+      ["Linen Bag", 6, 1],
+    ]);
+    expect(c.state.bags[0].items[0]).toEqual({ slot: 1, itemId: 2589, name: "Linen Cloth", count: 20, quality: 1 });
+    expect(c.state.bank?.containers.map((b) => b.name)).toEqual(["Bank", "Green Woolen Bag"]);
+    expect(c.state.bank?.at).toMatch(/^2026-/);
+  });
+
+  it("bounds bag data", () => {
+    const bad = parseAddonCharacter(guid, {
+      name: "Namzie",
+      events: [],
+      state: {
+        bags: [
+          { bag: 0, size: 999, items: [] }, // impossible size: dropped
+          { bag: 1, size: 4, items: [{ slot: 9, id: 1, name: "Out of range" }, { slot: 1, id: 2, name: "Ok", count: -5, q: 42 }] },
+        ],
+      },
+    })!;
+    expect(bad.state.bags).toEqual([{ bag: 1, name: null, size: 4, items: [{ slot: 1, itemId: 2, name: "Ok", count: 1, quality: null }] }]);
+    expect(bad.state.bank).toBeNull();
+  });
+
   it("rejects what it can't trust", () => {
     expect(parseAddonCharacter("not-a-guid", raw)).toBeNull();
     expect(parseAddonCharacter(guid, { events: "nope" })).toBeNull(); // no name

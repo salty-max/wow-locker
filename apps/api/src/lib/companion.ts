@@ -6,7 +6,8 @@ import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/li
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { deliverEvent } from "@/lib/push";
-import { addCharacter } from "@/lib/tracker";
+import { addCharacter, addonItemIds, fillIcons } from "@/lib/tracker";
+import { waitUntil } from "@vercel/functions";
 
 /**
  * The companion app: pairing (device-code style, ownership proven by a
@@ -198,6 +199,8 @@ async function applyAddon(c: CharacterRow, parsed: AddonCharacter): Promise<numb
     const r = await deliverEvent(updated, ev);
     if (r.sent > 0 || r.targets === 0) await db.update(characterEvents).set({ notifiedAt: new Date() }).where(eq(characterEvents.id, ev.id));
   }
+  // Icons for what's in the bags, bank and mail: fetched once per item, in the background.
+  waitUntil(fillIcons(updated, addonItemIds(updated.addon)).catch((err) => log.warn("icons.failed", { err: String(err) })));
   log.info("companion.upload", { character: updated.name, events: added, reminders: planned.length });
   return added;
 }

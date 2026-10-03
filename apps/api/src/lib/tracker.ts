@@ -1,4 +1,4 @@
-import type { AddCharacterRequest, CharacterDetail, CharacterEvent, CharacterSummary, EventData } from "@wow-locker/shared";
+import type { AddCharacterRequest, AddonState, CharacterDetail, CharacterEvent, CharacterSummary, EventData, ItemMatch } from "@wow-locker/shared";
 import { FLAVOURS, REGIONS } from "@wow-locker/shared";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -99,14 +99,53 @@ export async function getCharacter(id: number): Promise<CharacterDetail | null> 
     .where(eq(characterEvents.characterId, id))
     .orderBy(desc(characterEvents.at), desc(characterEvents.id))
     .limit(300);
+  // Uploads from before bags existed have neither field.
+  const addon = c.addon ? { ...c.addon, bags: c.addon.bags ?? [], bank: c.addon.bank ?? null } : null;
+  const icons = await cachedIcons(c, addonItemIds(addon));
   return {
     ...toSummary(c),
     equipment: c.equipment,
     talents: c.talents,
     stats: c.stats,
     events: events.map(toEvent),
-    addon: c.addon ?? null,
+    addon,
+    itemIcons: Object.fromEntries(icons),
   };
+}
+
+/**
+ * An item across the given characters (a device's roster): how many in bags,
+ * bank (as of the last visit), mail and equipped. Name match, case-insensitive.
+ */
+export async function searchItems(ids: number[], query: string): Promise<ItemMatch[]> {
+  const q = query.trim().toLowerCase();
+  if (!ids.length || q.length < 2) return [];
+  const rows = await db.select().from(characters).where(inArray(characters.id, ids.slice(0, 50)));
+  const found = new Map<string, ItemMatch>();
+  const add = (c: CharacterRow, itemId: number, name: string, quality: number | null, where: "bags" | "bank" | "mail" | "equipped", count: number) => {
+    if (!name.toLowerCase().includes(q)) return;
+    const key = `${c.id}:${itemId}`;
+    const m = found.get(key) ?? { characterId: c.id, itemId, name, quality, icon: null, bags: 0, bank: 0, mail: 0, equipped: 0 };
+    m[where] += count;
+    found.set(key, m);
+  };
+  const QUALITY: Record<string, number> = { poor: 0, common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, artifact: 6, heirloom: 7 };
+  for (const c of rows) {
+    const a = c.addon;
+    for (const box of a?.bags ?? []) for (const it of box.items) add(c, it.itemId, it.name, it.quality, "bags", it.count);
+    for (const box of a?.bank?.containers ?? []) for (const it of box.items) add(c, it.itemId, it.name, it.quality, "bank", it.count);
+    for (const l of a?.mail?.letters ?? []) for (const it of l.items) if (it.itemId != null) add(c, it.itemId, it.name, it.quality, "mail", it.count);
+    for (const e of c.equipment) add(c, e.itemId, e.name, QUALITY[e.quality] ?? null, "equipped", 1);
+  }
+  const matches = [...found.values()].sort((x, y) => x.name.localeCompare(y.name) || x.characterId - y.characterId).slice(0, 60);
+  // Icons from the cache, per character's region/flavour.
+  for (const c of rows) {
+    const mine = matches.filter((m) => m.characterId === c.id);
+    if (!mine.length) continue;
+    const icons = await cachedIcons(c, mine.map((m) => m.itemId));
+    for (const m of mine) m.icon = icons.get(m.itemId) ?? null;
+  }
+  return matches;
 }
 
 /** Start tracking a character (or return the existing row). */
@@ -153,6 +192,37 @@ export async function addCharacter(req: AddCharacterRequest): Promise<CharacterS
       .values({ characterId: created.id, type: "tracked", data: { type: "tracked", level: fresh.level }, notifiedAt: new Date() });
   }
   return toSummary(fresh);
+}
+
+/** Icon URLs already cached (no Battle.net call). */
+export async function cachedIcons(c: Pick<CharacterRow, "region" | "flavour">, itemIds: number[]): Promise<Map<number, string | null>> {
+  if (!itemIds.length) return new Map();
+  const rows = await db
+    .select()
+    .from(itemIcons)
+    .where(and(eq(itemIcons.region, c.region), eq(itemIcons.flavour, c.flavour), inArray(itemIcons.itemId, itemIds)));
+  return new Map(rows.map((r) => [r.itemId, r.url]));
+}
+
+/** Every item id in the addon's bags, bank and mail. */
+export function addonItemIds(a: AddonState | null): number[] {
+  if (!a) return [];
+  const ids = new Set<number>();
+  for (const c of [...(a.bags ?? []), ...(a.bank?.containers ?? [])]) for (const it of c.items) ids.add(it.itemId);
+  for (const l of a.mail?.letters ?? []) for (const it of l.items) if (it.itemId != null) ids.add(it.itemId);
+  return [...ids];
+}
+
+/**
+ * Fetch the icons not cached yet (paced Battle.net calls, one per item ever):
+ * run in the background after an upload, so a first upload with a full bank
+ * fills in over a few seconds.
+ */
+export async function fillIcons(c: CharacterRow, itemIds: number[], limit = 150): Promise<number> {
+  const known = await cachedIcons(c, itemIds);
+  const missing = itemIds.filter((id) => !known.has(id)).slice(0, limit);
+  if (missing.length) await iconsFor(c, missing);
+  return missing.length;
 }
 
 async function iconsFor(c: CharacterRow, itemIds: number[]): Promise<Map<number, string | null>> {

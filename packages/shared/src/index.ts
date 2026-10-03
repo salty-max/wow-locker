@@ -254,6 +254,11 @@ export type EventData =
 export type EventSource = "api" | "addon" | "scheduled";
 export type CharacterEvent = { id: number; characterId: number; at: string; source: EventSource; data: EventData };
 
+/** One stack in a bag or the bank (quality: 0 poor … 5 legendary). */
+export type BagItem = { slot: number; itemId: number; name: string; count: number; quality: number | null };
+/** A bag (or the bank's own slots): its name, size and filled slots. */
+export type Container = { bag: number; name: string | null; size: number; items: BagItem[] };
+
 /** What the addon knows that the API doesn't, as of the last upload. */
 export type AddonState = {
   syncedAt: string; // ISO, last upload
@@ -289,6 +294,10 @@ export type AddonState = {
   cooldowns: { name: string | null; spellId?: number; itemId?: number; readyAt: string }[];
   /** Dungeon the character was in at the last upload. */
   run: { name: string; kind: string; startedAt: string } | null;
+  /** Backpack + bags, as of the last save. */
+  bags: Container[];
+  /** The bank as of the last visit (only readable while it's open in game). */
+  bank: { at: string; containers: Container[] } | null;
 };
 
 export type CharacterDetail = CharacterSummary & {
@@ -298,6 +307,21 @@ export type CharacterDetail = CharacterSummary & {
   events: CharacterEvent[];
   /** Null until the companion has uploaded addon data for this character. */
   addon: AddonState | null;
+  /** Icon URL per item id, for the items in bags, bank and mail (null: none). */
+  itemIcons: Record<string, string | null>;
+};
+
+/** GET /api/items?ids=…&q=… : an item across the given characters. */
+export type ItemMatch = {
+  characterId: number;
+  itemId: number;
+  name: string;
+  quality: number | null;
+  icon: string | null;
+  bags: number;
+  bank: number;
+  mail: number;
+  equipped: number;
 };
 
 // ── companion ────────────────────────────────────────────────────────────────

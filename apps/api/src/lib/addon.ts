@@ -1,4 +1,4 @@
-import type { AddonState, EventData, Flavour, Quality, ReminderKind, TalentTree } from "@wow-locker/shared";
+import type { AddonState, Container, EventData, Flavour, Quality, ReminderKind, TalentTree } from "@wow-locker/shared";
 
 /**
  * The in-game addon's data (WowLockerDB, converted from Lua to JSON by the
@@ -175,6 +175,28 @@ export function mapEvent(raw: Record<string, unknown>): EventData | null {
   }
 }
 
+/** Bags / bank containers, bounded: 12 containers, 40 slots each. */
+function containers(v: unknown): Container[] {
+  return arr(v)
+    .map(obj)
+    .flatMap((c) => {
+      const size = int(c.size);
+      if (size == null || size < 1 || size > 40) return [];
+      const items = arr(c.items)
+        .map(obj)
+        .flatMap((it) => {
+          const slot = int(it.slot);
+          const itemId = int(it.id);
+          const name = str(it.name);
+          if (slot == null || slot < 1 || slot > size || itemId == null || !name) return [];
+          const q = int(it.q);
+          return [{ slot, itemId, name, count: Math.max(1, Math.min(10000, int(it.count) ?? 1)), quality: q != null && q >= 0 && q <= 7 ? q : null }];
+        });
+      return [{ bag: int(c.bag) ?? 0, name: str(c.name, 80), size, items }];
+    })
+    .slice(0, 12);
+}
+
 export type AddonEvent = { key: string; at: Date; data: EventData };
 
 export type AddonCharacter = {
@@ -296,6 +318,8 @@ export function parseAddonCharacter(guid: string, raw: unknown): AddonCharacter 
         })
         .slice(0, 30),
       run: str(run.name, 80) ? { name: str(run.name, 80)!, kind: str(run.kind, 10) ?? "party", startedAt: iso(int(run.startedAt)) ?? "" } : null,
+      bags: containers(s.bags),
+      bank: iso(int(obj(s.bank).at)) ? { at: iso(int(obj(s.bank).at))!, containers: containers(obj(s.bank).containers) } : null,
     },
   };
 }

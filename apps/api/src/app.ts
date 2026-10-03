@@ -11,7 +11,7 @@ import { log } from "@/lib/log";
 import { asLang, DEFAULT_LANG } from "@/lib/notify";
 import { isAllowedPushEndpoint, removeSubscription, saveSubscription, sendWelcome, vapidPublicKey } from "@/lib/push";
 import { listRealms } from "@/lib/realms";
-import { addCharacter, getCharacter, getCharacters, InputError, NotFoundError, refreshDue } from "@/lib/tracker";
+import { addCharacter, getCharacter, getCharacters, InputError, NotFoundError, refreshDue, searchItems } from "@/lib/tracker";
 
 export const app = new Hono();
 
@@ -42,6 +42,9 @@ app.post("/api/characters", async (c) => {
   if (!body || typeof body.realm !== "string" || typeof body.name !== "string") throw new InputError("realm and name required");
   return c.json(await addCharacter(body as AddCharacterRequest), 201);
 });
+
+// An item across a device's characters: /api/items?ids=1,2&q=linen
+app.get("/api/items", async (c) => c.json(await searchItems(ids(c.req.query("ids")), c.req.query("q") ?? "")));
 
 app.get("/api/characters/:id", async (c) => {
   const id = Number(c.req.param("id"));
