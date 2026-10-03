@@ -23,6 +23,7 @@ import {
 import { StatusBadges } from "@/components/Badges";
 import { CharacterRender } from "@/components/CharacterRender";
 import { AddonStatus, LevellingFrame, MailFrame, ReputationFrame, SkillsFrame } from "@/components/AddonPanels";
+import { BagsFrame } from "@/components/Bags";
 import { ChatLog } from "@/components/ChatLog";
 import { StatBox } from "@/components/StatBox";
 import { ItemTooltip } from "@/components/ItemTooltip";
@@ -280,6 +281,7 @@ export function Character() {
             <SkillsFrame a={c.addon} />
             <ReputationFrame a={c.addon} />
           </div>
+          <BagsFrame c={c} />
           <MailFrame a={c.addon} />
           <LevellingFrame a={c.addon} />
         </>

@@ -24,6 +24,8 @@ const state = (over: Partial<AddonState> = {}): AddonState => ({
   mail: null,
   cooldowns: [],
   run: null,
+  bags: [],
+  bank: null,
   ...over,
 });
 

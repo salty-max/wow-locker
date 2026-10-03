@@ -206,6 +206,21 @@ const en = {
     xp: (cur: string, max: string) => `XP: ${cur} / ${max}`,
     rested: (n: string, pct: number) => `Rested ${n} (${pct}%)`,
   },
+  bags: {
+    title: "Bags",
+    used: (used: number, total: number) => `${used}/${total} slots used`,
+    bank: "Bank",
+    lastVisit: "last visit",
+    noBank: "The bank shows up after your next visit to a banker (the game only lets addons read it while it's open).",
+    search: "Search an item on all your characters…",
+    noMatch: "None of your characters has that.",
+    where: {
+      bags: (n: number) => `${n} in bags`,
+      bank: (n: number) => `${n} in the bank`,
+      mail: (n: number) => `${n} in the mail`,
+      equipped: (n: number) => (n > 1 ? `${n} equipped` : "equipped"),
+    },
+  },
   inGame: {
     title: "In game",
     gold: "Gold",
@@ -560,6 +575,21 @@ const fr: Messages = {
     },
     xp: (cur: string, max: string) => `XP: ${cur} / ${max}`,
     rested: (n: string, pct: number) => `Repos ${n} (${pct} %)`,
+  },
+  bags: {
+    title: "Sacs",
+    used: (used: number, total: number) => `${used}/${total} emplacements utilisés`,
+    bank: "Banque",
+    lastVisit: "dernière visite",
+    noBank: "La banque apparaîtra après votre prochaine visite à un banquier (le jeu ne laisse les addons la lire qu'ouverte).",
+    search: "Chercher un objet sur tous vos personnages…",
+    noMatch: "Aucun de vos personnages n'en a.",
+    where: {
+      bags: (n: number) => `${n} dans les sacs`,
+      bank: (n: number) => `${n} à la banque`,
+      mail: (n: number) => `${n} au courrier`,
+      equipped: (n: number) => (n > 1 ? `${n} équipés` : "équipé"),
+    },
   },
   inGame: {
     title: "En jeu",
