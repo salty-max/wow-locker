@@ -143,6 +143,7 @@ export type EventType =
   | "loot"
   | "skill"
   | "reputation"
+  | "pet"
   // scheduled from addon data, fired while the game is closed
   | "reminder";
 
@@ -160,6 +161,7 @@ export const NOTIFIABLE_EVENTS: EventType[] = [
   "quest",
   "loot",
   "skill",
+  "pet",
   "selfFoundLost",
   "missing",
 ];
@@ -173,6 +175,7 @@ export const DEFAULT_NOTIFY_EVENTS: EventType[] = [
   "reputation",
   "guild",
   "respec",
+  "pet",
   "selfFoundLost",
   "missing",
 ];
@@ -195,6 +198,8 @@ export type EventData =
       subZone?: string | null;
       x?: number | null;
       y?: number | null;
+      /** The zone map the coordinates are on (uiMapID). */
+      mapId?: number | null;
       instance?: string | null;
     }
   | { type: "gear"; changes: GearChange[] }
@@ -227,6 +232,9 @@ export type EventData =
       zone: string | null;
       subZone: string | null;
       instance: string | null;
+      mapId?: number | null;
+      x?: number | null;
+      y?: number | null;
     }
   | {
       type: "dungeon";
@@ -241,6 +249,18 @@ export type EventData =
   | { type: "loot"; itemId: number; name: string; quality: Quality; count: number; how: "loot" | "received" | "created" }
   | { type: "skill"; name: string; section: string | null; rank: number; max: number; learned: boolean }
   | { type: "reputation"; faction: string; standing: number; label: string | null }
+  | {
+      type: "pet";
+      /** new: tamed (or first summoned); level: gained a level; death: died */
+      action: "new" | "level" | "death";
+      name: string;
+      family: string | null;
+      level: number;
+      zone?: string | null;
+      mapId?: number | null;
+      x?: number | null;
+      y?: number | null;
+    }
   // ── scheduled ──
   | {
       type: "reminder";
@@ -258,6 +278,27 @@ export type CharacterEvent = { id: number; characterId: number; at: string; sour
 export type BagItem = { slot: number; itemId: number; name: string; count: number; quality: number | null };
 /** A bag (or the bank's own slots): its name, size and filled slots. */
 export type Container = { bag: number; name: string | null; size: number; items: BagItem[] };
+
+export type PetState = {
+  name: string;
+  family: string | null;
+  level: number;
+  active: boolean;
+  /** A hunter pet (XP, happiness, loyalty, training points); false: a warlock demon. */
+  hunter: boolean;
+  /** The game's icon file id (resolved to an icon name by the web app). */
+  icon: number | null;
+  xp: number | null;
+  xpMax: number | null;
+  /** 1 unhappy, 2 content, 3 happy */
+  happiness: number | null;
+  loyalty: string | null;
+  trainingPoints: number | null;
+  trainingSpent: number | null;
+  abilities: string[];
+  updatedAt: string | null;
+};
+export type StabledPet = { slot: number; name: string; family: string | null; level: number; icon: number | null; loyalty: string | null };
 
 /** What the addon knows that the API doesn't, as of the last upload. */
 export type AddonState = {
@@ -294,6 +335,12 @@ export type AddonState = {
   cooldowns: { name: string | null; spellId?: number; itemId?: number; readyAt: string }[];
   /** Dungeon the character was in at the last upload. */
   run: { name: string; kind: string; startedAt: string } | null;
+  /** The zone map the position is on (uiMapID). */
+  mapId: number | null;
+  /** The hunter's (or warlock's) pet: the active one, or the last one seen. */
+  pet: PetState | null;
+  /** Stabled pets, as of the last visit to a stable master. */
+  stable: { at: string; pets: StabledPet[] } | null;
   /** Backpack + bags, as of the last save. */
   bags: Container[];
   /** The bank as of the last visit (only readable while it's open in game). */

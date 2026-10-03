@@ -105,6 +105,7 @@ export function mapEvent(raw: Record<string, unknown>): EventData | null {
         subZone: str(raw.subZone, 80),
         x: num(raw.x),
         y: num(raw.y),
+        mapId: int(raw.mapId),
         instance: str(raw.instance, 80),
       };
     case "quest": {
@@ -127,6 +128,9 @@ export function mapEvent(raw: Record<string, unknown>): EventData | null {
         zone: str(raw.zone, 80),
         subZone: str(raw.subZone, 80),
         instance: str(raw.instance, 80),
+        mapId: int(raw.mapId),
+        x: num(raw.x),
+        y: num(raw.y),
       };
     case "dungeon_enter":
     case "dungeon_leave": {
@@ -170,9 +174,46 @@ export function mapEvent(raw: Record<string, unknown>): EventData | null {
       if (!faction) return null;
       return { type: "reputation", faction, standing: int(raw.standing) ?? 0, label: str(raw.label, 40) };
     }
+    case "pet_new":
+    case "pet_level":
+    case "pet_death": {
+      const name = str(raw.name, 40);
+      if (!name) return null;
+      return {
+        type: "pet",
+        action: raw.type === "pet_new" ? "new" : raw.type === "pet_level" ? "level" : "death",
+        name,
+        family: str(raw.family, 40),
+        level: int(raw.level) ?? 0,
+        ...(raw.type === "pet_death" ? { zone: str(raw.zone, 80), mapId: int(raw.mapId), x: num(raw.x), y: num(raw.y) } : {}),
+      };
+    }
     default:
       return null; // an event type this server doesn't know (newer addon): skip it
   }
+}
+
+/** The active (or last seen) pet. */
+function pet(v: unknown): AddonState["pet"] {
+  const p = obj(v);
+  const name = str(p.name, 40);
+  if (!name) return null;
+  return {
+    name,
+    family: str(p.family, 40),
+    level: int(p.level) ?? 0,
+    active: p.active !== false,
+    hunter: p.hunter === true,
+    icon: int(p.icon),
+    xp: int(p.xp),
+    xpMax: int(p.xpMax) || null,
+    happiness: int(p.happiness),
+    loyalty: str(p.loyalty, 60),
+    trainingPoints: int(p.trainingPoints),
+    trainingSpent: int(p.trainingSpent),
+    abilities: arr(p.abilities).flatMap((a) => (str(a, 60) ? [str(a, 60)!] : [])).slice(0, 20),
+    updatedAt: iso(int(p.updatedAt)),
+  };
 }
 
 /** Bags / bank containers, bounded: 12 containers, 40 slots each. */
@@ -259,6 +300,21 @@ export function parseAddonCharacter(guid: string, raw: unknown): AddonCharacter 
       playedLevel: int(s.playedLevel),
       zone: str(s.zone, 80),
       subZone: str(s.subZone, 80),
+      mapId: int(s.mapId),
+      pet: pet(s.pet),
+      stable: iso(int(obj(s.stable).at))
+        ? {
+            at: iso(int(obj(s.stable).at))!,
+            pets: arr(obj(s.stable).pets)
+              .map(obj)
+              .flatMap((p) =>
+                str(p.name, 40)
+                  ? [{ slot: int(p.slot) ?? 0, name: str(p.name, 40)!, family: str(p.family, 40), level: int(p.level) ?? 0, icon: int(p.icon), loyalty: str(p.loyalty, 60) }]
+                  : [],
+              )
+              .slice(0, 10),
+          }
+        : null,
       x: num(s.x),
       y: num(s.y),
       hardcore: bool(s.hardcore),

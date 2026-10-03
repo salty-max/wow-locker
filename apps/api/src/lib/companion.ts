@@ -91,7 +91,8 @@ export async function linkFor(token: string) {
 // ── uploads ──────────────────────────────────────────────────────────────────
 
 /** Timeline only, never pushed: logins/logouts, quests being accepted. */
-const quiet = (d: EventData) => d.type === "session" || (d.type === "quest" && d.action === "accept");
+const quiet = (d: EventData) =>
+  d.type === "session" || (d.type === "quest" && d.action === "accept") || (d.type === "pet" && d.action === "level");
 
 /** Events older than this at upload time are history: stored, not pushed. */
 const PUSH_WINDOW_MS = 24 * 3600_000;

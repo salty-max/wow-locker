@@ -93,6 +93,12 @@ export function renderEvent(character: string, e: EventData, lang: Lang): Render
       };
     case "reputation":
       return { title: character, body: `🤝 ${e.label ?? e.standing} ${t("with", "avec")} ${e.faction}` };
+    case "pet":
+      return e.action === "death"
+        ? { title: `💀 ${character}`, body: t(`${e.name} (level ${e.level}) died`, `${e.name} (niveau ${e.level}) est mort`) }
+        : e.action === "new"
+          ? { title: character, body: t(`🐾 New pet: ${e.name}${e.family ? ` (${e.family})` : ""}`, `🐾 Nouveau familier : ${e.name}${e.family ? ` (${e.family})` : ""}`) }
+          : { title: character, body: t(`🐾 ${e.name} reached level ${e.level}`, `🐾 ${e.name} atteint le niveau ${e.level}`) };
     case "reminder":
       switch (e.kind) {
         case "mailExpiring":

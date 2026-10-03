@@ -95,6 +95,38 @@ describe("parseAddonCharacter", () => {
     expect(c.state.bank?.at).toMatch(/^2026-/);
   });
 
+  it("keeps where a death and a close call happened, on which map", () => {
+    const death = c.events.find((e) => e.data.type === "death")!.data;
+    expect(death).toMatchObject({ mapId: 1436, x: 42.1, y: 74.6 });
+    const call = c.events.find((e) => e.data.type === "closeCall")!.data;
+    expect(call).toMatchObject({ mapId: 1436, x: 42.1, y: 74.6 });
+    expect(c.state.mapId).toBe(1436);
+  });
+
+  it("reads the pet, the stable and pet events", () => {
+    const t = 1_790_900_000;
+    const p = parseAddonCharacter(guid, {
+      name: "Namzie",
+      events: [
+        { type: "pet_new", t, name: "Wolfy", family: "Wolf", level: 23, hunter: true },
+        { type: "pet_level", t: t + 60, name: "Wolfy", family: "Wolf", level: 24 },
+        { type: "pet_death", t: t + 120, name: "Wolfy", family: "Wolf", level: 24, zone: "Westfall", mapId: 1436, x: 40, y: 50 },
+        { type: "pet_new", t, family: "Wolf" }, // no name: dropped
+      ],
+      state: {
+        pet: { name: "Wolfy", family: "Wolf", level: 24, active: false, hunter: true, icon: 132203, xp: 1200, xpMax: 4800, happiness: 3, loyalty: "Loyalty Level 3 (Faithful)", trainingPoints: 120, trainingSpent: 85, abilities: ["Bite (Rank 3)", 42] },
+        stable: { at: t, pets: [{ slot: 1, name: "Fang", family: "Cat", level: 18, icon: 132185 }, { slot: 2 }] },
+      },
+    })!;
+    expect(p.events.map((e) => e.data)).toEqual([
+      { type: "pet", action: "new", name: "Wolfy", family: "Wolf", level: 23 },
+      { type: "pet", action: "level", name: "Wolfy", family: "Wolf", level: 24 },
+      { type: "pet", action: "death", name: "Wolfy", family: "Wolf", level: 24, zone: "Westfall", mapId: 1436, x: 40, y: 50 },
+    ]);
+    expect(p.state.pet).toMatchObject({ name: "Wolfy", active: false, hunter: true, icon: 132203, happiness: 3, abilities: ["Bite (Rank 3)"] });
+    expect(p.state.stable?.pets).toEqual([{ slot: 1, name: "Fang", family: "Cat", level: 18, icon: 132185, loyalty: null }]);
+  });
+
   it("bounds bag data", () => {
     const bad = parseAddonCharacter(guid, {
       name: "Namzie",

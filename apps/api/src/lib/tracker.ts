@@ -100,7 +100,9 @@ export async function getCharacter(id: number): Promise<CharacterDetail | null> 
     .orderBy(desc(characterEvents.at), desc(characterEvents.id))
     .limit(300);
   // Uploads from before bags existed have neither field.
-  const addon = c.addon ? { ...c.addon, bags: c.addon.bags ?? [], bank: c.addon.bank ?? null } : null;
+  const addon = c.addon
+    ? { ...c.addon, bags: c.addon.bags ?? [], bank: c.addon.bank ?? null, mapId: c.addon.mapId ?? null, pet: c.addon.pet ?? null, stable: c.addon.stable ?? null }
+    : null;
   const icons = await cachedIcons(c, addonItemIds(addon));
   return {
     ...toSummary(c),
