@@ -1,4 +1,4 @@
--- wow-locker: the settings panel (Esc → Options → AddOns → wow-locker) and the
+-- wow-locker: the settings panel (Esc → Options → AddOns → WoWLocker) and the
 -- event log window (/wowlocker). Everything recorded lives in WowLocker.lua;
 -- this file only shows it and edits WowLockerSettings.
 
@@ -185,7 +185,7 @@ local function buildLog()
   local title = part(f, "TitleText") or text(f, "GameFontNormal")
   if not part(f, "TitleText") then title:SetPoint("TOP", 0, -6) end
   local me = ns.character()
-  title:SetText("wow-locker · " .. L.log .. (me and (" · " .. me.name) or ""))
+  title:SetText("WoWLocker · " .. L.log .. (me and (" · " .. me.name) or ""))
 
   filterButtons = {}
   local prev
@@ -255,7 +255,7 @@ end
 -- ── the settings panel ────────────────────────────────────────────────────────
 
 local panel = CreateFrame("Frame")
-panel.name = "wow-locker"
+panel.name = "WoWLocker"
 panel:Hide()
 
 local RECORD_KEYS = { "gear", "quests", "loot", "closeCalls", "dungeons", "skills", "reputation", "mail", "cooldowns" }
@@ -270,7 +270,7 @@ local function build()
   panel.built = true
   local s = ns.settings
 
-  local title = text(panel, "GameFontNormalLarge", "wow-locker")
+  local title = text(panel, "GameFontNormalLarge", "WoWLocker")
   title:SetPoint("TOPLEFT", 16, -16)
   local ver = text(panel, "GameFontDisableSmall", "v" .. ns.version())
   ver:SetPoint("LEFT", title, "RIGHT", 8, 0)
@@ -363,7 +363,7 @@ panel.okay, panel.cancel, panel.refresh = function() end, function() end, refres
 
 local category
 if Settings and Settings.RegisterCanvasLayoutCategory then
-  category = Settings.RegisterCanvasLayoutCategory(panel, "wow-locker")
+  category = Settings.RegisterCanvasLayoutCategory(panel, "WoWLocker")
   Settings.RegisterAddOnCategory(category)
 elseif InterfaceOptions_AddCategory then
   InterfaceOptions_AddCategory(panel)
@@ -371,7 +371,7 @@ end
 
 ns.openOptions = function()
   if InCombatLockdown and InCombatLockdown() then
-    print(GOLD .. "wow-locker|r " .. L.combatLocked)
+    print(GOLD .. "WoWLocker|r " .. L.combatLocked)
     return
   end
   if category and Settings and Settings.OpenToCategory then

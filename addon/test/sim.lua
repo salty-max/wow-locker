@@ -291,7 +291,7 @@ do
   function InCombatLockdown() return false end
   function IsShiftKeyDown() return false end
   assert(loadfile("addon/WowLocker/Options.lua"))("WowLocker", ns)
-  check(registered and registered.title == "wow-locker", "settings panel registered under AddOns")
+  check(registered and registered.title == "WoWLocker", "settings panel registered under AddOns")
 
   ns.toggleLog()
   local log

@@ -113,6 +113,6 @@ export function renderEvent(character: string, e: EventData, lang: Lang): Render
 
 export function renderWelcome(lang: Lang): Rendered {
   return lang === "fr"
-    ? { title: "wow-locker", body: "Notifications activées ✓" }
-    : { title: "wow-locker", body: "Notifications enabled ✓" };
+    ? { title: "WoWLocker", body: "Notifications activées ✓" }
+    : { title: "WoWLocker", body: "Notifications enabled ✓" };
 }

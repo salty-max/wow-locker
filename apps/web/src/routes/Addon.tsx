@@ -33,7 +33,7 @@ export function Addon() {
           <DownloadCard
             icon={<Package className="size-5" />}
             kind={a.kindAddon}
-            name="WowLocker"
+            name="WoWLocker"
             version={ADDON_VERSION}
             detail={a.addonDetail}
             href={download(FILES.addon)}

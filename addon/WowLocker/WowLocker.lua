@@ -2,7 +2,7 @@
 --
 -- Addons have no network access. Everything goes into the WowLockerDB
 -- SavedVariables table, which the game writes to disk on logout, /reload or
--- disconnect; the wow-locker companion app watches that file and uploads it.
+-- disconnect; the WoWLocker companion app watches that file and uploads it.
 --
 -- Data layout (format 1):
 --   WowLockerDB = {
@@ -119,7 +119,7 @@ local L = FR and {
 }
 ns.L, ns.FR = L, FR
 
-local PREFIX = "|cffffd100wow-locker|r "
+local PREFIX = "|cffffd100WoWLocker|r "
 local SLOT_LABELS = {
   HEAD = "Head", NECK = "Neck", SHOULDER = "Shoulder", SHIRT = "Shirt", CHEST = "Chest", WAIST = "Waist",
   LEGS = "Legs", FEET = "Feet", WRIST = "Wrist", HANDS = "Hands", FINGER_1 = "Finger", FINGER_2 = "Finger",

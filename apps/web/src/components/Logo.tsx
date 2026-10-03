@@ -1,4 +1,4 @@
-/** The wow-locker mark: an iron-bound chest with a gold padlock. */
+/** The WoWLocker mark: an iron-bound chest with a gold padlock. */
 export function Logo({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="80 90 352 336" aria-hidden>

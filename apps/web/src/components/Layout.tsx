@@ -37,10 +37,10 @@ export function Layout() {
     <div className="mx-auto flex min-h-dvh max-w-4xl flex-col">
       <header className="pt-safe bar-layer sticky top-0 z-30 border-b border-black bg-[linear-gradient(180deg,#1a1a20,#0c0c10)] shadow-[0_1px_0_#5c5c5c,0_4px_12px_rgb(0_0_0/0.6)]">
         <div className="flex h-14 items-center gap-2.5 px-4">
-          <Link to="/" className="flex items-center gap-2.5" aria-label="wow-locker">
+          <Link to="/" className="flex items-center gap-2.5" aria-label="WoWLocker">
             <Logo size={30} />
             <span className="title-display text-lg font-semibold whitespace-nowrap text-[#ffd100] [text-shadow:0_1px_2px_#000] sm:text-xl">
-              wow-locker
+              WoWLocker
             </span>
           </Link>
           <span className="mt-1 hidden text-xs text-ink-faint md:inline">{t.app.tagline}</span>

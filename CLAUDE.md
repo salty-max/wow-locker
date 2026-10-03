@@ -1,4 +1,4 @@
-# wow-locker
+# WoWLocker
 
 WoW Classic character tracker PWA (Hardcore-friendly): roster per device,
 gear / talents / stats / XP / alive-or-fallen, change timeline, push. Built on

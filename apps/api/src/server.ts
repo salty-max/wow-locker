@@ -18,6 +18,6 @@ if (!credentials()) log.warn("bnet.credentials.missing", { hint: "set BNET_CLIEN
 if (process.env.SCHEDULER !== "off") startScheduler();
 
 const port = Number(process.env.PORT ?? 3000);
-console.log(`wow-locker API → http://localhost:${port}`);
+console.log(`WoWLocker API → http://localhost:${port}`);
 
 export default { port, fetch: app.fetch };

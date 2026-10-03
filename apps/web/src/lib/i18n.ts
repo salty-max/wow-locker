@@ -8,7 +8,7 @@ const en = {
   addon: {
     title: "Get started",
     intro:
-      "The Battle.net API only sees a character as it was at its last logout. The WowLocker addon records what happens while you play, and the wow-locker companion app uploads it here a few seconds after you log out or /reload.",
+      "The Battle.net API only sees a character as it was at its last logout. The WoWLocker addon records what happens while you play, and the WoWLocker companion app uploads it here a few seconds after you log out or /reload.",
     features: [
       "Every gear swap, level-up and talent point, timestamped",
       "Hardcore deaths and close calls: killer, zone, coordinates",
@@ -17,7 +17,7 @@ const en = {
       "Reminders while the game is closed: mail about to expire, fully rested, crafting cooldown ready",
     ],
     withoutAddon:
-      "Without the addon, wow-locker still tracks level, gear, talents and Hardcore status from Battle.net, updated when you log out.",
+      "Without the addon, WoWLocker still tracks level, gear, talents and Hardcore status from Battle.net, updated when you log out.",
     downloads: "Downloads",
     onComputer: "Install these on the computer you play on.",
     kindAddon: "Addon",
@@ -37,14 +37,14 @@ const en = {
         title: "Install the addon",
         body: [
           "Unzip it into the game's AddOns folder, e.g. `World of Warcraft/_anniversary_/Interface/AddOns` (or `_classic_era_`), so that you get `AddOns/WowLocker/WowLocker.toc`.",
-          "On the character select screen, open AddOns and make sure WowLocker is enabled.",
+          "On the character select screen, open AddOns and make sure WoWLocker is enabled.",
         ],
       },
       {
         title: "Install the companion",
         body: [
           "Windows: run the .exe. It isn't signed yet, so SmartScreen may warn you: More info → Run anyway. Its icon appears in the tray (the ^ arrow next to the clock).",
-          "macOS: unzip, move wow-locker to Applications, then right-click it → Open the first time (it isn't notarized yet). Its icon appears in the menu bar.",
+          "macOS: unzip, move WoWLocker to Applications, then right-click it → Open the first time (it isn't notarized yet). Its icon appears in the menu bar.",
         ],
       },
       {
@@ -78,7 +78,7 @@ const en = {
       },
       {
         q: "What gets sent, and where?",
-        a: "Only the WowLocker data (the events and state listed above), only to wow-locker.app, only for characters on your Battle.net account. Your Battle.net password never goes through wow-locker, and the companion keeps an upload token, nothing else.",
+        a: "Only the WoWLocker data (the events and state listed above), only to wow-locker.app, only for characters on your Battle.net account. Your Battle.net password never goes through WoWLocker, and the companion keeps an upload token, nothing else.",
       },
       {
         q: "Does the game need to be running for notifications?",
@@ -116,9 +116,9 @@ const en = {
   },
   pair: {
     title: "Link the companion",
-    intro: "The wow-locker companion app wants to upload your addon data. Log in with Battle.net so it can only send data for your own characters.",
+    intro: "The WoWLocker companion app wants to upload your addon data. Log in with Battle.net so it can only send data for your own characters.",
     checkCode: "Check this code matches the one shown in the companion.",
-    privacy: "wow-locker reads your character list once and keeps no Battle.net login.",
+    privacy: "WoWLocker reads your character list once and keeps no Battle.net login.",
     done: (who: string) => `Companion linked to ${who}.`,
     backToCompanion: "You can close this tab: the companion will start uploading after your next logout or /reload.",
     alsoImport: "Also add my characters to the locker",
@@ -247,7 +247,7 @@ const en = {
     disable: "Turn off",
     enabled: "Notifications are on for this device.",
     denied: "Notifications are blocked. Allow them in your browser or system settings.",
-    needInstall: "On iPhone, add wow-locker to your Home Screen first (Share → Add to Home Screen), then open it from there.",
+    needInstall: "On iPhone, add WoWLocker to your Home Screen first (Share → Add to Home Screen), then open it from there.",
     insecure: "Notifications need HTTPS.",
     unsupported: "This browser doesn't support push notifications.",
     unavailable: "Push isn't configured on this server yet.",
@@ -256,10 +256,10 @@ const en = {
     saved: "Saved.",
     which: "Notify me about",
     install: "Install the app",
-    installHint: "Install wow-locker for a full-screen app and (on iPhone) notifications.",
+    installHint: "Install WoWLocker for a full-screen app and (on iPhone) notifications.",
     about: "About",
     aboutText:
-      "wow-locker reads public character profiles from the official Battle.net API (WoW Classic flavours). Not affiliated with Blizzard Entertainment.",
+      "WoWLocker reads public character profiles from the official Battle.net API (WoW Classic flavours). Not affiliated with Blizzard Entertainment.",
     version: (v: string, d: string) => `Version ${v} · ${d}`,
   },
   slots: {
@@ -312,13 +312,13 @@ const en = {
     notLearned: "Not learned yet. Blizzard only describes learned talents.",
     maxed: "Maxed",
   },
-  update: { available: "A new version of wow-locker is available.", reload: "Reload", close: "Close" },
+  update: { available: "A new version of WoWLocker is available.", reload: "Reload", close: "Close" },
   install: {
-    title: "Install wow-locker",
+    title: "Install WoWLocker",
     step1: "Tap the Share button in Safari",
     step2: "Choose “Add to Home Screen”",
-    step3: "Open wow-locker from your Home Screen",
-    why: "Installed, wow-locker runs full-screen and can send you notifications.",
+    step3: "Open WoWLocker from your Home Screen",
+    why: "Installed, WoWLocker runs full-screen and can send you notifications.",
     later: "Maybe later",
   },
 };
@@ -331,7 +331,7 @@ const fr: Messages = {
   addon: {
     title: "Bien démarrer",
     intro:
-      "L'API Battle.net ne voit un personnage que tel qu'il était à sa dernière déconnexion. L'addon WowLocker enregistre ce qui se passe pendant que vous jouez, et l'application compagnon wow-locker l'envoie ici quelques secondes après une déconnexion ou un /reload.",
+      "L'API Battle.net ne voit un personnage que tel qu'il était à sa dernière déconnexion. L'addon WoWLocker enregistre ce qui se passe pendant que vous jouez, et l'application compagnon WoWLocker l'envoie ici quelques secondes après une déconnexion ou un /reload.",
     features: [
       "Chaque changement d'équipement, niveau et point de talent, horodaté",
       "Morts et frôlements de mort en Hardcore : tueur, zone, coordonnées",
@@ -340,7 +340,7 @@ const fr: Messages = {
       "Rappels jeu fermé : courrier sur le point d'expirer, repos complet, recharge d'artisanat prête",
     ],
     withoutAddon:
-      "Sans l'addon, wow-locker suit quand même le niveau, l'équipement, les talents et le statut Hardcore via Battle.net, mis à jour à la déconnexion.",
+      "Sans l'addon, WoWLocker suit quand même le niveau, l'équipement, les talents et le statut Hardcore via Battle.net, mis à jour à la déconnexion.",
     downloads: "Téléchargements",
     onComputer: "À installer sur l'ordinateur où vous jouez.",
     kindAddon: "Addon",
@@ -360,14 +360,14 @@ const fr: Messages = {
         title: "Installer l'addon",
         body: [
           "Décompressez-le dans le dossier AddOns du jeu, par ex. `World of Warcraft/_anniversary_/Interface/AddOns` (ou `_classic_era_`), pour obtenir `AddOns/WowLocker/WowLocker.toc`.",
-          "À l'écran de sélection des personnages, ouvrez AddOns et vérifiez que WowLocker est activé.",
+          "À l'écran de sélection des personnages, ouvrez AddOns et vérifiez que WoWLocker est activé.",
         ],
       },
       {
         title: "Installer le compagnon",
         body: [
           "Windows : lancez le .exe. Il n'est pas encore signé, SmartScreen peut avertir : Informations complémentaires → Exécuter quand même. Son icône apparaît dans la zone de notification (la flèche ^ près de l'horloge).",
-          "macOS : décompressez, placez wow-locker dans Applications, puis clic droit → Ouvrir la première fois (il n'est pas encore notarisé). Son icône apparaît dans la barre des menus.",
+          "macOS : décompressez, placez WoWLocker dans Applications, puis clic droit → Ouvrir la première fois (il n'est pas encore notarisé). Son icône apparaît dans la barre des menus.",
         ],
       },
       {
@@ -401,7 +401,7 @@ const fr: Messages = {
       },
       {
         q: "Qu'est-ce qui est envoyé, et où ?",
-        a: "Uniquement les données WowLocker (les événements et l'état listés plus haut), uniquement vers wow-locker.app, uniquement pour les personnages de votre compte Battle.net. Votre mot de passe Battle.net ne passe jamais par wow-locker, et le compagnon ne garde qu'un jeton d'envoi.",
+        a: "Uniquement les données WoWLocker (les événements et l'état listés plus haut), uniquement vers wow-locker.app, uniquement pour les personnages de votre compte Battle.net. Votre mot de passe Battle.net ne passe jamais par WoWLocker, et le compagnon ne garde qu'un jeton d'envoi.",
       },
       {
         q: "Le jeu doit-il tourner pour les notifications ?",
@@ -439,9 +439,9 @@ const fr: Messages = {
   },
   pair: {
     title: "Lier le compagnon",
-    intro: "L'application compagnon wow-locker veut envoyer les données de votre addon. Connectez-vous avec Battle.net pour qu'elle ne puisse envoyer que vos propres personnages.",
+    intro: "L'application compagnon WoWLocker veut envoyer les données de votre addon. Connectez-vous avec Battle.net pour qu'elle ne puisse envoyer que vos propres personnages.",
     checkCode: "Vérifiez que ce code est celui affiché dans le compagnon.",
-    privacy: "wow-locker lit votre liste de personnages une fois et ne garde aucune connexion Battle.net.",
+    privacy: "WoWLocker lit votre liste de personnages une fois et ne garde aucune connexion Battle.net.",
     done: (who: string) => `Compagnon lié à ${who}.`,
     backToCompanion: "Vous pouvez fermer cet onglet : le compagnon enverra les données après votre prochaine déconnexion ou /reload.",
     alsoImport: "Ajouter aussi mes personnages au casier",
@@ -572,7 +572,7 @@ const fr: Messages = {
     enabled: "Les notifications sont activées sur cet appareil.",
     denied: "Les notifications sont bloquées. Autorisez-les dans les réglages du navigateur ou du système.",
     needInstall:
-      "Sur iPhone, ajoutez d'abord wow-locker à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvrez-le depuis l'icône.",
+      "Sur iPhone, ajoutez d'abord WoWLocker à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvrez-le depuis l'icône.",
     insecure: "Les notifications nécessitent HTTPS.",
     unsupported: "Ce navigateur ne gère pas les notifications push.",
     unavailable: "Les notifications ne sont pas encore configurées sur ce serveur.",
@@ -581,10 +581,10 @@ const fr: Messages = {
     saved: "Enregistré.",
     which: "Me prévenir pour",
     install: "Installer l'app",
-    installHint: "Installez wow-locker pour une app plein écran et (sur iPhone) les notifications.",
+    installHint: "Installez WoWLocker pour une app plein écran et (sur iPhone) les notifications.",
     about: "À propos",
     aboutText:
-      "wow-locker lit les profils publics des personnages via l'API officielle Battle.net (versions Classic). Non affilié à Blizzard Entertainment.",
+      "WoWLocker lit les profils publics des personnages via l'API officielle Battle.net (versions Classic). Non affilié à Blizzard Entertainment.",
     version: (v: string, d: string) => `Version ${v} · ${d}`,
   },
   slots: {
@@ -637,13 +637,13 @@ const fr: Messages = {
     notLearned: "Pas encore appris. Blizzard ne décrit que les talents appris.",
     maxed: "Maximum",
   },
-  update: { available: "Une nouvelle version de wow-locker est disponible.", reload: "Recharger", close: "Fermer" },
+  update: { available: "Une nouvelle version de WoWLocker est disponible.", reload: "Recharger", close: "Fermer" },
   install: {
-    title: "Installer wow-locker",
+    title: "Installer WoWLocker",
     step1: "Touchez le bouton Partager de Safari",
     step2: "Choisissez « Sur l'écran d'accueil »",
-    step3: "Ouvrez wow-locker depuis l'écran d'accueil",
-    why: "Installé, wow-locker s'ouvre en plein écran et peut vous envoyer des notifications.",
+    step3: "Ouvrez WoWLocker depuis l'écran d'accueil",
+    why: "Installé, WoWLocker s'ouvre en plein écran et peut vous envoyer des notifications.",
     later: "Plus tard",
   },
 };

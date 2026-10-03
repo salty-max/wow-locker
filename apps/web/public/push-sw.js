@@ -3,14 +3,14 @@
    focuses an open window (navigating it to the post) or opens a new one. */
 
 self.addEventListener("push", (event) => {
-  let data = { title: "wow-locker", body: "" };
+  let data = { title: "WoWLocker", body: "" };
   try {
     if (event.data) data = event.data.json();
   } catch (e) {
-    if (event.data) data = { title: "wow-locker", body: event.data.text() };
+    if (event.data) data = { title: "WoWLocker", body: event.data.text() };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "wow-locker", {
+    self.registration.showNotification(data.title || "WoWLocker", {
       body: data.body || "",
       tag: data.tag,
       icon: "/pwa-192.png",

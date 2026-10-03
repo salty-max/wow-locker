@@ -1,4 +1,4 @@
-# Deploying wow-locker (Vercel Pro + Supabase)
+# Deploying WoWLocker (Vercel Pro + Supabase)
 
 Vercel Pro (the PWA on the CDN, the API as one Node function, Vercel Cron for
 the scheduler) and a free Supabase project (Postgres).

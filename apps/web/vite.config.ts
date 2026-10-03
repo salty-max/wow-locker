@@ -25,8 +25,8 @@ export default defineConfig(() => ({
       includeAssets: ["icon.svg", "favicon-32.png", "apple-touch-icon.png"],
       manifest: {
         id: "/",
-        name: "wow-locker — WoW Classic characters",
-        short_name: "wow-locker",
+        name: "WoWLocker — WoW Classic characters",
+        short_name: "WoWLocker",
         description: "Your WoW Classic characters — gear, talents, levels and Hardcore status — with push alerts.",
         lang: "en",
         theme_color: "#0b0d12",

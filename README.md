@@ -1,4 +1,4 @@
-# wow-locker
+# WoWLocker
 
 Track your **World of Warcraft Classic** characters in one installable PWA,
 **Hardcore-friendly**: level and XP, gear (with enchants and icons), talents,
@@ -42,7 +42,7 @@ folders (`_classic_era_`, `_anniversary_`, …), watches each account's
 `SavedVariables/WowLocker.lua`, and uploads it a few seconds after the game
 writes it (logout, `/reload`, disconnect).
 
-- **Linking**: "Link with Battle.net" opens wow-locker's `/pair` page; the
+- **Linking**: "Link with Battle.net" opens WoWLocker's `/pair` page; the
   Battle.net login proves which characters are yours, and the server only
   accepts uploads for those. The companion keeps an upload token, nothing else.
 - **Settings** (a page served on `127.0.0.1` only, opened from the icon): WoW
