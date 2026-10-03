@@ -1,71 +1,93 @@
 # WoWLocker
 
-Track your **World of Warcraft Classic** characters in one installable PWA,
-**Hardcore-friendly**: level and XP, gear (with enchants and icons), talents,
-stats, alive or fallen, Self-Found, and a timeline of what changed, with push
-notifications.
+**Your World of Warcraft Classic characters, on your phone.** WoWLocker is an
+installable web app (PWA) at **[wow-locker.app](https://wow-locker.app)**,
+built for Hardcore: levels, gear, talents, deaths and close calls, bags and
+mail, rested XP, with push notifications. It looks and reads like the game's
+own interface.
 
-- **Locker**: your roster, kept per device. Add a character by region, realm
-  and name; Hardcore realms are labelled and listed first.
-- **Character page**: render, XP bar, paper-doll gear, talent trees, stats,
-  timeline (level-ups, deaths, gear changes, respecs, guild changes,
-  Self-Found lost).
-- **Push**: per device, for the characters in its locker and the event types
-  you pick.
+Classic Era, Hardcore, Season of Discovery, TBC Anniversary and MoP Classic.
+Not affiliated with Blizzard Entertainment.
 
-- **Look**: the Classic (1.x) WoW UI — character select screen, Character
-  frame with the paper doll, real talent trees, the timeline as a chat window,
-  WoW-style item and talent tooltips (drawn in CSS, no game assets).
-- **Log in with Battle.net** to import your account's characters (nothing about
-  the account is stored).
+## Getting started
 
-Data comes from the official **Battle.net API** (client credentials). Profiles
-only update when a character logs out. Supported flavours, verified 2026-10-01
-(see `spike/FINDINGS.md`): Classic Era / Hardcore / Season of Discovery
-(`classic1x`), TBC Anniversary (`classicann`) and MoP Classic (`classic`).
-WoW: Forever has no API yet. Not affiliated with Blizzard Entertainment.
+1. Open **[wow-locker.app](https://wow-locker.app)**, log in with Battle.net
+   and import your characters (or add any character by realm and name).
+2. For everything Battle.net doesn't show, install the
+   **[WoWLocker addon](https://www.curseforge.com/projects/1724925)** and the
+   **companion app** (Windows / macOS) from
+   [wow-locker.app/addon](https://wow-locker.app/addon) or the
+   [latest release](https://github.com/salty-max/wow-locker/releases/latest).
+3. Install the app on your phone (Add to Home Screen) and turn notifications on
+   in Settings.
 
-## In-game addon (`addon/WowLocker`)
+The companion isn't code-signed yet: Windows SmartScreen and macOS Gatekeeper
+warn the first time (setup steps on the addon page).
 
-The API only sees characters as they were at their last logout. The addon
-records what happens in between — every gear swap, level-up (with /played),
-talent point, guild change, quest turned in, notable loot, profession and
-reputation milestone, dungeon run, Hardcore close call and death (killer, zone,
-coordinates) — plus rested XP, gold, /played, location and completed quests. Addons can't reach the network, so it writes its
-SavedVariables on logout or `/reload`; the companion app uploads them. Test it
-outside the game with `luajit addon/test/sim.lua`.
+## What it shows
 
-## Companion app (`companion/`)
+From the **Battle.net API**, for any character:
+- Level and XP, gear on the game's paper doll (item tooltips), talent trees,
+  stats, guild, Hardcore status (alive or fallen) and Self-Found.
+- A timeline of what changed (level-ups, gear, respecs, guild, death), refreshed
+  after each logout.
 
-A small Go app living in the macOS menu bar / Windows tray. It finds the game
-folders (`_classic_era_`, `_anniversary_`, …), watches each account's
-`SavedVariables/WowLocker.lua`, and uploads it a few seconds after the game
-writes it (logout, `/reload`, disconnect).
+With the **addon and companion** (your own characters):
+- Every gear swap, level-up (with /played), talent point, quest, notable loot,
+  skill and reputation milestone, dungeon run, pet, Hardcore close call and
+  death (killer, place), timestamped, in a chat-frame timeline.
+- **Session summaries**: what each play session brought (time, levels, XP,
+  gold, quests, loot, danger), also as a notification when you log out.
+- Bags and bank (with item search across all your characters), mailbox, gold,
+  /played, rested XP projected while you're offline, skills, reputation,
+  levelling pace, hunter pets and the stable.
+- **Zone maps** (fully explored) with your position, deaths and close calls.
+- **Today**: what needs you across all characters (crafts off cooldown, fully
+  rested, new or expiring mail) and what's coming this week.
+- **Memorial**: the fallen and their last hour; close calls and deaths by foe,
+  place and dungeon.
+- **Reminders while the game is closed**: mail about to expire, fully rested,
+  cooldown ready.
 
-- **Linking**: "Link with Battle.net" opens WoWLocker's `/pair` page; the
-  Battle.net login proves which characters are yours, and the server only
-  accepts uploads for those. The companion keeps an upload token, nothing else.
-- **Settings** (a page served on `127.0.0.1` only, opened from the icon): WoW
-  folders (detected or added), which accounts and characters to upload, launch
-  at login, server address.
-- The SavedVariables file is parsed as data by a dedicated reader, never
-  executed.
+**Your account**: logging in with Battle.net keeps your locker, language and
+notification choices on every device. Bags, bank, mail, gold and position are
+visible only to you unless you share a character; its link shows a preview
+card on Discord and other chats. Details: [privacy](https://wow-locker.app/privacy).
 
-```bash
-cd companion
-go test ./...                       # parser checked against the addon simulation
-go run . --headless                 # no tray; settings at the printed URL
-WOWLOCKER_SERVER=https://… scripts/build.sh   # dist/: macOS .app, Windows .exe, addon zip
+## How it works
+
+```
+ WoW client                    your computer                 wow-locker.app
+┌──────────────┐  logout /   ┌──────────────────┐  HTTPS   ┌──────────────────┐
+│ WoWLocker    │  /reload →  │ companion (Go,   │ ───────→ │ API (Hono)       │ ← Battle.net API
+│ addon (Lua)  │  saved file │ tray / menu bar) │  upload  │ Postgres         │ → Web Push
+└──────────────┘             └──────────────────┘  token   │ PWA (React)      │
+                                                           └──────────────────┘
 ```
 
-`WOWLOCKER_CONFIG_DIR` and `WOWLOCKER_NO_BROWSER=1` isolate a test run from
-your real config.
+- **Addon** (`addon/WowLocker`): addons can't use the network, so it records
+  into the game's SavedVariables, written on logout or `/reload`. No impact on
+  combat or the interface. `luajit addon/test/sim.lua` simulates a session.
+- **Companion** (`companion/`): finds the game folders, watches each account's
+  `SavedVariables/WowLocker.lua`, uploads it seconds after the game writes it.
+  Linking goes through a Battle.net login, which proves which characters are
+  yours: the server only accepts uploads for those. The saved file is parsed as
+  data, never executed. Settings on a page served on `127.0.0.1` only; upload
+  status in the tray and on that page.
+- **Server** (`apps/api`): polls Battle.net for tracked characters, turns
+  changes and uploads into timeline events, session summaries and reminders,
+  and sends pushes. Per-viewer privacy, rate limits, and a 90-day retention for
+  timeline noise.
+- **Web** (`apps/web`): React PWA. Interface textures, zone maps and icons come
+  from the game's files (via [wago.tools](https://wago.tools)), © Blizzard
+  Entertainment.
 
 ## Stack
 
-Same as Farseer: Turborepo + Bun workspaces, `apps/api` (Hono, Drizzle,
-Postgres, node-cron), `apps/web` (React 19, Vite, Tailwind v4, TanStack
-Router/Query, vite-plugin-pwa), `packages/shared` (wire contract).
+Turborepo + Bun workspaces: `apps/api` (Hono, Drizzle, Postgres), `apps/web`
+(React 19, Vite, Tailwind v4, TanStack Router/Query, vite-plugin-pwa),
+`packages/shared` (the wire contract). Companion in Go (fyne.io/systray),
+addon in Lua 5.1. Hosted on Vercel (functions + cron) and Supabase (Postgres).
 
 ## Develop
 
@@ -78,7 +100,28 @@ bun run --filter @wow-locker/api vapid   # push keys, also into .env.local
 bun run dev            # api :3001 + web :5174
 ```
 
-Checks: `bun run typecheck && bun run lint && bun run test && bun run build`.
+Checks (also run by CI on every push and pull request):
+`bun run typecheck && bun run lint && bun run test && bun run build`,
+`luajit addon/test/sim.lua`, and in `companion/`: `go vet ./... && go test ./...`.
 
-Hosting: Vercel Pro (with Vercel Cron) + a free Supabase project — see
-[DEPLOY.md](DEPLOY.md).
+Companion: `go run . --headless` runs it without a tray (settings at the
+printed URL); `WOWLOCKER_CONFIG_DIR` and `WOWLOCKER_NO_BROWSER=1` isolate a test
+run from your real config.
+
+## Releases and operations
+
+- **Site**: every push to `main` deploys on Vercel (database migrations
+  included). See [DEPLOY.md](DEPLOY.md).
+- **Addon and companion**: `scripts/release.sh [--addon X.Y.Z] [--companion
+  X.Y.Z] NOTES.md` bumps the versions, runs the checks, then tags and pushes.
+  GitHub Actions builds the companion (macOS universal app, Windows x64/arm64),
+  publishes the GitHub release, and uploads the addon to CurseForge when its
+  version changed.
+- **Monitoring**: an uptime check every 30 minutes (`/api/status`);
+  Dependabot opens weekly update pull requests.
+
+## License
+
+[MIT](LICENSE). World of Warcraft and Battle.net are trademarks of Blizzard
+Entertainment, Inc. WoWLocker is a fan project, not affiliated with or endorsed
+by Blizzard.

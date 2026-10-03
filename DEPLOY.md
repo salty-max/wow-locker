@@ -64,16 +64,20 @@ On the Hobby plan, crons run at most once a day: remove `crons` from
 external service instead (e.g. cron-job.org, with the
 `Authorization: Bearer <CRON_SECRET>` header).
 
-## 5. Companion
+## 5. Companion and addon
 
-Build it pointing at the deployment:
+Releases are built by GitHub Actions (`.github/workflows/release.yml`, on a
+`v*` tag pushed by `scripts/release.sh`), with the server set to
+`https://wow-locker.app`: change `WOWLOCKER_SERVER` there for another
+deployment. To build by hand on a Mac:
 
 ```bash
 WOWLOCKER_SERVER=https://<project>.vercel.app bun run companion:build
 ```
 
 `companion/dist/` then holds the macOS app, the Windows executables and the
-addon zip.
+addon zip. CurseForge uploads need the repository variable
+`CURSEFORGE_PROJECT_ID` and secret `CURSEFORGE_TOKEN`.
 
 ## Limits to keep in mind
 

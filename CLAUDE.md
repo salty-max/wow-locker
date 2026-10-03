@@ -94,7 +94,16 @@ changed. Pairing: `POST /api/companion/pair/start` → browser on `/pair` →
 Battle.net login → poll for the token (`apps/api/src/lib/companion.ts`).
 Settings page on 127.0.0.1:47615 (also the single-instance lock), every API
 call needs the config's key in `X-Locker-Key` + a matching Host header.
-Release: `WOWLOCKER_SERVER=https://… companion/scripts/build.sh`.
+Release builds: `companion/scripts/build.sh` (macOS only), run by the release
+workflow; see Operations.
+Windows builds are unsigned, so Smart App Control judges them by behaviour:
+never start PowerShell, rundll32, cmd or any script host (0.1.2's PowerShell
+system notifications got it blocked). The folder picker and opening links are
+direct Win32 calls (`platform_windows.go`); the .exe embeds an icon, version
+info and a manifest (go-winres in build.sh). Signing is the real fix.
+Upload feedback stays inside the companion (the user's choice): the tray's
+status line ("Uploading X…", then "✓ X synced · +N events" for a minute) and
+a toast on its settings page. No system notifications.
 
 ## Hosting (Vercel Pro + Supabase, see DEPLOY.md)
 
@@ -146,13 +155,33 @@ would otherwise turn public.
   onto logouts first) and skipped at upload; 20 000 events max per character;
   a `db.size` warning past 400 MB.
 
-## CurseForge
+## Operations (all scripted)
 
-`.github/workflows/curseforge.yml` uploads the release's `WowLocker-addon.zip`
-when a GitHub release is published and the TOC version changed (variable
-`CURSEFORGE_PROJECT_ID`, secret `CURSEFORGE_TOKEN`); game versions come from
-the TOC's Interface list (`scripts/curseforge-upload.sh`). Project page text:
-`addon/CURSEFORGE.md`.
+- **Deploy the site**: push to `main` (Vercel Git integration; migrations +
+  table lockdown run on production builds). If a push doesn't deploy:
+  `vercel deploy --prod --scope jellycat --yes` (refresh the CLI token with
+  `vercel whoami` first).
+- **Release** (addon / companion / site version): write the notes (markdown,
+  for players: they become the GitHub release and the CurseForge changelog),
+  then `scripts/release.sh [--addon X.Y.Z] [--companion X.Y.Z] NOTES.md`
+  (`--dry-run` first). It bumps every version (TOC, main.go, downloads.ts,
+  package.json), runs the checks, commits `chore(release): vX.Y.Z`, tags (the
+  tag message = the notes) and pushes. `.github/workflows/release.yml` then
+  builds on macOS, publishes the GitHub release and calls `curseforge.yml`,
+  which uploads the addon only if its version changed (project 1724925;
+  variable `CURSEFORGE_PROJECT_ID`, secret `CURSEFORGE_TOKEN`; game versions
+  from the TOC's Interface list via `scripts/curseforge-upload.sh`; project
+  page text in `addon/CURSEFORGE.md`).
+- **CI** (`ci.yml`) on every push and PR: typecheck, lint, tests, build,
+  addon sim, companion vet/test (macOS). Dependabot opens weekly grouped PRs.
+- **Monitoring** (`monitor.yml`, every 30 min): `/api/status` must answer 200
+  (scheduler ran within 10 min); a failure emails the repo owner.
+- **Production database**: `scripts/prod-sql.sh "SQL"` (read only;
+  `--write` to change data). Never put the database URL on a command line or
+  in output: it contains the password.
+- Don't poll wow-locker.app in tight loops: Vercel's bot protection then
+  challenges this network's IP (403 "Security Checkpoint", lifts in minutes),
+  which also blocks the companion's uploads from the same network.
 
 ## Derived views (pure, tested)
 
