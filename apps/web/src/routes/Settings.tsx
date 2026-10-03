@@ -1,6 +1,7 @@
 import { NOTIFIABLE_EVENTS, type EventType, type Lang } from "@wow-locker/shared";
 import { Bell, BellOff, Download, Send, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { BnetLogin } from "@/components/BnetLogin";
 import { useLogout, useMe } from "@/lib/account";
 import { api } from "@/lib/api";
@@ -215,6 +216,9 @@ export function Settings() {
       )}
       <Section title={t.settings.about}>
         <p className="text-sm text-ink-dim">{t.settings.aboutText}</p>
+        <Link to="/privacy" className="mt-2 inline-block text-sm text-[#ffd100] underline-offset-2 hover:underline">
+          {t.privacy.link}
+        </Link>
         <p className="mt-3 text-xs text-ink-faint">{t.settings.version(__APP_VERSION__, __BUILD_DATE__)}</p>
       </Section>
     </div>

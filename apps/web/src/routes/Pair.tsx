@@ -58,7 +58,12 @@ export function Pair() {
               </a>
             ))}
           </div>
-          <p className="text-xs text-ink-faint">{t.pair.privacy}</p>
+          <p className="text-xs text-ink-faint">
+            {t.pair.privacy}{" "}
+            <Link to="/privacy" className="text-[#ffd100] underline-offset-2 hover:underline">
+              {t.privacy.link}
+            </Link>
+          </p>
         </>
       )}
     </div>

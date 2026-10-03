@@ -1,4 +1,5 @@
 import { REGIONS } from "@wow-locker/shared";
+import { Link } from "@tanstack/react-router";
 import { ChevronDown, Download, LogIn, LogOut, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLogout, useMe } from "@/lib/account";
@@ -73,7 +74,12 @@ export function AccountMenu() {
             </>
           ) : (
             <>
-              <p className="px-3 pt-1.5 pb-2 text-xs text-ink-faint">{t.account.hint}</p>
+              <p className="px-3 pt-1.5 pb-2 text-xs text-ink-faint">
+                {t.account.hint}{" "}
+                <Link to="/privacy" onClick={() => setOpen(false)} className="text-[#ffd100] underline-offset-2 hover:underline">
+                  {t.privacy.link}
+                </Link>
+              </p>
               {REGIONS.map((r) => (
                 <a key={r} className={item} href={api.loginUrl(r)}>
                   <LogIn className="size-4" /> {t.account.loginRegion(r.toUpperCase())}

@@ -295,6 +295,48 @@ const en = {
     deaths: (n: number) => `${n} death${n > 1 ? "s" : ""}`,
     closeCalls: (n: number, lowest: number | null) => `${n} close call${n > 1 ? "s" : ""}${lowest != null ? ` (${lowest}%)` : ""}`,
   },
+  privacy: {
+    title: "Privacy",
+    link: "Privacy",
+    updated: "Last updated: 3 October 2026",
+    intro:
+      "WoWLocker is a hobby project by salty-max, not affiliated with Blizzard Entertainment. This page says what it stores, why, for how long, and how to delete it.",
+    sections: [
+      {
+        title: "Without an account",
+        body: "Your locker (the characters you follow), your language and your notification choices stay in this browser. The server stores the characters themselves as Battle.net shows them publicly (name, realm, level, class, gear, talents, guild, Hardcore status) and refreshes them while someone follows them.",
+      },
+      {
+        title: "With a Battle.net account",
+        body: "Logging in with Battle.net gives us your Battle.net account number, your BattleTag and the list of your characters. We keep those, your locker and your choices, so they follow you on every device. Your Battle.net password never reaches WoWLocker, and the access Blizzard grants is used once, during the login, then dropped. A session cookie, the only cookie WoWLocker sets, keeps you logged in for up to 180 days.",
+      },
+      {
+        title: "The addon and the companion",
+        body: "The addon records what happens in game (levels, gear, quests, loot, dungeons, deaths and close calls, skills, reputation, mail, bags and bank, gold, /played, position) into the game's own saved files. The companion app sends that file to wow-locker.app, only for the characters of the Battle.net account it was linked with. The upload token stays on your computer; we only keep a fingerprint of it.",
+      },
+      {
+        title: "Who sees what",
+        body: "Anyone with a character's link sees its public profile: level, gear, talents, timeline and Hardcore deaths. Bags, bank, mail, gold, position and reminders are visible to the character's owner only, unless the owner shares them.",
+      },
+      {
+        title: "Notifications",
+        body: "If you turn notifications on, we store your browser's push address, the characters and events you chose and your language. Notifications travel encrypted through your browser's push service (Google, Apple, Mozilla or Microsoft).",
+      },
+      {
+        title: "How long",
+        body: "Logins, accepted quests, skill-ups and reminders: 90 days. Milestones (levels, gear, deaths, dungeons, loot, session summaries): as long as the character is tracked, up to 20,000 events per character. Sessions: 180 days. Login and pairing data in progress: 10 minutes.",
+      },
+      {
+        title: "Where",
+        body: "The site runs on Vercel and the database on Supabase, both in Ireland. Character data comes from the official Battle.net API. No advertising, no analytics, no tracking.",
+      },
+      {
+        title: "Your choices",
+        body: "Settings → Delete my account removes your account, its sessions and companions, and your characters' private data (bags, bank, mail, gold, position). For anything else, such as a copy of your data or a character someone tracks by name, open an issue on GitHub.",
+      },
+    ],
+    contact: "Contact: GitHub issues",
+  },
   map: {
     close: "Close",
     show: "Show on the map",
@@ -783,6 +825,48 @@ const fr: Messages = {
     skillUps: (n: number) => `${n} compétence${n > 1 ? "s" : ""} améliorée${n > 1 ? "s" : ""}`,
     deaths: (n: number) => `${n} mort${n > 1 ? "s" : ""}`,
     closeCalls: (n: number, lowest: number | null) => `${n} frayeur${n > 1 ? "s" : ""}${lowest != null ? ` (${lowest} %)` : ""}`,
+  },
+  privacy: {
+    title: "Confidentialité",
+    link: "Confidentialité",
+    updated: "Dernière mise à jour : 3 octobre 2026",
+    intro:
+      "WoWLocker est un projet personnel de salty-max, sans lien avec Blizzard Entertainment. Cette page dit ce qu'il conserve, pourquoi, combien de temps, et comment le supprimer.",
+    sections: [
+      {
+        title: "Sans compte",
+        body: "Votre casier (les personnages que vous suivez), votre langue et vos choix de notifications restent dans ce navigateur. Le serveur conserve les personnages eux-mêmes tels que Battle.net les montre publiquement (nom, royaume, niveau, classe, équipement, talents, guilde, statut Hardcore) et les met à jour tant que quelqu'un les suit.",
+      },
+      {
+        title: "Avec un compte Battle.net",
+        body: "Se connecter avec Battle.net nous donne votre numéro de compte Battle.net, votre BattleTag et la liste de vos personnages. On les conserve, avec votre casier et vos choix, pour qu'ils vous suivent sur tous vos appareils. Votre mot de passe Battle.net ne passe jamais par WoWLocker, et l'accès accordé par Blizzard sert une fois, pendant la connexion, puis est abandonné. Un cookie de session, le seul que WoWLocker dépose, vous garde connecté·e jusqu'à 180 jours.",
+      },
+      {
+        title: "L'addon et le compagnon",
+        body: "L'addon enregistre ce qui se passe en jeu (niveaux, équipement, quêtes, butin, donjons, morts et frayeurs, compétences, réputation, courrier, sacs et banque, or, /played, position) dans les fichiers de sauvegarde du jeu. L'application compagnon envoie ce fichier à wow-locker.app, uniquement pour les personnages du compte Battle.net auquel elle est liée. Le jeton d'envoi reste sur votre ordinateur ; on n'en garde qu'une empreinte.",
+      },
+      {
+        title: "Qui voit quoi",
+        body: "Quiconque a le lien d'un personnage voit son profil public : niveau, équipement, talents, chronologie et morts en Hardcore. Les sacs, la banque, le courrier, l'or, la position et les rappels ne sont visibles que par le propriétaire du personnage, sauf s'il les partage.",
+      },
+      {
+        title: "Notifications",
+        body: "Si vous activez les notifications, on conserve l'adresse push de votre navigateur, les personnages et événements choisis et votre langue. Les notifications passent, chiffrées, par le service push de votre navigateur (Google, Apple, Mozilla ou Microsoft).",
+      },
+      {
+        title: "Combien de temps",
+        body: "Connexions, quêtes acceptées, progrès de compétences et rappels : 90 jours. Les étapes marquantes (niveaux, équipement, morts, donjons, butin, résumés de session) : tant que le personnage est suivi, jusqu'à 20 000 événements par personnage. Sessions : 180 jours. Données de connexion et d'appairage en cours : 10 minutes.",
+      },
+      {
+        title: "Où",
+        body: "Le site tourne sur Vercel et la base de données sur Supabase, tous deux en Irlande. Les données des personnages viennent de l'API officielle Battle.net. Pas de publicité, pas de statistiques, pas de pistage.",
+      },
+      {
+        title: "Vos choix",
+        body: "Réglages → Supprimer mon compte supprime votre compte, ses sessions et compagnons, et les données privées de vos personnages (sacs, banque, courrier, or, position). Pour le reste, comme une copie de vos données ou un personnage que quelqu'un suit par son nom, ouvrez un ticket sur GitHub.",
+      },
+    ],
+    contact: "Contact : tickets GitHub",
   },
   map: {
     close: "Fermer",
