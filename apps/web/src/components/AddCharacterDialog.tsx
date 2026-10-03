@@ -2,6 +2,7 @@ import { REGIONS, type Realm, type Region } from "@wow-locker/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { api, ApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { addToRoster } from "@/lib/roster";
@@ -66,7 +67,9 @@ export function AddCharacterDialog({ onClose }: { onClose: () => void }) {
         ? t.add.down
         : null;
 
-  return (
+  // On <body>: above the top and bottom bars (the page content is isolated
+  // below them, see Layout).
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
       role="dialog"
@@ -163,6 +166,7 @@ export function AddCharacterDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

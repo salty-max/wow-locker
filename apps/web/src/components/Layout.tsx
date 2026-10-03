@@ -35,7 +35,7 @@ export function Layout() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-4xl flex-col">
-      <header className="pt-safe sticky top-0 z-30 border-b border-black bg-[linear-gradient(180deg,#1a1a20,#0c0c10)] shadow-[0_1px_0_#5c5c5c,0_4px_12px_rgb(0_0_0/0.6)]">
+      <header className="pt-safe bar-layer sticky top-0 z-30 border-b border-black bg-[linear-gradient(180deg,#1a1a20,#0c0c10)] shadow-[0_1px_0_#5c5c5c,0_4px_12px_rgb(0_0_0/0.6)]">
         <div className="flex h-14 items-center gap-2.5 px-4">
           <Link to="/" className="flex items-center gap-2.5" aria-label="wow-locker">
             <Logo size={30} />
@@ -58,12 +58,12 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 px-3 pt-9 pb-28 sm:px-4 sm:pt-10 sm:pb-10">
+      <main className="isolate flex-1 px-3 pt-9 pb-28 sm:px-4 sm:pt-10 sm:pb-10">
         <Outlet />
       </main>
 
       {/* Phones: navigation as the action bar — square bevelled slots. */}
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-black bg-[linear-gradient(180deg,#1c1c22,#09090c)] shadow-[0_-1px_0_#5c5c5c] sm:hidden">
+      <nav className="pb-safe bar-layer fixed inset-x-0 bottom-0 z-30 border-t border-black bg-[linear-gradient(180deg,#1c1c22,#09090c)] shadow-[0_-1px_0_#5c5c5c] sm:hidden">
         <div className="mx-auto flex max-w-md justify-center gap-6 px-4 py-2">
           {tabs.map((tab) => (
             <Link key={tab.to} to={tab.to} className="flex flex-col items-center gap-1">

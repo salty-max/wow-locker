@@ -286,6 +286,7 @@ const en = {
       `[Hardcore] ${n} the Level ${lvl} ${race} ${cls} has ${by ? `been slain by ${by}` : "fallen"}${where ? ` in ${where}` : ""}.`,
     closeCall: (n: string, pct: number, by: string | null, where: string | null) =>
       `[Hardcore] Close call! ${n} dropped to ${pct}% health${by ? ` against ${by}` : ""}${where ? ` in ${where}` : ""}.`,
+    questAccepted: (title: string) => `Quest accepted: ${title}`,
     questDone: (title: string) => `${title} completed.`,
     xpGained: (xp: string) => `Experience gained: ${xp}.`,
     received: "Received ",
@@ -610,6 +611,7 @@ const fr: Messages = {
       `[Hardcore] ${n}, ${race} ${cls} de niveau ${lvl}, ${by ? `a été tué·e par ${by}` : "est tombé·e"}${where ? ` (${where})` : ""}.`,
     closeCall: (n: string, pct: number, by: string | null, where: string | null) =>
       `[Hardcore] ${n} a frôlé la mort : ${pct} % de vie${by ? ` face à ${by}` : ""}${where ? ` (${where})` : ""}.`,
+    questAccepted: (title: string) => `Quête acceptée : ${title}`,
     questDone: (title: string) => `${title} terminée.`,
     xpGained: (xp: string) => `Expérience gagnée : ${xp}.`,
     received: "Reçu : ",

@@ -130,6 +130,10 @@ function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
       lines = [{ color: SYSTEM, text: msg.talentPoints(d.trees.map((x) => `${x.name} ${x.points}`).join(" / ")) }];
       break;
     case "quest":
+      if (d.action === "accept") {
+        lines = [{ color: SYSTEM, text: msg.questAccepted(d.title ?? `#${d.questId}`) }];
+        break;
+      }
       lines = [
         { color: SYSTEM, text: msg.questDone(d.title ?? `#${d.questId}`) },
         ...(d.xp ? [{ color: SYSTEM, text: msg.xpGained(d.xp.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB")) }] : []),

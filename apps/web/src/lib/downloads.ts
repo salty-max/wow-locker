@@ -4,7 +4,7 @@
  * `companion/scripts/build.sh`; bump the versions here when publishing.
  */
 export const RELEASES_URL = "https://github.com/salty-max/wow-locker/releases";
-export const ADDON_VERSION = "0.3.1";
+export const ADDON_VERSION = "0.3.2";
 export const COMPANION_VERSION = "0.1.0";
 
 export const download = (file: string) => `${RELEASES_URL}/latest/download/${file}`;

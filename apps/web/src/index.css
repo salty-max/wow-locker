@@ -137,6 +137,15 @@
   padding-top: env(safe-area-inset-top);
 }
 
+/* The top and bottom bars on their own compositing layer: during momentum
+   scrolling, iOS WebKit can otherwise paint transformed or stacked content
+   (frame titles, frames) over a sticky/fixed bar for a few frames. */
+.bar-layer {
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
 /* Item qualities. */
 .q[data-q="poor"] { color: var(--color-q-poor); }
 .q[data-q="common"] { color: #ffffff; }
