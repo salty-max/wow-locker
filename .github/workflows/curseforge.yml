@@ -33,7 +33,7 @@ jobs:
     steps:
       # The default branch (for the upload script, which older tags don't have);
       # the tag's own files are read with git show.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
