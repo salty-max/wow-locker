@@ -29,6 +29,15 @@ SpellName, SpellMisc, ManifestInterfaceData). Talent ids match the profile's
 is not generated and keeps the points-per-tree view. Icons:
 `render.worldofwarcraft.com/{flavour}-{region}/icons/56/{icon}.jpg`.
 
+## Paper-doll slot textures
+
+`apps/web/public/slots/*.png` are the game's empty-slot textures
+(Interface/PaperDoll/UI-PaperDoll-Slot-*, FileDataIDs 136510–136530): the render
+CDN only serves the icon library, so `apps/web/scripts/paperdoll-slots.py`
+downloads the BLPs from wago.tools and converts them with Pillow. Committed;
+re-run only if they ever change. Back uses the chest texture, the 2nd ring
+"rfinger", ranged "relic" for paladins/druids/shamans (as in FrameXML).
+
 ## Addon (`addon/WowLocker`)
 
 Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:

@@ -5,20 +5,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
-  Circle,
-  Crosshair,
-  Footprints,
-  Gem,
-  Hand,
-  HardHat,
-  Shield,
-  Shirt,
-  Sparkles,
-  Sword,
   Trash2,
-  Watch,
-  Wind,
-  type LucideIcon,
 } from "lucide-react";
 import { StatusBadges } from "@/components/Badges";
 import { CharacterRender } from "@/components/CharacterRender";
@@ -45,41 +32,52 @@ const route = getRouteApi("/character/$id");
 const LEFT = ["HEAD", "NECK", "SHOULDER", "BACK", "CHEST", "SHIRT", "TABARD", "WRIST"];
 const RIGHT = ["HANDS", "WAIST", "LEGS", "FEET", "FINGER_1", "FINGER_2", "TRINKET_1", "TRINKET_2"];
 const BOTTOM = ["MAIN_HAND", "OFF_HAND", "RANGED"];
-const SLOT_ICON: Record<string, LucideIcon> = {
-  HEAD: HardHat,
-  NECK: Gem,
-  SHOULDER: Shield,
-  BACK: Wind,
-  CHEST: Shirt,
-  SHIRT: Shirt,
-  TABARD: Shirt,
-  WRIST: Watch,
-  HANDS: Hand,
-  WAIST: Circle,
-  LEGS: Footprints,
-  FEET: Footprints,
-  FINGER_1: Circle,
-  FINGER_2: Circle,
-  TRINKET_1: Sparkles,
-  TRINKET_2: Sparkles,
-  MAIN_HAND: Sword,
-  OFF_HAND: Shield,
-  RANGED: Crosshair,
+/**
+ * The game's empty-slot textures (Interface/PaperDoll/UI-PaperDoll-Slot-*,
+ * converted by scripts/paperdoll-slots.py). As in the game's own interface,
+ * the back slot reuses the chest texture and the second ring has its own.
+ */
+const SLOT_TEXTURE: Record<string, string> = {
+  HEAD: "head",
+  NECK: "neck",
+  SHOULDER: "shoulder",
+  BACK: "chest",
+  CHEST: "chest",
+  SHIRT: "shirt",
+  TABARD: "tabard",
+  WRIST: "wrists",
+  HANDS: "hands",
+  WAIST: "waist",
+  LEGS: "legs",
+  FEET: "feet",
+  FINGER_1: "finger",
+  FINGER_2: "rfinger",
+  TRINKET_1: "trinket",
+  TRINKET_2: "trinket",
+  MAIN_HAND: "mainhand",
+  OFF_HAND: "secondaryhand",
+  RANGED: "ranged",
 };
+// Paladins, druids and shamans carry a relic (libram, idol, totem) there.
+const RELIC_CLASSES = new Set(["paladin", "druid", "shaman"]);
 
-function Slot({ slot, item }: { slot: string; item?: EquippedItem }) {
+function Slot({ slot, item, relic = false }: { slot: string; item?: EquippedItem; relic?: boolean }) {
   const t = useT();
   const label = t.slots[slot as keyof typeof t.slots] ?? slot;
   const tip = useTooltip(() =>
     item ? <ItemTooltip item={item} /> : <p className="text-ink-dim">{label}</p>,
   );
-  const Icon = SLOT_ICON[slot] ?? Circle;
+  const texture = slot === "RANGED" && relic ? "relic" : (SLOT_TEXTURE[slot] ?? "bag");
   return (
     <span
       {...tip.anchor}
       tabIndex={0}
       aria-label={item ? item.name : label}
-      className={cn("wow-slot outline-none focus-visible:ring-2 focus-visible:ring-[#ffd100]", item && "q qb")}
+      className={cn(
+        "outline-none focus-visible:ring-2 focus-visible:ring-[#ffd100]",
+        // An empty slot is the game's texture alone: it has its own bevelled frame.
+        item ? "wow-slot q qb" : "relative block size-[42px] shrink-0 rounded-[3px]",
+      )}
       data-q={item?.quality}
       style={item ? { boxShadow: "0 0 0 1px #000, 0 0 6px -1px currentColor" } : undefined}
     >
@@ -88,7 +86,7 @@ function Slot({ slot, item }: { slot: string; item?: EquippedItem }) {
       ) : item ? (
         <span className="block size-full bg-stone-3" />
       ) : (
-        <Icon className="absolute inset-0 m-auto size-5 text-white/15" />
+        <img src={`/slots/${texture}.png`} alt="" className="size-full" />
       )}
       {tip.node}
     </span>
@@ -114,7 +112,7 @@ function PaperDoll({ c }: { c: CharacterDetail }) {
         </div>
         <div className="mt-1 flex gap-1.5">
           {BOTTOM.map((s) => (
-            <Slot key={s} slot={s} item={bySlot.get(s)} />
+            <Slot key={s} slot={s} item={bySlot.get(s)} relic={RELIC_CLASSES.has(c.classKey ?? "")} />
           ))}
         </div>
       </div>
