@@ -127,6 +127,27 @@ function GetInventoryItemLink(unit, slot)
 end
 NUM_BAG_SLOTS, NUM_BANKBAGSLOTS = 4, 6
 
+-- pets (off until the second session)
+state.pet = nil
+local baseUnitName, baseUnitLevel, baseUnitGUID = UnitName, UnitLevel, UnitGUID
+function UnitName(u) if u == "pet" then return state.pet and state.pet.name end; return baseUnitName(u) end
+function UnitLevel(u) if u == "pet" then return state.pet and state.pet.level end; return baseUnitLevel(u) end
+function UnitGUID(u) if u == "pet" then return state.pet and "Pet-0-1234" end; return baseUnitGUID(u) end
+function UnitExists(u) return u ~= "pet" or state.pet ~= nil end
+function UnitCreatureFamily() return state.pet and state.pet.family end
+function HasPetUI() return state.pet ~= nil, state.pet ~= nil end
+function GetPetExperience() return 1200, 4800 end
+function GetPetHappiness() return 3, 125, 2 end
+function GetPetLoyalty() return "Loyalty Level 3 (Faithful)" end
+function GetPetTrainingPoints() return 120, 85 end
+function GetPetIcon() return 132203 end
+function HasPetSpells() return state.pet and 2 or 0 end
+BOOKTYPE_PET = "pet"
+function GetSpellBookItemName(i) return ({ "Bite", "Growl" })[i], ({ "Rank 3", "Rank 2" })[i] end
+function GetSpellBookItemInfo() return "SPELL" end
+function GetNumStableSlots() return 2 end
+function GetStablePetInfo(i) if i == 1 then return 132190, "Fang", 18, "Cat", "Loyalty Level 2" end end
+
 -- Load the way the game does: both files share the addon namespace.
 local printed = {}
 function print(...) printed[#printed + 1] = table.concat({ ... }, " ") end
@@ -345,7 +366,7 @@ do
   registered.frame.scripts.OnShow(registered.frame) -- open the panel: builds and refreshes widgets
   local boxes = 0
   for _, m in ipairs(made) do if m.kind == "CheckButton" then boxes = boxes + 1 end end
-  check(boxes == 2 + 10 + 4 + 3, "options panel: 2 chat, 10 record, 4 threshold, 3 loot quality checkboxes")
+  check(boxes == 2 + 11 + 4 + 3, "options panel: 2 chat, 11 record, 4 threshold, 3 loot quality checkboxes")
   SlashCmdList.WOWLOCKER("options")
   check(registered.opened, "/wowlocker options opens the panel")
 end
@@ -404,6 +425,38 @@ check(ofType(ev, "guild") == 1 and ev[#ev].type == "guild" and ev[#ev].from == "
   "guild name loading after login isn't a change; leaving it is")
 check(ofType(ev, "talent") == 1, "a level-up's unspent point isn't a talent change; spending it is")
 check(ofType(ev, "skill") == 1 and ev[1].type ~= "skill", "expanding a header isn't learning; Herbalism is")
+-- ── pets: tame one, it levels, the stable, it dies ──
+before = #me.events
+state.pet = { name = "Wolfy", family = "Wolf", level = 23 }
+fire("UNIT_PET", "player")
+local p = me.state.pet
+check(p and p.name == "Wolfy" and p.family == "Wolf" and p.xp == 1200 and p.xpMax == 4800 and p.happiness == 3
+  and p.loyalty:find("Faithful") and p.trainingPoints == 120 and p.icon == 132203,
+  "pet: name, family, XP, happiness, loyalty, training points, icon")
+check(#p.abilities == 2 and p.abilities[1] == "Bite (Rank 3)", "pet abilities with ranks")
+state.pet.level = 24; fire("UNIT_LEVEL", "pet")
+fire("PET_STABLE_SHOW")
+check(me.state.stable and #me.state.stable.pets == 1 and me.state.stable.pets[1].name == "Fang", "stable saved on a visit")
+combat = { 0, "UNIT_DIED", false, "", "", 0, 0, "Pet-0-1234", "Wolfy", 0, 0 }
+fire("COMBAT_LOG_EVENT_UNFILTERED")
+local ev = newEvents()
+check(ofType(ev, "pet_new") == 1 and ofType(ev, "pet_level") == 1 and ofType(ev, "pet_death") == 1,
+  "pet events: new, level, death")
+local pd; for _, e in ipairs(ev) do if e.type == "pet_death" then pd = e end end
+check(pd.mapId == 1436 and pd.x and pd.level == 24, "pet death with its place on the map")
+state.pet = nil; fire("UNIT_PET", "player")
+check(me.state.pet and me.state.pet.active == false and me.state.pet.name == "Wolfy", "a dismissed pet is kept, marked inactive")
+-- deaths carry the map; no position means no stale coordinates
+local deaths = {}
+for _, e in ipairs(me.events) do if e.type == "death" then deaths[#deaths + 1] = e end end
+check(deaths[1].mapId == 1436, "a death records its map id")
+local baseMapPos = C_Map.GetPlayerMapPosition
+C_Map.GetPlayerMapPosition = function() return nil end
+fire("ZONE_CHANGED_NEW_AREA")
+check(me.state.x == nil and me.state.y == nil, "no position from the game: no stale coordinates")
+C_Map.GetPlayerMapPosition = baseMapPos
+fire("ZONE_CHANGED_NEW_AREA")
+
 -- into the Deadmines, log out inside, come back 8 hours later (instance reset)
 before = #me.events
 tick(60); state.instance = { true, "party" }; fire("PLAYER_ENTERING_WORLD")

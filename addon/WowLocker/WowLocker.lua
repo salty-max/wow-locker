@@ -60,7 +60,7 @@ local DEFAULTS = {
   lootQuality = 2, -- 2 uncommon, 3 rare, 4 epic
   record = {
     gear = true, quests = true, loot = true, closeCalls = true, dungeons = true,
-    skills = true, reputation = true, mail = true, cooldowns = true, bags = true,
+    skills = true, reputation = true, mail = true, cooldowns = true, bags = true, pets = true,
   },
 }
 -- Event type → its "record" toggle. Levels, deaths, talents, guild and
@@ -69,6 +69,7 @@ local CATEGORY = {
   gear = "gear", quest = "quests", quest_accept = "quests", loot = "loot",
   close_call = "closeCalls", dungeon_enter = "dungeons", dungeon_leave = "dungeons",
   skill = "skills", reputation = "reputation",
+  pet_new = "pets", pet_level = "pets", pet_death = "pets",
 }
 
 local settings
@@ -101,6 +102,7 @@ local L = FR and {
   leftRun = "Sortie : %s après %s", deaths = ", %d mort(s)", calls = ", %d frôlement(s)",
   loot = "Butin : %s", received = "Reçu : %s", created = "Créé : %s",
   learned = "Appris : %s", skillUp = "%s : %d/%d", reputation = "%s auprès de %s",
+  petNew = "Nouveau familier : %s (%s)", petLevel = "%s atteint le niveau %d", petDeath = "%s (niveau %d) est mort",
   loaded = "%s · enregistre %s · %s pour le journal et les options",
 } or {
   login = "Logged in (level %d)", logout = "Logged out",
@@ -115,6 +117,7 @@ local L = FR and {
   leftRun = "Left %s after %s", deaths = ", %d death(s)", calls = ", %d close call(s)",
   loot = "Looted %s", received = "Received %s", created = "Created %s",
   learned = "Learned %s", skillUp = "%s %d/%d", reputation = "%s with %s",
+  petNew = "New pet: %s (%s)", petLevel = "%s reached level %d", petDeath = "%s (level %d) died",
   loaded = "%s · recording %s · %s for the event log and options",
 }
 ns.L, ns.FR = L, FR
@@ -210,6 +213,9 @@ function ns.formatEvent(e)
   if t == "reputation" then
     return color(FACTION, L.reputation:format(e.label or tostring(e.standing), e.faction or "?"))
   end
+  if t == "pet_new" then return color(SYSTEM, L.petNew:format(e.name or "?", e.family or "?")) end
+  if t == "pet_level" then return color(SYSTEM, L.petLevel:format(e.name or "?", e.level or 0)) end
+  if t == "pet_death" then return color(DEATH, L.petDeath:format(e.name or "?", e.level or 0)) end
   return color(MUTED, t or "?")
 end
 
@@ -273,6 +279,8 @@ local function location()
   s.subZone = GetSubZoneText()
   local mapId = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
   s.mapId = mapId
+  -- No position (e.g. inside an instance): no coordinates, rather than the last ones outside.
+  s.x, s.y = nil, nil
   if mapId then
     local pos = C_Map.GetPlayerMapPosition(mapId, "player")
     if pos then
@@ -547,6 +555,83 @@ local function bagsChanged()
   end)
 end
 
+-- ── pets (hunters, warlocks) ─────────────────────────────────────────────────
+
+local function petSpells()
+  local list = {}
+  local book = BOOKTYPE_PET or "pet"
+  local n = HasPetSpells and HasPetSpells() or 0
+  for i = 1, n do
+    local name, rank
+    if C_SpellBook and C_SpellBook.GetSpellBookItemName then
+      name, rank = C_SpellBook.GetSpellBookItemName(i, Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Pet or book)
+    else
+      name, rank = GetSpellBookItemName(i, book)
+    end
+    if name and not (GetSpellBookItemInfo and select(1, GetSpellBookItemInfo(i, book)) == "PETACTION") then
+      list[#list + 1] = rank and rank ~= "" and (name .. " (" .. rank .. ")") or name
+    end
+  end
+  return list
+end
+
+-- The active pet, kept after it's dismissed (active = false) so the site still
+-- shows the hunter's companion.
+local function readPet()
+  if not me or (settings and settings.record.pets == false) then return end
+  if not UnitExists("pet") then
+    ns.petGUID = nil
+    if me.state.pet then me.state.pet.active = false end
+    return
+  end
+  local _, isHunterPet = HasPetUI()
+  local name, level = UnitName("pet"), UnitLevel("pet")
+  local family = UnitCreatureFamily("pet")
+  local p = { name = name, family = family, level = level, active = true, hunter = isHunterPet and true or false, updatedAt = time() }
+  p.icon = GetPetIcon and GetPetIcon() or nil
+  if isHunterPet then
+    local xp, xpMax = GetPetExperience()
+    p.xp, p.xpMax = xp, xpMax
+    p.happiness = GetPetHappiness and GetPetHappiness() or nil -- 1 unhappy, 2 content, 3 happy
+    p.loyalty = GetPetLoyalty and GetPetLoyalty() or nil
+    if GetPetTrainingPoints then p.trainingPoints, p.trainingSpent = GetPetTrainingPoints() end
+  end
+  p.abilities = petSpells()
+  ns.petGUID = UnitGUID("pet")
+
+  -- Events: a pet never seen before, a level gained.
+  me.knownPets = me.knownPets or {}
+  local key = (name or "?") .. "|" .. (family or "?")
+  local before = me.knownPets[key]
+  if not before then
+    if next(me.knownPets) or isHunterPet then
+      record({ type = "pet_new", name = name, family = family, level = level, hunter = p.hunter })
+    end
+  elseif level and before < level then
+    record({ type = "pet_level", name = name, family = family, level = level })
+  end
+  me.knownPets[key] = level or before or 0
+  me.state.pet = p
+end
+
+function ns.petDied()
+  local p = me and me.state.pet
+  if not p then return end
+  location()
+  record({ type = "pet_death", name = p.name, family = p.family, level = p.level, zone = me.state.zone, mapId = me.state.mapId, x = me.state.x, y = me.state.y })
+end
+
+-- Stabled pets: readable while the stable master window is open.
+local function readStable()
+  if not me or (settings and settings.record.pets == false) or not GetNumStableSlots then return end
+  local list = {}
+  for i = 1, GetNumStableSlots() do
+    local icon, name, level, family, loyalty = GetStablePetInfo(i)
+    if name then list[#list + 1] = { slot = i, icon = icon, name = name, level = level, family = family, loyalty = loyalty } end
+  end
+  me.state.stable = { at = time(), pets = list }
+end
+
 -- ── profession cooldowns ─────────────────────────────────────────────────────
 
 -- GetSpellCooldown's start is on the GetTime() clock: convert to a real time.
@@ -732,6 +817,7 @@ end
 
 function handlers.COMBAT_LOG_EVENT_UNFILTERED()
   local _, sub, _, _, sourceName, _, _, destGUID, _, _, _, a12, a13 = CombatLogGetCurrentEventInfo()
+  if sub == "UNIT_DIED" and ns.petDied and destGUID == ns.petGUID then return ns.petDied() end
   if destGUID ~= playerGUID then return end
   if sub == "ENVIRONMENTAL_DAMAGE" then
     lastAttacker = { name = a12, environmental = true, t = time() } -- "Falling", "Drowning", "Lava"…
@@ -765,6 +851,9 @@ function handlers.UNIT_HEALTH(unit)
       spell = attacker and attacker.spell,
       zone = me.state.zone,
       subZone = me.state.subZone,
+      mapId = me.state.mapId,
+      x = me.state.x,
+      y = me.state.y,
       instance = me.state.run and me.state.run.name,
     })
     if me.state.run then me.state.run.closeCalls = me.state.run.closeCalls + 1 end
@@ -783,6 +872,7 @@ function handlers.PLAYER_DEAD()
     environmental = killer and killer.environmental,
     zone = me.state.zone,
     subZone = me.state.subZone,
+    mapId = me.state.mapId,
     x = me.state.x,
     y = me.state.y,
     instance = me.state.run and me.state.run.name,
@@ -877,7 +967,21 @@ function handlers.PLAYER_ENTERING_WORLD()
   checkInstance()
   readCooldowns()
   readBags()
+  readPet()
 end
+
+function handlers.UNIT_PET(unit)
+  if unit == "player" then C_Timer.After(0.5, readPet) end -- spells and happiness lag a moment
+end
+
+function handlers.UNIT_LEVEL(unit)
+  if unit == "pet" then readPet() end
+end
+
+handlers.UNIT_HAPPINESS = function() readPet() end
+handlers.PET_BAR_UPDATE = function() readPet() end
+handlers.PET_STABLE_SHOW = readStable
+handlers.PET_STABLE_UPDATE = readStable
 
 handlers.BAG_UPDATE = bagsChanged
 handlers.PLAYERBANKSLOTS_CHANGED = bagsChanged

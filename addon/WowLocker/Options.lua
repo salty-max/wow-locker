@@ -13,7 +13,7 @@ local L = ns.FR and {
   gear = "Changements d'équipement", quests = "Quêtes (acceptées et terminées)", loot = "Butin",
   closeCalls = "Frôlements de mort", dungeons = "Donjons", skills = "Métiers et compétences",
   reputation = "Réputations", mail = "Courrier (rappels d'expiration)", cooldowns = "Recharges d'artisanat",
-  bags = "Sacs et banque",
+  bags = "Sacs et banque", pets = "Familiers",
   threshold = "Frôlement de mort sous",
   lootFrom = "Butin à partir de",
   uncommon = "Inhabituel", rare = "Rare", epic = "Épique",
@@ -37,7 +37,7 @@ local L = ns.FR and {
   gear = "Gear changes", quests = "Quests (accepted and completed)", loot = "Loot",
   closeCalls = "Close calls", dungeons = "Dungeon runs", skills = "Professions and skills",
   reputation = "Reputation", mail = "Mail (expiry reminders)", cooldowns = "Crafting cooldowns",
-  bags = "Bags and bank",
+  bags = "Bags and bank", pets = "Pets",
   threshold = "Close call below",
   lootFrom = "Loot from",
   uncommon = "Uncommon", rare = "Rare", epic = "Epic",
@@ -260,7 +260,7 @@ local panel = CreateFrame("Frame")
 panel.name = "WoWLocker"
 panel:Hide()
 
-local RECORD_KEYS = { "gear", "quests", "loot", "closeCalls", "dungeons", "skills", "reputation", "mail", "cooldowns", "bags" }
+local RECORD_KEYS = { "gear", "quests", "loot", "closeCalls", "dungeons", "skills", "reputation", "mail", "cooldowns", "bags", "pets" }
 local widgets = {}
 
 local function refresh()
@@ -301,7 +301,7 @@ local function build()
     local cb = checkbox(panel, L[key], function() return s().record[key] ~= false end, function(v) s().record[key] = v end)
     if i == 1 then
       cb:SetPoint("TOPLEFT", rec, "BOTTOMLEFT", -4, -4)
-    elseif i == 6 then
+    elseif i == 7 then
       cb:SetPoint("TOPLEFT", col[1], "TOPLEFT", 260, 0)
     else
       cb:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 2)
@@ -310,7 +310,7 @@ local function build()
     widgets[#widgets + 1] = cb
   end
   local always = text(panel, "GameFontDisableSmall", L.always)
-  always:SetPoint("TOPLEFT", col[5], "BOTTOMLEFT", 4, -6)
+  always:SetPoint("TOPLEFT", col[6], "BOTTOMLEFT", 4, -6)
 
   -- Close call threshold
   local th = header(L.threshold, always, -16)
