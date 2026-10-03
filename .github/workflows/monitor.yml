@@ -1,0 +1,28 @@
+# Uptime check every 30 minutes: the site answers and the scheduler (Vercel
+# Cron, every 2 min) ran within the last 10. A failed run emails the repo
+# owner. Note: GitHub disables scheduled workflows after 60 days without
+# repository activity — re-enable it from the Actions tab if that happens.
+name: Monitor
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: wow-locker.app/api/status
+        run: |
+          for attempt in 1 2 3; do
+            body=$(curl -sS --max-time 20 -w '\n%{http_code}' https://wow-locker.app/api/status) || body=$'\n000'
+            code=${body##*$'\n'}
+            echo "attempt $attempt: HTTP $code ${body%$'\n'*}"
+            [ "$code" = 200 ] && exit 0
+            sleep 60
+          done
+          echo "::error::wow-locker.app is down or the scheduler has stalled (last answer: HTTP $code)"
+          exit 1

@@ -1,0 +1,22 @@
+# Weekly dependency updates, grouped (one pull request per ecosystem); CI
+# checks each one. Majors come separately: they need reading.
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    commit-message: { prefix: "build(deps)" }
+  - package-ecosystem: gomod
+    directory: /companion
+    schedule: { interval: weekly, day: monday }
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    commit-message: { prefix: "build(deps)" }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    commit-message: { prefix: "ci(deps)" }

@@ -1,0 +1,56 @@
+# Every push to main and every pull request (Dependabot's included): the same
+# checks as "done" means locally — typecheck, lint, tests, build — plus the
+# addon simulation and the companion's vet + tests.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+      - run: bun run build
+
+  addon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y -qq luajit
+      - run: luajit addon/test/sim.lua
+
+  companion:
+    # The macOS tray needs cgo against macOS frameworks: vet and test on a Mac,
+    # and vet the Windows build too (it cross-compiles without cgo).
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: companion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: companion/go.mod
+          cache-dependency-path: companion/go.sum
+      - run: go vet ./...
+      - run: GOOS=windows CGO_ENABLED=0 go vet ./...
+      - run: go test ./...

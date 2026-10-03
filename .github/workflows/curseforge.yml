@@ -1,7 +1,7 @@
-# Publishes the addon on CurseForge when a GitHub release is published (the
-# release is made by hand with companion/scripts/build.sh's files), but only
-# if the addon's version changed since the previous release: companion-only
-# releases don't upload the same addon again. Run it by hand to force one.
+# Publishes the addon on CurseForge after a release (called by release.yml;
+# also on a release published by hand), but only if the addon's version
+# changed since the previous release: companion-only releases don't upload
+# the same addon again. Run it by hand to force one.
 #
 # Needs: repository variable CURSEFORGE_PROJECT_ID, secret CURSEFORGE_TOKEN.
 name: CurseForge
@@ -13,6 +13,11 @@ on:
     inputs:
       tag:
         description: Release tag to upload (uploads even if the addon didn't change)
+        required: true
+  workflow_call:
+    inputs:
+      tag:
+        type: string
         required: true
 
 permissions:
