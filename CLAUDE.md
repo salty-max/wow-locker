@@ -46,6 +46,17 @@ from wago.tools and converts them with Pillow (cursors are palettized with a
 change. Back slot = chest texture, 2nd ring = "rfinger", ranged = "relic" for
 paladins/druids/shamans (as in FrameXML).
 
+## Zone maps and pet icons
+
+`apps/web/public/maps/<uiMapID>.webp` (65 zones and cities, Classic Era +
+Anniversary, 1002×668, ~8 MB, not precached: cached once opened) are built by
+`apps/web/scripts/maps.py` from the UiMap / UiMapXMapArt / UiMapArtTile DB2
+tables (wago.tools) and the 12 tiles per map; `src/data/maps.json` lists them.
+The addon's x/y are percentages of that map (`state.mapId`, and `mapId` on
+deaths, close calls, pet deaths). No dungeon maps (Era has none in game).
+`src/data/petIcons.json` (`scripts/pet-icons.py`): icon file id → icon name
+for pet families and warlock demons, since the addon only gets file ids.
+
 ## Addon (`addon/WowLocker`)
 
 Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:

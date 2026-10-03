@@ -1,5 +1,12 @@
 import type { AddonState, CharacterDetail } from "@wow-locker/shared";
-import type { ReactNode } from "react";
+import { MapPin } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { MapPopup } from "@/components/MapPopup";
+import { hasMap, type MapMarker } from "@/lib/maps";
+import petIcons from "@/data/petIcons.json";
+import { iconUrl } from "@/lib/talentData";
+import { fullDate } from "@/lib/time";
+import { XpBar } from "@/components/XpBar";
 import { Money } from "@/components/Money";
 import { StatBox } from "@/components/StatBox";
 import { When } from "@/components/When";
@@ -32,6 +39,7 @@ const coins = (copper: number) => ({
 export function AddonStatus({ c }: { c: CharacterDetail }) {
   const t = useT();
   const lang = useLang();
+  const [mapOpen, setMapOpen] = useState(false);
   const a = c.addon;
   if (!a) return null;
   const T = t.inGame;
@@ -49,10 +57,9 @@ export function AddonStatus({ c }: { c: CharacterDetail }) {
         {a.playedLevel != null && <span className="text-ink-faint"> · {T.thisLevel(played(a.playedLevel, lang))}</span>}
       </>,
     ]);
-  if (a.zone)
-    rows.push([
-      T.location,
-      <span className="text-right">
+  if (a.zone) {
+    const place = (
+      <>
         {a.subZone && a.subZone !== a.zone ? `${a.subZone}, ${a.zone}` : a.zone}
         {a.x != null && a.y != null && (
           <span className="text-ink-faint">
@@ -60,8 +67,20 @@ export function AddonStatus({ c }: { c: CharacterDetail }) {
             ({a.x.toFixed(0)}, {a.y.toFixed(0)})
           </span>
         )}
-      </span>,
+      </>
+    );
+    rows.push([
+      T.location,
+      hasMap(a.mapId) && a.x != null && a.y != null ? (
+        <button type="button" onClick={() => setMapOpen(true)} title={t.map.show} className="inline-flex items-center gap-1 text-right hover:text-[#ffd100]">
+          <MapPin className="size-3.5 shrink-0 text-[#ffd100]" />
+          <span>{place}</span>
+        </button>
+      ) : (
+        <span className="text-right">{place}</span>
+      ),
     ]);
+  }
   if (rest)
     rows.push([
       T.rest,
@@ -96,7 +115,117 @@ export function AddonStatus({ c }: { c: CharacterDetail }) {
   return (
     <div className="mt-3">
       <StatBox title={T.title} rows={rows} />
+      {mapOpen && hasMap(a.mapId) && (
+        <MapPopup mapId={a.mapId} title={a.zone ?? ""} markers={zoneMarkers(c, a.mapId, t, lang)} onClose={() => setMapOpen(false)} />
+      )}
     </div>
+  );
+}
+
+/** The character on its zone map, with its deaths and close calls there. */
+function zoneMarkers(c: CharacterDetail, mapId: number, t: ReturnType<typeof useT>, lang: "en" | "fr"): MapMarker[] {
+  const a = c.addon!;
+  const out: MapMarker[] = [];
+  for (const e of c.events) {
+    const d = e.data;
+    const placed = d.type === "death" || d.type === "closeCall" || (d.type === "pet" && d.action === "death");
+    if (!placed || d.mapId !== mapId || d.x == null || d.y == null) continue;
+    const date = fullDate(e.at, lang);
+    out.push(
+      d.type === "death"
+        ? { x: d.x, y: d.y, kind: "death", label: t.map.died(date) }
+        : d.type === "closeCall"
+          ? { x: d.x, y: d.y, kind: "closeCall", label: t.map.closeCall(d.pct, date) }
+          : { x: d.x, y: d.y, kind: "death", label: t.map.petDied(d.name, date) },
+    );
+  }
+  if (a.x != null && a.y != null) out.push({ x: a.x, y: a.y, kind: "player", label: t.map.you });
+  return out;
+}
+
+const PET_ICONS = petIcons as Record<string, string>;
+const petIcon = (c: CharacterDetail, icon: number | null) =>
+  icon != null && PET_ICONS[icon] ? iconUrl(c.flavour, c.region, PET_ICONS[icon]) : null;
+const HAPPINESS_COLOR = ["", "#ff4040", "#ffd100", "#1eff00"];
+
+/** The hunter's pet (or warlock's demon) and the stable, like the game's Pet tab. */
+export function PetFrame({ c }: { c: CharacterDetail }) {
+  const t = useT();
+  const P = t.pet;
+  const a = c.addon;
+  const pet = a?.pet;
+  const stable = a?.stable;
+  if (!pet && !stable?.pets.length) return null;
+  return (
+    <section className="wow-frame mt-10 px-3 pt-8 pb-4 sm:px-5">
+      <span className="wow-title">{P.title}</span>
+      {pet && (
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="relative block size-[52px] shrink-0 rounded-[4px] bg-[url(/slots/bag-empty.png)] bg-cover">
+              {petIcon(c, pet.icon) && <img src={petIcon(c, pet.icon)!} alt="" className="absolute inset-px size-[calc(100%-2px)] rounded-[3px]" />}
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-[#ffd100] [text-shadow:0_1px_1px_#000]">{pet.name}</p>
+              <p className="text-sm text-white">{P.level(pet.level, pet.family ?? "")}</p>
+              {pet.hunter && pet.happiness != null && P.happiness[pet.happiness] && (
+                <p className="text-xs" style={{ color: HAPPINESS_COLOR[pet.happiness] }}>
+                  {P.happiness[pet.happiness]}
+                </p>
+              )}
+              {!pet.active && pet.updatedAt && (
+                <p className="text-xs text-ink-faint">
+                  {P.inactive} <When iso={pet.updatedAt} />
+                </p>
+              )}
+            </div>
+          </div>
+          {pet.hunter && pet.xpMax != null && pet.xp != null && (
+            <div className="mt-3">
+              <XpBar xp={pet.xp} max={pet.xpMax} />
+            </div>
+          )}
+          {pet.hunter && (pet.loyalty || pet.trainingPoints != null) && (
+            <div className="mt-3">
+              <StatBox
+                title={P.status}
+                rows={[
+                  ...(pet.loyalty ? ([[P.loyalty, pet.loyalty]] as [string, ReactNode][]) : []),
+                  ...(pet.trainingPoints != null
+                    ? ([[P.trainingLabel, P.training(pet.trainingPoints - (pet.trainingSpent ?? 0), pet.trainingPoints)]] as [string, ReactNode][])
+                    : []),
+                ]}
+              />
+            </div>
+          )}
+          {pet.abilities.length > 0 && (
+            <div className="mt-3">
+              <p className="wow-header mb-1 text-xs">{P.abilities}</p>
+              <p className="text-sm text-ink">{pet.abilities.join(" · ")}</p>
+            </div>
+          )}
+        </div>
+      )}
+      {stable && stable.pets.length > 0 && (
+        <div className={pet ? "mt-5" : undefined}>
+          <p className="wow-header mb-1 text-xs">{P.stable}</p>
+          <p className="mb-2 text-xs text-ink-faint">
+            {P.lastVisit} <When iso={stable.at} />
+          </p>
+          <ul className="flex flex-col gap-1.5">
+            {stable.pets.map((s) => (
+              <li key={s.slot} className="flex items-center gap-2.5 text-sm">
+                <span className="relative block size-8 shrink-0 rounded-[4px] bg-[url(/slots/bag-empty.png)] bg-cover">
+                  {petIcon(c, s.icon) && <img src={petIcon(c, s.icon)!} alt="" className="absolute inset-px size-[calc(100%-2px)] rounded-[3px]" />}
+                </span>
+                <span className="text-[#ffd100]">{s.name}</span>
+                <span className="text-ink-dim">{P.level(s.level, s.family ?? "")}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 

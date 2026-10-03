@@ -1,7 +1,12 @@
 import type { CharacterDetail, CharacterEvent, EquippedItem, Quality } from "@wow-locker/shared";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { ItemTooltip } from "@/components/ItemTooltip";
+import { MapPin } from "lucide-react";
+import { useState } from "react";
+import { MapPopup } from "@/components/MapPopup";
+import { hasMap, type MapMarker } from "@/lib/maps";
 import { Money } from "@/components/Money";
+import { fullDate } from "@/lib/time";
 import { useLang, useT } from "@/lib/i18n";
 import { useTooltip } from "@/lib/useTooltip";
 
@@ -186,6 +191,15 @@ function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
     case "reputation":
       lines = [{ color: FACTION, text: msg.reputation(d.label ?? String(d.standing), d.faction) }];
       break;
+    case "pet":
+      lines = [
+        d.action === "death"
+          ? { color: DEATH, text: msg.petDied(d.name, d.level) }
+          : d.action === "new"
+            ? { color: SYSTEM, text: msg.petNew(d.name, d.family ?? "") }
+            : { color: SYSTEM, text: msg.petLevel(d.name, d.level) },
+      ];
+      break;
     case "reminder":
       lines = [
         {
@@ -201,14 +215,49 @@ function Line({ e, c }: { e: CharacterEvent; c: CharacterDetail }) {
       break;
   }
 
+  const pin = mapPinFor(e, t, lang);
   return (
     <>
       {lines.map((l, i) => (
         <p key={i} style={{ color: l.color }}>
           <span className="text-[#a0a0a0]">{stamp(e.at, lang)} </span>
           {l.text}
+          {i === 0 && pin && <MapButton {...pin} />}
         </p>
       ))}
+    </>
+  );
+}
+
+/** Deaths, close calls and pet deaths with a position: where it happened. */
+function mapPinFor(e: CharacterEvent, t: ReturnType<typeof useT>, lang: "en" | "fr"): { mapId: number; title: string; marker: MapMarker } | null {
+  const d = e.data;
+  const date = fullDate(e.at, lang);
+  if ((d.type === "death" || d.type === "closeCall" || (d.type === "pet" && d.action === "death")) && hasMap(d.mapId) && d.x != null && d.y != null) {
+    const kind = d.type === "closeCall" ? "closeCall" : "death";
+    const label =
+      d.type === "death" ? t.map.died(date) : d.type === "closeCall" ? t.map.closeCall(d.pct, date) : t.map.petDied(d.name, date);
+    const title = (d.type === "pet" ? d.zone : (d.instance ?? d.zone)) ?? "";
+    return { mapId: d.mapId, title, marker: { x: d.x, y: d.y, kind, label } };
+  }
+  return null;
+}
+
+function MapButton({ mapId, title, marker }: { mapId: number; title: string; marker: MapMarker }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={t.map.show}
+        title={t.map.show}
+        className="ml-1.5 inline-flex translate-y-0.5 text-[#ffd100] hover:text-white"
+      >
+        <MapPin className="size-3.5" />
+      </button>
+      {open && <MapPopup mapId={mapId} title={title} markers={[marker]} onClose={() => setOpen(false)} />}
     </>
   );
 }

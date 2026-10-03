@@ -73,6 +73,12 @@ export default defineConfig(() => ({
               expiration: { maxEntries: 200, maxAgeSeconds: 30 * 86400 },
             },
           },
+          {
+            // Zone maps (8 MB in all): not precached, kept once opened.
+            urlPattern: ({ url }) => url.pathname.startsWith("/maps/"),
+            handler: "CacheFirst",
+            options: { cacheName: "maps", expiration: { maxEntries: 30, maxAgeSeconds: 90 * 86400 } },
+          },
         ],
       },
       devOptions: { enabled: true, type: "module", suppressWarnings: true },

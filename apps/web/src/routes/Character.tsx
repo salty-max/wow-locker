@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { StatusBadges } from "@/components/Badges";
 import { CharacterRender } from "@/components/CharacterRender";
-import { AddonStatus, LevellingFrame, MailFrame, ReputationFrame, SkillsFrame } from "@/components/AddonPanels";
+import { AddonStatus, LevellingFrame, MailFrame, PetFrame, ReputationFrame, SkillsFrame } from "@/components/AddonPanels";
 import { BagsFrame } from "@/components/Bags";
 import { ChatLog } from "@/components/ChatLog";
 import { StatBox } from "@/components/StatBox";
@@ -284,6 +284,7 @@ export function Character() {
             <SkillsFrame a={c.addon} />
             <ReputationFrame a={c.addon} />
           </div>
+          <PetFrame c={c} />
           <BagsFrame c={c} />
           <MailFrame a={c.addon} />
           <LevellingFrame a={c.addon} />

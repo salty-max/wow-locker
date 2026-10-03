@@ -26,6 +26,9 @@ const state = (over: Partial<AddonState> = {}): AddonState => ({
   run: null,
   bags: [],
   bank: null,
+  mapId: null,
+  pet: null,
+  stable: null,
   ...over,
 });
 
