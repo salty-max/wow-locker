@@ -209,6 +209,7 @@ const en = {
   bags: {
     title: "Bags",
     used: (used: number, total: number) => `${used}/${total} slots used`,
+    stack: (n: number) => `Stack of ${n}`,
     bank: "Bank",
     lastVisit: "last visit",
     noBank: "The bank shows up after your next visit to a banker (the game only lets addons read it while it's open).",
@@ -579,6 +580,7 @@ const fr: Messages = {
   bags: {
     title: "Sacs",
     used: (used: number, total: number) => `${used}/${total} emplacements utilisés`,
+    stack: (n: number) => `Pile de ${n}`,
     bank: "Banque",
     lastVisit: "dernière visite",
     noBank: "La banque apparaîtra après votre prochaine visite à un banquier (le jeu ne laisse les addons la lire qu'ouverte).",

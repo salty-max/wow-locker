@@ -44,6 +44,16 @@ export function useTooltip(render: () => ReactNode) {
     if (open) place();
   }, [open, place]);
 
+  // Content that loads after opening (an item's details) changes the size:
+  // keep it on screen.
+  useEffect(() => {
+    const el = tipRef.current;
+    if (!open || !el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => place());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, place]);
+
   useEffect(() => {
     if (!open) return;
     const close = (e: Event) => {

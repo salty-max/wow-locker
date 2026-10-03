@@ -1,8 +1,9 @@
-import type { BagItem, CharacterDetail, Container } from "@wow-locker/shared";
+import type { BagItem, CharacterDetail, Container, Flavour, ItemMatch, Quality, Region } from "@wow-locker/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ItemTooltip } from "@/components/ItemTooltip";
 import { When } from "@/components/When";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -20,16 +21,43 @@ import { cn } from "@/lib/utils";
 const QUALITIES = ["poor", "common", "uncommon", "rare", "epic", "legendary", "artifact", "heirloom"];
 const qualityName = (q: number | null) => (q == null ? "common" : (QUALITIES[q] ?? "common"));
 
-function Slot({ item, icon }: { item: BagItem | undefined; icon: string | null | undefined }) {
+type Realm = { region: Region; flavour: Flavour };
+
+/**
+ * The game's tooltip for an item in bags or the bank. Its details come from
+ * Battle.net's item data, fetched (once, then cached) when it's first hovered.
+ */
+function BagItemTip({ itemId, name, quality, count, realm }: { itemId: number; name: string; quality: number | null; count: number; realm: Realm }) {
+  const t = useT();
+  const q = useQuery({
+    queryKey: ["tooltip", realm.region, realm.flavour, itemId],
+    queryFn: () => api.itemTooltip(realm.region, realm.flavour, itemId),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  return (
+    <div className="space-y-0.5">
+      <ItemTooltip
+        item={{
+          slot: "",
+          slotName: "",
+          itemId,
+          name,
+          quality: qualityName(quality) as Quality,
+          iconUrl: null,
+          enchantments: [],
+          tooltip: q.data ?? undefined,
+        }}
+      />
+      {q.isPending && <p className="text-xs text-ink-faint">…</p>}
+      {count > 1 && <p className="text-ink-dim">{t.bags.stack(count)}</p>}
+    </div>
+  );
+}
+
+function Slot({ item, icon, realm }: { item: BagItem | undefined; icon: string | null | undefined; realm: Realm }) {
   const tip = useTooltip(() =>
-    item ? (
-      <div className="space-y-0.5">
-        <p className="q text-[14px] font-semibold" data-q={qualityName(item.quality)}>
-          {item.name}
-        </p>
-        {item.count > 1 && <p className="text-ink-dim">×{item.count}</p>}
-      </div>
-    ) : null,
+    item ? <BagItemTip itemId={item.itemId} name={item.name} quality={item.quality} count={item.count} realm={realm} /> : null,
   );
   if (!item) return <span className="wow-slot !size-10" aria-hidden />;
   const q = qualityName(item.quality);
@@ -58,7 +86,7 @@ function Slot({ item, icon }: { item: BagItem | undefined; icon: string | null |
   );
 }
 
-function BagWindow({ box, icons }: { box: Container; icons: CharacterDetail["itemIcons"] }) {
+function BagWindow({ box, icons, realm }: { box: Container; icons: CharacterDetail["itemIcons"]; realm: Realm }) {
   const bySlot = new Map(box.items.map((i) => [i.slot, i]));
   return (
     <div className="rounded border border-[#3a3a3a] bg-black/40 p-2 shadow-[inset_0_1px_4px_rgb(0_0_0/0.9)]">
@@ -72,7 +100,7 @@ function BagWindow({ box, icons }: { box: Container; icons: CharacterDetail["ite
       <div className="grid w-max grid-cols-4 gap-1">
         {Array.from({ length: box.size }, (_, i) => {
           const item = bySlot.get(i + 1);
-          return <Slot key={i} item={item} icon={item ? icons[item.itemId] : undefined} />;
+          return <Slot key={i} item={item} icon={item ? icons[item.itemId] : undefined} realm={realm} />;
         })}
       </div>
     </div>
@@ -97,7 +125,7 @@ export function BagsFrame({ c }: { c: CharacterDetail }) {
           <p className="mb-2 text-xs text-ink-faint">{t.bags.used(used, total)}</p>
           <div className="flex flex-wrap gap-2">
             {a.bags.map((b) => (
-              <BagWindow key={b.bag} box={b} icons={c.itemIcons} />
+              <BagWindow key={b.bag} box={b} icons={c.itemIcons} realm={c} />
             ))}
           </div>
         </>
@@ -110,13 +138,26 @@ export function BagsFrame({ c }: { c: CharacterDetail }) {
           </p>
           <div className="flex flex-wrap gap-2">
             {a.bank.containers.map((b) => (
-              <BagWindow key={b.bag} box={b} icons={c.itemIcons} />
+              <BagWindow key={b.bag} box={b} icons={c.itemIcons} realm={c} />
             ))}
           </div>
         </div>
       )}
       {!a.bank && a.bags.length > 0 && <p className="mt-3 text-xs text-ink-faint">{t.bags.noBank}</p>}
     </section>
+  );
+}
+
+/** A search result's icon, with the item's tooltip (realm from its character). */
+function ResultIcon({ match, realm }: { match: ItemMatch; realm: Realm | undefined }) {
+  const tip = useTooltip(() =>
+    realm ? <BagItemTip itemId={match.itemId} name={match.name} quality={match.quality} count={1} realm={realm} /> : null,
+  );
+  return (
+    <span {...tip.anchor} tabIndex={0} className="wow-slot !size-8 shrink-0 overflow-hidden outline-none">
+      {match.icon && <img src={match.icon} alt="" loading="lazy" className="size-full" />}
+      {tip.node}
+    </span>
   );
 }
 
@@ -169,9 +210,7 @@ function ItemSearch({ current }: { current: number }) {
                 ).filter(([, n]) => n > 0);
                 return (
                   <li key={`${m.characterId}:${m.itemId}`} className="flex items-center gap-2.5 rounded bg-black/30 px-2 py-1">
-                    <span className="wow-slot !size-8 shrink-0 overflow-hidden">
-                      {m.icon && <img src={m.icon} alt="" loading="lazy" className="size-full" />}
-                    </span>
+                    <ResultIcon match={m} realm={who} />
                     <span className="min-w-0 flex-1">
                       <span className="q block truncate text-sm" data-q={qualityName(m.quality)}>
                         {m.name}

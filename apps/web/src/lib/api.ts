@@ -1,4 +1,4 @@
-import type { AccountImport, AddCharacterRequest, CharacterDetail, CharacterSummary, ItemMatch, Realm, Region } from "@wow-locker/shared";
+import type { AccountImport, AddCharacterRequest, CharacterDetail, CharacterSummary, Flavour, ItemMatch, ItemTooltip, Realm, Region } from "@wow-locker/shared";
 
 export class ApiError extends Error {
   constructor(
@@ -22,6 +22,8 @@ export const api = {
   realms: (region: Region) => req<Realm[]>(`/api/realms?region=${region}`),
   characters: (ids: number[]) => req<CharacterSummary[]>(`/api/characters?ids=${ids.join(",")}`),
   character: (id: number) => req<CharacterDetail>(`/api/characters/${id}`),
+  itemTooltip: (region: Region, flavour: Flavour, id: number) =>
+    req<{ tooltip: ItemTooltip | null }>(`/api/item-tooltip/${region}/${flavour}/${id}`).then((r) => r.tooltip),
   items: (ids: number[], q: string) => req<ItemMatch[]>(`/api/items?ids=${ids.join(",")}&q=${encodeURIComponent(q)}`),
   accountImport: (k: string) => req<AccountImport>(`/api/auth/import/${encodeURIComponent(k)}`),
   /** Full-page navigation: Blizzard's login page, then back to /import. */
