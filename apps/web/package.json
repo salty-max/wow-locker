@@ -16,10 +16,10 @@
     "@wow-locker/shared": "workspace:*",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/cinzel": "^5.2.8",
-    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.18",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.24.0",
+    "lucide-react": "^1.50.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "workbox-window": "^7.4.1"
