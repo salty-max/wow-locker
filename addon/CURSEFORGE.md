@@ -26,8 +26,9 @@ Without the companion the addon still works (`/wowlocker` shows the event log in
 
 ## In game
 
-- `/wowlocker`: the event log
-- `/wowlocker options`: what to record, chat confirmations, close-call threshold
+- `/wowlocker`: the event log, filtered by combat, quests, gear, progress, dungeons or sessions
+- `/wowlocker options`: what to record, a login message, chat confirmations, close-call threshold
+- In English, and in French on a French client
 
 The addon doesn't touch combat or the interface: it listens, and writes down.
 
