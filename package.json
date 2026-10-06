@@ -20,10 +20,7 @@
     "prepare": "husky",
     "db": "bash scripts/db.sh",
     "db:generate": "bun run --filter @wow-locker/api db:generate",
-    "db:migrate": "bun run --filter @wow-locker/api db:migrate",
-    "companion": "cd companion && go run .",
-    "companion:test": "cd companion && go vet ./... && go test ./...",
-    "companion:build": "bash companion/scripts/build.sh"
+    "db:migrate": "bun run --filter @wow-locker/api db:migrate"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --fix"

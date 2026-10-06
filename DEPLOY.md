@@ -64,24 +64,18 @@ On the Hobby plan, crons run at most once a day: remove `crons` from
 external service instead (e.g. cron-job.org, with the
 `Authorization: Bearer <CRON_SECRET>` header).
 
-## 5. Companion and addon
+## 5. Addon (and Ravenpost)
 
-Releases are built by GitHub Actions (`.github/workflows/release.yml`, on a
-`v*` tag pushed by `scripts/release.sh`), with the server set to
-`https://wow-locker.app`: change `WOWLOCKER_SERVER` there for another
-deployment. To build by hand on a Mac:
-
-```bash
-WOWLOCKER_SERVER=https://<project>.vercel.app bun run companion:build
-```
-
-`companion/dist/` then holds the macOS app, the Windows executables and the
-addon zip. CurseForge uploads need the repository variable
-`CURSEFORGE_PROJECT_ID` and secret `CURSEFORGE_TOKEN`.
+Addon releases are built by GitHub Actions (`.github/workflows/release.yml`, on
+a `v*` tag pushed by `scripts/release.sh`). CurseForge uploads need the
+repository variable `CURSEFORGE_PROJECT_ID` and secret `CURSEFORGE_TOKEN`.
+The companion app, Ravenpost, releases from salty-max/ravenpost with
+`https://wow-locker.app` built in (`WOWLOCKER_SERVER` in its build for another
+deployment).
 
 ## Limits to keep in mind
 
-- Function requests are capped at 4.5 MB; companion uploads are capped at 4 MB
+- Function requests are capped at 4.5 MB; Ravenpost uploads are capped at 4 MB
   (a SavedVariables file with 5,000 events is about 1 MB of JSON).
 - The Bun server (`bun run start`, the Dockerfile) still works for any host
   with a long-lived process: it runs the same tick in process.

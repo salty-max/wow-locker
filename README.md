@@ -15,13 +15,12 @@ Not affiliated with Blizzard Entertainment.
    and import your characters (or add any character by realm and name).
 2. For everything Battle.net doesn't show, install the
    **[WoWLocker addon](https://www.curseforge.com/projects/1724925)** and the
-   **companion app** (Windows / macOS) from
-   [wow-locker.app/addon](https://wow-locker.app/addon) or the
-   [latest release](https://github.com/salty-max/wow-locker/releases/latest).
+   companion app, **[Ravenpost](https://github.com/salty-max/ravenpost)**
+   (Windows / macOS), from [wow-locker.app/addon](https://wow-locker.app/addon).
 3. Install the app on your phone (Add to Home Screen) and turn notifications on
    in Settings.
 
-The companion isn't code-signed yet: Windows SmartScreen and macOS Gatekeeper
+Ravenpost isn't code-signed yet: Windows SmartScreen and macOS Gatekeeper
 warn the first time (setup steps on the addon page).
 
 ## What it shows
@@ -32,7 +31,7 @@ From the **Battle.net API**, for any character:
 - A timeline of what changed (level-ups, gear, respecs, guild, death), refreshed
   after each logout.
 
-With the **addon and companion** (your own characters):
+With the **addon and Ravenpost** (your own characters):
 - Every gear swap, level-up (with /played), talent point, quest, notable loot,
   skill and reputation milestone, dungeon run, pet, Hardcore close call and
   death (killer, place), timestamped, in a chat-frame timeline.
@@ -59,7 +58,7 @@ card on Discord and other chats. Details: [privacy](https://wow-locker.app/priva
 ```
  WoW client                    your computer                 wow-locker.app
 ┌──────────────┐  logout /   ┌──────────────────┐  HTTPS   ┌──────────────────┐
-│ WoWLocker    │  /reload →  │ companion (Go,   │ ───────→ │ API (Hono)       │ ← Battle.net API
+│ WoWLocker    │  /reload →  │ Ravenpost (Go,   │ ───────→ │ API (Hono)       │ ← Battle.net API
 │ addon (Lua)  │  saved file │ tray / menu bar) │  upload  │ Postgres         │ → Web Push
 └──────────────┘             └──────────────────┘  token   │ PWA (React)      │
                                                            └──────────────────┘
@@ -68,7 +67,7 @@ card on Discord and other chats. Details: [privacy](https://wow-locker.app/priva
 - **Addon** (`addon/WowLocker`): addons can't use the network, so it records
   into the game's SavedVariables, written on logout or `/reload`. No impact on
   combat or the interface. `luajit addon/test/sim.lua` simulates a session.
-- **Companion** (`companion/`): finds the game folders, watches each account's
+- **Ravenpost** ([its own repo](https://github.com/salty-max/ravenpost), shared with Hearthtale): finds the game folders, watches each account's
   `SavedVariables/WowLocker.lua`, uploads it seconds after the game writes it.
   Linking goes through a Battle.net login, which proves which characters are
   yours: the server only accepts uploads for those. The saved file is parsed as
@@ -86,7 +85,7 @@ card on Discord and other chats. Details: [privacy](https://wow-locker.app/priva
 
 Turborepo + Bun workspaces: `apps/api` (Hono, Drizzle, Postgres), `apps/web`
 (React 19, Vite, Tailwind v4, TanStack Router/Query, vite-plugin-pwa),
-`packages/shared` (the wire contract). Companion in Go (fyne.io/systray),
+`packages/shared` (the wire contract). Ravenpost (its own repo) in Go (fyne.io/systray),
 addon in Lua 5.1. Hosted on Vercel (functions + cron) and Supabase (Postgres).
 
 ## Develop
@@ -102,21 +101,16 @@ bun run dev            # api :3001 + web :5174
 
 Checks (also run by CI on every push and pull request):
 `bun run typecheck && bun run lint && bun run test && bun run build`,
-`luajit addon/test/sim.lua`, and in `companion/`: `go vet ./... && go test ./...`.
-
-Companion: `go run . --headless` runs it without a tray (settings at the
-printed URL); `WOWLOCKER_CONFIG_DIR` and `WOWLOCKER_NO_BROWSER=1` isolate a test
-run from your real config.
+`luajit addon/test/sim.lua`. Ravenpost has its own checks in its repo.
 
 ## Releases and operations
 
 - **Site**: every push to `main` deploys on Vercel (database migrations
   included). See [DEPLOY.md](DEPLOY.md).
-- **Addon and companion**: `scripts/release.sh [--addon X.Y.Z] [--companion
-  X.Y.Z] NOTES.md` bumps the versions, runs the checks, then tags and pushes.
-  GitHub Actions builds the companion (macOS universal app, Windows x64/arm64),
-  publishes the GitHub release, and uploads the addon to CurseForge when its
-  version changed.
+- **Addon**: `scripts/release.sh [--addon X.Y.Z] NOTES.md` bumps the
+  versions, runs the checks, then tags and pushes. GitHub Actions publishes the
+  GitHub release and uploads the addon to CurseForge when its version changed.
+  Ravenpost releases from its own repo.
 - **Monitoring**: an uptime check every 30 minutes (`/api/status`);
   Dependabot opens weekly update pull requests.
 

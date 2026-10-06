@@ -2,7 +2,7 @@
 --
 -- Addons have no network access. Everything goes into the WowLockerDB
 -- SavedVariables table, which the game writes to disk on logout, /reload or
--- disconnect; the WoWLocker companion app watches that file and uploads it.
+-- disconnect; Ravenpost, the companion app, watches that file and uploads it.
 --
 -- Data layout (format 1):
 --   WowLockerDB = {
@@ -1054,5 +1054,5 @@ SlashCmdList.WOWLOCKER = function(msg)
   msg = (msg or ""):lower()
   if (msg == "options" or msg == "config") and ns.openOptions then return ns.openOptions() end
   if ns.toggleLog then return ns.toggleLog() end
-  print(PREFIX .. ("%d events recorded for %s. Saved on logout or /reload, then uploaded by the companion."):format(#me.events, me.name))
+  print(PREFIX .. ("%d events recorded for %s. Saved on logout or /reload, then uploaded by Ravenpost."):format(#me.events, me.name))
 end

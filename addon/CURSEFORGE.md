@@ -16,13 +16,13 @@ For Classic Era, Hardcore, Season of Discovery and TBC Anniversary.
 
 ## How it works
 
-Addons can't use the network, so the addon only writes the game's saved variables, when you log out or `/reload`. The free **WoWLocker companion** app (Windows and macOS, open source) picks the file up and uploads it, only for the characters of the Battle.net account you link it with.
+Addons can't use the network, so the addon only writes the game's saved variables, when you log out or `/reload`. The free companion app, **Ravenpost**, (Windows and macOS, open source) picks the file up and uploads it, only for the characters of the Battle.net account you link it with.
 
 1. Install this addon.
-2. Install the companion from [wow-locker.app/addon](https://wow-locker.app/addon) and link it with your Battle.net account.
+2. Install Ravenpost from [wow-locker.app/addon](https://wow-locker.app/addon) and link it with your Battle.net account.
 3. Play. Log out or `/reload`, and your page on wow-locker.app updates seconds later.
 
-Without the companion the addon still works (`/wowlocker` shows the event log in game), but nothing reaches the site.
+Without Ravenpost the addon still works (`/wowlocker` shows the event log in game), but nothing reaches the site.
 
 ## In game
 

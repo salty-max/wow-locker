@@ -1,19 +1,23 @@
 /**
- * The addon + companion downloads: assets of the repo's latest GitHub release
- * (`releases/latest/download/<file>` always points at the newest one). Built by
- * `companion/scripts/build.sh`; bump the versions here when publishing.
+ * The downloads: the addon from this repo's latest GitHub release, Ravenpost
+ * (the companion app, its own repo since 0.2.0, shared with Hearthtale) from
+ * salty-max/ravenpost's. `releases/latest/download/<file>` always points at the
+ * newest one; bump the versions here when publishing.
  */
 export const RELEASES_URL = "https://github.com/salty-max/wow-locker/releases";
+export const RAVENPOST_RELEASES_URL = "https://github.com/salty-max/ravenpost/releases";
 export const ADDON_VERSION = "0.3.8";
-export const COMPANION_VERSION = "0.1.5";
+export const COMPANION_VERSION = "0.2.0";
 
-export const download = (file: string) => `${RELEASES_URL}/latest/download/${file}`;
+/** A file of the latest release: the addon's here, Ravenpost's there. */
+export const download = (file: string) =>
+  `${file === FILES.addon ? RELEASES_URL : RAVENPOST_RELEASES_URL}/latest/download/${file}`;
 
 export const FILES = {
   addon: "WowLocker-addon.zip",
-  macos: "wow-locker-companion-macos.zip",
-  windows: "wow-locker-companion-windows-x64.exe",
-  windowsArm: "wow-locker-companion-windows-arm64.exe",
+  macos: "ravenpost-macos.zip",
+  windows: "ravenpost-windows-x64.exe",
+  windowsArm: "ravenpost-windows-arm64.exe",
 } as const;
 
 export type Platform = "macos" | "windows" | "other";

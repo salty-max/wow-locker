@@ -14,7 +14,7 @@ const en = {
   addon: {
     title: "Get started",
     intro:
-      "The Battle.net API only sees a character as it was at its last logout. The WoWLocker addon records what happens while you play, and the WoWLocker companion app uploads it here a few seconds after you log out or /reload.",
+      "The Battle.net API only sees a character as it was at its last logout. The WoWLocker addon records what happens while you play, and Ravenpost, its companion app, uploads it here a few seconds after you log out or /reload.",
     features: [
       "Every gear swap, level-up and talent point, timestamped",
       "Hardcore deaths and close calls: killer, zone, coordinates",
@@ -27,11 +27,11 @@ const en = {
     downloads: "Downloads",
     onComputer: "Install these on the computer you play on.",
     kindAddon: "Addon",
-    kindCompanion: "Companion",
+    kindCompanion: "Ravenpost",
     yourSystem: "Your system",
     addonDetail: "Classic Era, Hardcore, Season of Discovery and TBC Anniversary.",
     windowsDetail: "Windows 10 or 11. Lives in the system tray.",
-    windowsArm: "Companion for Windows on ARM",
+    windowsArm: "Ravenpost for Windows on ARM",
     macDetail: "macOS 11 or later, Apple silicon and Intel. Lives in the menu bar.",
     downloadZip: "Download .zip",
     downloadExe: "Download .exe",
@@ -47,7 +47,7 @@ const en = {
         ],
       },
       {
-        title: "Install the companion",
+        title: "Install Ravenpost",
         body: [
           "Windows: run the .exe. It isn't signed yet, so SmartScreen may warn you: More info → Run anyway. Its icon appears in the tray (the ^ arrow next to the clock).",
           "macOS: unzip, move WoWLocker to Applications, then right-click it → Open the first time (it isn't notarized yet). Its icon appears in the menu bar.",
@@ -56,14 +56,14 @@ const en = {
       {
         title: "Link it with Battle.net",
         body: [
-          "The companion opens its settings page: click Link with Battle.net and log in on wow-locker.app. The login only proves which characters are yours: the companion can upload data for those, and nothing else.",
-          "It finds your World of Warcraft folder by itself; if not, add it in the companion's settings, where you can also choose accounts and characters and launch it at login.",
+          "Ravenpost opens its settings page: click Link WoWLocker and log in with Battle.net on wow-locker.app. The login only proves which characters are yours: Ravenpost can upload data for those, and nothing else.",
+          "It finds your World of Warcraft folder by itself; if not, add it in Ravenpost's settings, where you can also choose accounts and characters and launch it at login.",
         ],
       },
       {
         title: "Play",
         body: [
-          "The game saves the addon's data when you log out or type `/reload`; the companion uploads it seconds later. Type `/wowlocker` in game to see what has been recorded.",
+          "The game saves the addon's data when you log out or type `/reload`; Ravenpost uploads it seconds later. Type `/wowlocker` in game to see what has been recorded.",
           "Characters that aren't in your locker yet are added on their first upload.",
         ],
       },
@@ -80,11 +80,11 @@ const en = {
     questions: [
       {
         q: "Is it allowed?",
-        a: "The addon only reads what the game shows you through the standard addon API and writes it to its saved variables, like any other addon. It automates nothing. The companion only reads that one file.",
+        a: "The addon only reads what the game shows you through the standard addon API and writes it to its saved variables, like any other addon. It automates nothing. Ravenpost only reads that one file (and Hearthtale's, if you link it to hearthtale.app too).",
       },
       {
         q: "What gets sent, and where?",
-        a: "Only the WoWLocker data (the events and state listed above), only to wow-locker.app, only for characters on your Battle.net account. Your Battle.net password never goes through WoWLocker, and the companion keeps an upload token, nothing else.",
+        a: "Only the WoWLocker data (the events and state listed above), only to wow-locker.app, only for characters on your Battle.net account. Your Battle.net password never goes through WoWLocker, and Ravenpost keeps an upload token, nothing else.",
       },
       {
         q: "Does the game need to be running for notifications?",
@@ -92,11 +92,11 @@ const en = {
       },
       {
         q: "Several accounts or computers?",
-        a: "Link the companion on each computer. In its settings you can pick which WoW accounts and characters it uploads.",
+        a: "Link Ravenpost on each computer. In its settings you can pick which WoW accounts and characters it uploads.",
       },
       {
         q: "Something isn't syncing",
-        a: "Open the companion's settings from its icon: each character shows its last upload, and errors are listed there. The game only writes the file on logout or `/reload`.",
+        a: "Open Ravenpost's settings from its icon: each character shows its last upload, and errors are listed there. The game only writes the file on logout or `/reload`.",
       },
     ],
   },
@@ -137,14 +137,14 @@ const en = {
     sharedHint: "Anyone with the link sees bags, bank, mail, gold and position. Click to make them private again.",
   },
   pair: {
-    title: "Link the companion",
-    intro: "The WoWLocker companion app wants to upload your addon data. Log in with Battle.net so it can only send data for your own characters.",
-    checkCode: "Check this code matches the one shown in the companion.",
+    title: "Link Ravenpost",
+    intro: "Ravenpost, the companion app, wants to upload your addon data. Log in with Battle.net so it can only send data for your own characters.",
+    checkCode: "Check this code matches the one shown in Ravenpost.",
     privacy: "WoWLocker keeps your BattleTag and which characters are yours, never your Battle.net login.",
-    done: (who: string) => `Companion linked to ${who}.`,
-    backToCompanion: "You can close this tab: the companion will start uploading after your next logout or /reload.",
+    done: (who: string) => `Ravenpost linked to ${who}.`,
+    backToCompanion: "You can close this tab: Ravenpost will start uploading after your next logout or /reload.",
     alsoImport: "Also add my characters to the locker",
-    expired: "This pairing code has expired. Start again from the companion app.",
+    expired: "This pairing code has expired. Start again from Ravenpost.",
   },
   bnet: {
     login: "Log in with Battle.net",
@@ -318,8 +318,8 @@ const en = {
         body: "Logging in with Battle.net gives us your Battle.net account number, your BattleTag and the list of your characters. We keep those, your locker and your choices, so they follow you on every device. Your Battle.net password never reaches WoWLocker, and the access Blizzard grants is used once, during the login, then dropped. A session cookie, the only cookie WoWLocker sets, keeps you logged in for up to 180 days.",
       },
       {
-        title: "The addon and the companion",
-        body: "The addon records what happens in game (levels, gear, quests, loot, dungeons, deaths and close calls, skills, reputation, mail, bags and bank, gold, /played, position) into the game's own saved files. The companion app sends that file to wow-locker.app, only for the characters of the Battle.net account it was linked with. The upload token stays on your computer; we only keep a fingerprint of it.",
+        title: "The addon and Ravenpost",
+        body: "The addon records what happens in game (levels, gear, quests, loot, dungeons, deaths and close calls, skills, reputation, mail, bags and bank, gold, /played, position) into the game's own saved files. Ravenpost, the companion app, sends that file to wow-locker.app, only for the characters of the Battle.net account it was linked with. The upload token stays on your computer; we only keep a fingerprint of it.",
       },
       {
         title: "Who sees what",
@@ -551,7 +551,7 @@ const fr: Messages = {
   addon: {
     title: "Bien démarrer",
     intro:
-      "L'API Battle.net ne voit un personnage que tel qu'il était à sa dernière déconnexion. L'addon WoWLocker enregistre ce qui se passe pendant que vous jouez, et l'application compagnon WoWLocker l'envoie ici quelques secondes après une déconnexion ou un /reload.",
+      "L'API Battle.net ne voit un personnage que tel qu'il était à sa dernière déconnexion. L'addon WoWLocker enregistre ce qui se passe pendant que vous jouez, et Ravenpost, son application compagnon, l'envoie ici quelques secondes après une déconnexion ou un /reload.",
     features: [
       "Chaque changement d'équipement, niveau et point de talent, horodaté",
       "Morts et frôlements de mort en Hardcore : tueur, zone, coordonnées",
@@ -564,11 +564,11 @@ const fr: Messages = {
     downloads: "Téléchargements",
     onComputer: "À installer sur l'ordinateur où vous jouez.",
     kindAddon: "Addon",
-    kindCompanion: "Compagnon",
+    kindCompanion: "Ravenpost",
     yourSystem: "Votre système",
     addonDetail: "Classic Era, Hardcore, Saison de la Découverte et TBC Anniversary.",
     windowsDetail: "Windows 10 ou 11. Se loge dans la zone de notification.",
-    windowsArm: "Compagnon pour Windows sur ARM",
+    windowsArm: "Ravenpost pour Windows sur ARM",
     macDetail: "macOS 11 ou plus récent, puces Apple et Intel. Se loge dans la barre des menus.",
     downloadZip: "Télécharger le .zip",
     downloadExe: "Télécharger le .exe",
@@ -584,7 +584,7 @@ const fr: Messages = {
         ],
       },
       {
-        title: "Installer le compagnon",
+        title: "Installer Ravenpost",
         body: [
           "Windows : lancez le .exe. Il n'est pas encore signé, SmartScreen peut avertir : Informations complémentaires → Exécuter quand même. Son icône apparaît dans la zone de notification (la flèche ^ près de l'horloge).",
           "macOS : décompressez, placez WoWLocker dans Applications, puis clic droit → Ouvrir la première fois (il n'est pas encore notarisé). Son icône apparaît dans la barre des menus.",
@@ -593,14 +593,14 @@ const fr: Messages = {
       {
         title: "Le lier à Battle.net",
         body: [
-          "Le compagnon ouvre sa page de réglages : cliquez sur Lier avec Battle.net et connectez-vous sur wow-locker.app. La connexion prouve seulement quels personnages sont les vôtres : le compagnon peut envoyer leurs données, rien d'autre.",
+          "Ravenpost ouvre sa page de réglages : cliquez sur Lier WoWLocker et connectez-vous avec Battle.net sur wow-locker.app. La connexion prouve seulement quels personnages sont les vôtres : Ravenpost peut envoyer leurs données, rien d'autre.",
           "Il trouve seul votre dossier World of Warcraft ; sinon, ajoutez-le dans ses réglages, où vous choisissez aussi les comptes et personnages et le lancement à l'ouverture de session.",
         ],
       },
       {
         title: "Jouer",
         body: [
-          "Le jeu enregistre les données de l'addon à la déconnexion ou avec `/reload` ; le compagnon les envoie quelques secondes après. Tapez `/wowlocker` en jeu pour voir ce qui a été enregistré.",
+          "Le jeu enregistre les données de l'addon à la déconnexion ou avec `/reload` ; Ravenpost les envoie quelques secondes après. Tapez `/wowlocker` en jeu pour voir ce qui a été enregistré.",
           "Les personnages pas encore dans votre casier y sont ajoutés au premier envoi.",
         ],
       },
@@ -617,11 +617,11 @@ const fr: Messages = {
     questions: [
       {
         q: "Est-ce autorisé ?",
-        a: "L'addon lit seulement ce que le jeu vous montre via l'API standard des addons et l'écrit dans ses variables sauvegardées, comme n'importe quel addon. Il n'automatise rien. Le compagnon ne lit que ce fichier.",
+        a: "L'addon lit seulement ce que le jeu vous montre via l'API standard des addons et l'écrit dans ses variables sauvegardées, comme n'importe quel addon. Il n'automatise rien. Ravenpost ne lit que ce fichier (et ceux de Hearthtale, si vous le liez aussi à hearthtale.app).",
       },
       {
         q: "Qu'est-ce qui est envoyé, et où ?",
-        a: "Uniquement les données WoWLocker (les événements et l'état listés plus haut), uniquement vers wow-locker.app, uniquement pour les personnages de votre compte Battle.net. Votre mot de passe Battle.net ne passe jamais par WoWLocker, et le compagnon ne garde qu'un jeton d'envoi.",
+        a: "Uniquement les données WoWLocker (les événements et l'état listés plus haut), uniquement vers wow-locker.app, uniquement pour les personnages de votre compte Battle.net. Votre mot de passe Battle.net ne passe jamais par WoWLocker, et Ravenpost ne garde qu'un jeton d'envoi.",
       },
       {
         q: "Le jeu doit-il tourner pour les notifications ?",
@@ -629,11 +629,11 @@ const fr: Messages = {
       },
       {
         q: "Plusieurs comptes ou ordinateurs ?",
-        a: "Liez le compagnon sur chaque ordinateur. Dans ses réglages, choisissez quels comptes WoW et personnages il envoie.",
+        a: "Liez Ravenpost sur chaque ordinateur. Dans ses réglages, choisissez quels comptes WoW et personnages il envoie.",
       },
       {
         q: "Quelque chose ne se synchronise pas",
-        a: "Ouvrez les réglages du compagnon depuis son icône : chaque personnage y montre son dernier envoi, et les erreurs y sont listées. Le jeu n'écrit le fichier qu'à la déconnexion ou avec `/reload`.",
+        a: "Ouvrez les réglages de Ravenpost depuis son icône : chaque personnage y montre son dernier envoi, et les erreurs y sont listées. Le jeu n'écrit le fichier qu'à la déconnexion ou avec `/reload`.",
       },
     ],
   },
@@ -674,14 +674,14 @@ const fr: Messages = {
     sharedHint: "Quiconque a le lien voit sacs, banque, courrier, or et position. Cliquez pour les rendre de nouveau privés.",
   },
   pair: {
-    title: "Lier le compagnon",
-    intro: "L'application compagnon WoWLocker veut envoyer les données de votre addon. Connectez-vous avec Battle.net pour qu'elle ne puisse envoyer que vos propres personnages.",
-    checkCode: "Vérifiez que ce code est celui affiché dans le compagnon.",
+    title: "Lier Ravenpost",
+    intro: "Ravenpost, l'application compagnon, veut envoyer les données de votre addon. Connectez-vous avec Battle.net pour qu'elle ne puisse envoyer que vos propres personnages.",
+    checkCode: "Vérifiez que ce code est celui affiché dans Ravenpost.",
     privacy: "WoWLocker garde votre BattleTag et la liste de vos personnages, jamais votre connexion Battle.net.",
-    done: (who: string) => `Compagnon lié à ${who}.`,
-    backToCompanion: "Vous pouvez fermer cet onglet : le compagnon enverra les données après votre prochaine déconnexion ou /reload.",
+    done: (who: string) => `Ravenpost lié à ${who}.`,
+    backToCompanion: "Vous pouvez fermer cet onglet : Ravenpost enverra les données après votre prochaine déconnexion ou /reload.",
     alsoImport: "Ajouter aussi mes personnages au casier",
-    expired: "Ce code d'appairage a expiré. Recommencez depuis l'application compagnon.",
+    expired: "Ce code d'appairage a expiré. Recommencez depuis Ravenpost.",
   },
   bnet: {
     login: "Se connecter avec Battle.net",
@@ -856,8 +856,8 @@ const fr: Messages = {
         body: "Se connecter avec Battle.net nous donne votre numéro de compte Battle.net, votre BattleTag et la liste de vos personnages. On les conserve, avec votre casier et vos choix, pour qu'ils vous suivent sur tous vos appareils. Votre mot de passe Battle.net ne passe jamais par WoWLocker, et l'accès accordé par Blizzard sert une fois, pendant la connexion, puis est abandonné. Un cookie de session, le seul que WoWLocker dépose, vous garde connecté·e jusqu'à 180 jours.",
       },
       {
-        title: "L'addon et le compagnon",
-        body: "L'addon enregistre ce qui se passe en jeu (niveaux, équipement, quêtes, butin, donjons, morts et frayeurs, compétences, réputation, courrier, sacs et banque, or, /played, position) dans les fichiers de sauvegarde du jeu. L'application compagnon envoie ce fichier à wow-locker.app, uniquement pour les personnages du compte Battle.net auquel elle est liée. Le jeton d'envoi reste sur votre ordinateur ; on n'en garde qu'une empreinte.",
+        title: "L'addon et Ravenpost",
+        body: "L'addon enregistre ce qui se passe en jeu (niveaux, équipement, quêtes, butin, donjons, morts et frayeurs, compétences, réputation, courrier, sacs et banque, or, /played, position) dans les fichiers de sauvegarde du jeu. Ravenpost, l'application compagnon, envoie ce fichier à wow-locker.app, uniquement pour les personnages du compte Battle.net auquel elle est liée. Le jeton d'envoi reste sur votre ordinateur ; on n'en garde qu'une empreinte.",
       },
       {
         title: "Qui voit quoi",
