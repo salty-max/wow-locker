@@ -16,7 +16,7 @@ For Classic Era, Hardcore, Season of Discovery and TBC Anniversary.
 
 ## How it works
 
-Addons can't use the network, so the addon only writes the game's saved variables, when you log out or `/reload`. The free companion app, **Ravenpost**, (Windows and macOS, open source) picks the file up and uploads it, only for the characters of the Battle.net account you link it with.
+Addons can't use the network, so the addon only writes the game's saved variables, when you log out or `/reload`. The free companion app, **[Ravenpost](https://github.com/salty-max/ravenpost)** (Windows and macOS, open source), picks the file up and uploads it, only for the characters of the Battle.net account you link it with. The same app carries [Hearthtale](https://hearthtale.app)'s journals too, if you use it.
 
 1. Install this addon.
 2. Install Ravenpost from [wow-locker.app/addon](https://wow-locker.app/addon) and link it with your Battle.net account.
