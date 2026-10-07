@@ -26,4 +26,4 @@ export DATABASE_URL
 # One transaction (-1), declared read only first: Supabase's transaction pooler
 # ignores connection options, but not this.
 docker run --rm -i -e DATABASE_URL postgres:16-alpine \
-  psql "$DATABASE_URL" "${FORMAT[@]}" -v ON_ERROR_STOP=1 -1 -c "set transaction $MODE" -c "$1" 2>&1 | grep -v -e "postgres://" -e "postgresql://" || true
+  psql "$DATABASE_URL" ${FORMAT[@]+"${FORMAT[@]}"} -v ON_ERROR_STOP=1 -1 -c "set transaction $MODE" -c "$1" 2>&1 | grep -v -e "postgres://" -e "postgresql://" || true
