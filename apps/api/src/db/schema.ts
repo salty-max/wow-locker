@@ -120,6 +120,8 @@ export const companionLinks = pgTable("companion_links", {
   ownedIds: integer("owned_ids").array().notNull(),
   /** Enough to start tracking an owned character on its first upload. */
   owned: jsonb("owned").$type<{ id: number; flavour: Flavour; realmSlug: string; name: string }[]>().notNull(),
+  /** The flavours Battle.net didn't answer for at pairing: their characters may be missing from `owned`. Null: before it was kept. */
+  unavailable: jsonb("unavailable").$type<Flavour[]>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastUploadAt: timestamp("last_upload_at", { withTimezone: true }),
   /** The account that paired it: its uploads join that account's roster. */

@@ -115,6 +115,7 @@ export async function finishLogin(
       region: pending.region,
       battletag: battletag ?? null,
       owned: found.map((c) => ({ id: c.id, flavour: c.flavour, realmSlug: c.realmSlug, name: c.name })),
+      unavailable,
       accountId: acc?.id ?? null,
     });
     if (!paired) pairCode = undefined;

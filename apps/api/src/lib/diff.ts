@@ -84,3 +84,21 @@ export function availabilityStep(
   }
   return { next: { status: "not_found", missingReported: prev.missingReported }, event: null };
 }
+
+/**
+ * A character the account no longer has (deleted): Battle.net's list at
+ * pairing left it out though the addon had already seen it, every flavour
+ * having answered; or, tracked since, Battle.net has lost it (reported
+ * missing). The companion then leaves it out of its list. Played again, it
+ * was never gone: seen after the list, it is only not linked ("unknown").
+ */
+export function isGone(
+  link: { createdAt: Date; unavailable: readonly string[] | null },
+  owned: boolean,
+  lastSeen: string | null,
+  missingReported: boolean,
+): boolean {
+  if (owned) return missingReported;
+  if (link.unavailable && link.unavailable.length > 0) return false; // a flavour unheard: can't tell
+  return lastSeen != null && new Date(lastSeen) < link.createdAt;
+}

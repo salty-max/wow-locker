@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { EquippedItem } from "@wow-locker/shared";
-import { availabilityStep, diffSnapshots, type Snapshot } from "./diff";
+import { availabilityStep, diffSnapshots, isGone, type Snapshot } from "./diff";
 
 const item = (slot: string, itemId: number, name: string): EquippedItem => ({
   slot,
@@ -82,5 +82,28 @@ describe("availabilityStep", () => {
 
   it("ignores errors", () => {
     expect(availabilityStep(ok, "error")).toEqual({ next: ok, event: null });
+  });
+});
+
+describe("isGone", () => {
+  const paired = { createdAt: new Date("2026-10-06T12:00:00Z"), unavailable: [] as string[] };
+  it("a character the pairing's list left out, last seen before it: deleted", () => {
+    expect(isGone(paired, false, "2026-09-01T10:00:00.000Z", false)).toBe(true);
+  });
+  it("one seen since the pairing (new, or played again): only not linked", () => {
+    expect(isGone(paired, false, "2026-10-07T10:00:00.000Z", false)).toBe(false);
+  });
+  it("a flavour Battle.net didn't answer at pairing: can't tell", () => {
+    expect(isGone({ ...paired, unavailable: ["classicann"] }, false, "2026-09-01T10:00:00.000Z", false)).toBe(false);
+  });
+  it("a link from before the flavours were kept: the list taken as complete", () => {
+    expect(isGone({ ...paired, unavailable: null }, false, "2026-09-01T10:00:00.000Z", false)).toBe(true);
+  });
+  it("never seen by the addon: can't tell", () => {
+    expect(isGone(paired, false, null, false)).toBe(false);
+  });
+  it("an owned character: gone only once Battle.net reported it missing", () => {
+    expect(isGone(paired, true, "2026-09-01T10:00:00.000Z", false)).toBe(false);
+    expect(isGone(paired, true, "2026-09-01T10:00:00.000Z", true)).toBe(true);
   });
 });

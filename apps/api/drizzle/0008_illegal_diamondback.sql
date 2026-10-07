@@ -1,0 +1,1 @@
+ALTER TABLE "companion_links" ADD COLUMN "unavailable" jsonb;

@@ -57,6 +57,13 @@
       "when": 1791052097320,
       "tag": "0007_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791397755141,
+      "tag": "0008_illegal_diamondback",
+      "breakpoints": true
     }
   ]
 }

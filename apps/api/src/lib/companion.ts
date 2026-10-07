@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
 import { addToAccountRoster } from "@/lib/accounts";
 import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/lib/addon";
+import { isGone } from "@/lib/diff";
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { deliverEvent } from "@/lib/push";
@@ -62,6 +63,7 @@ export async function completePairing(
     region: Region;
     battletag: string | null;
     owned: { id: number; flavour: Flavour; realmSlug: string; name: string }[];
+    unavailable: Flavour[];
     accountId: number | null;
   },
 ): Promise<boolean> {
@@ -74,6 +76,7 @@ export async function completePairing(
     battletag: account.battletag,
     ownedIds: account.owned.map((c) => c.id),
     owned: account.owned,
+    unavailable: account.unavailable,
     accountId: account.accountId,
   });
   // Exposed to the poll only once the link exists.
@@ -122,12 +125,17 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
     // Only characters the Battle.net login proved to be this account's.
     const owned = link.owned.find((c) => c.id === parsed.characterId);
     if (!owned) {
-      result.characters.push({ guid, name: parsed.name, status: "unknown", events: 0 });
+      const gone = isGone(link, false, parsed.state.updatedAt, false);
+      result.characters.push({ guid, name: parsed.name, status: gone ? "gone" : "unknown", events: 0 });
       continue;
     }
     const row = await characterFor(link.region, owned);
     if (!row) {
       result.characters.push({ guid, name: parsed.name, status: "unknown", events: 0 });
+      continue;
+    }
+    if (isGone(link, true, parsed.state.updatedAt, row.missingReportedAt != null)) {
+      result.characters.push({ guid, name: parsed.name, status: "gone", events: 0, characterId: row.id });
       continue;
     }
     // The companion's account owns what it uploads, and has it in its locker.

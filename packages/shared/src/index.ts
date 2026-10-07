@@ -480,7 +480,8 @@ export type PairPoll = { status: "pending" } | { status: "paired"; token: string
 /** POST /api/companion/upload — the addon's WowLockerDB, converted from Lua to JSON. */
 export type UploadRequest = { format: number; characters: Record<string, unknown> };
 export type UploadResult = {
-  characters: { guid: string; name: string; status: "synced" | "unknown" | "invalid"; events: number; characterId?: number }[];
+  /** gone: deleted (Battle.net no longer has it): the companion leaves it out of its list. */
+  characters: { guid: string; name: string; status: "synced" | "unknown" | "invalid" | "gone"; events: number; characterId?: number }[];
 };
 
 export type AddCharacterRequest = { region: Region; flavour: Flavour; realm: string; name: string };
