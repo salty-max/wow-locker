@@ -85,20 +85,41 @@ export function availabilityStep(
   return { next: { status: "not_found", missingReported: prev.missingReported }, event: null };
 }
 
+/** A Battle.net list of the account's characters: when it was taken, and the flavours that didn't answer (null: not kept then). */
+export type OwnedList = { at: Date; ids: readonly number[]; unavailable: readonly string[] | null };
+
 /**
- * A character the account no longer has (deleted): Battle.net's list at
- * pairing left it out though the addon had already seen it, every flavour
- * having answered; or, tracked since, Battle.net has lost it (reported
- * missing). The companion then leaves it out of its list. Played again, it
- * was never gone: seen after the list, it is only not linked ("unknown").
+ * A character the account no longer has (deleted). Tracked: once Battle.net
+ * has reported it missing. Otherwise, by the freshest list that can tell:
+ * one that has it says it's there; a complete one (every flavour answered)
+ * that leaves it out, though the addon had seen it before the list was
+ * taken, says it's gone. Seen after every list: new, only not linked. The
+ * companion leaves a gone character out of its list; played again, it isn't.
  */
-export function isGone(
-  link: { createdAt: Date; unavailable: readonly string[] | null },
-  owned: boolean,
-  lastSeen: string | null,
-  missingReported: boolean,
-): boolean {
-  if (owned) return missingReported;
-  if (link.unavailable && link.unavailable.length > 0) return false; // a flavour unheard: can't tell
-  return lastSeen != null && new Date(lastSeen) < link.createdAt;
+export function isGone(lists: readonly OwnedList[], id: number, tracked: boolean, lastSeen: string | null, missingReported: boolean): boolean {
+  if (tracked) return missingReported;
+  for (const list of [...lists].sort((a, b) => b.at.getTime() - a.at.getTime())) {
+    if (list.ids.includes(id)) return false;
+    if (list.unavailable && list.unavailable.length > 0) continue; // a flavour unheard: this list can't tell
+    return lastSeen != null && new Date(lastSeen) < list.at;
+  }
+  return false;
+}
+
+/**
+ * Characters of one upload sharing a realm and a name with one played more
+ * recently: deleted, a realm holding one character of each name (a name
+ * recreated, "Testlore" five times over). Their GUIDs.
+ */
+export function superseded(chars: readonly { guid: string; realmId: number; name: string; lastSeen: string | null }[]): Set<string> {
+  const latest = new Map<string, { guid: string; at: number }>();
+  const seen = (c: { lastSeen: string | null }) => (c.lastSeen ? new Date(c.lastSeen).getTime() : 0);
+  for (const c of chars) {
+    const key = `${c.realmId}:${c.name.toLowerCase()}`;
+    const best = latest.get(key);
+    if (!best || seen(c) > best.at) latest.set(key, { guid: c.guid, at: seen(c) });
+  }
+  const out = new Set<string>();
+  for (const c of chars) if (latest.get(`${c.realmId}:${c.name.toLowerCase()}`)?.guid !== c.guid) out.add(c.guid);
+  return out;
 }

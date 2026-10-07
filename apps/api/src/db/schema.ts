@@ -138,8 +138,14 @@ export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),
   bnetId: bigint("bnet_id", { mode: "number" }).notNull().unique(),
   battletag: text("battletag"),
-  /** Battle.net character ids the account owned at its last login, per region. */
-  owned: jsonb("owned").$type<{ region: Region; ids: number[] }[]>().notNull().default(sql`'[]'::jsonb`),
+  /**
+   * Battle.net character ids the account owned at its last login, per region:
+   * when (at, ISO) and the flavours that didn't answer (both since 0.2.2's "gone").
+   */
+  owned: jsonb("owned")
+    .$type<{ region: Region; ids: number[]; at?: string; unavailable?: Flavour[] }[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
   /** The locker: tracked character ids, in display order. */
   roster: integer("roster").array().notNull().default(sql`'{}'::integer[]`),
   /** Null until a device sends its own (then they follow the account). */

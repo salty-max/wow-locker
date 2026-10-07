@@ -1,10 +1,10 @@
 import type { EventData, Flavour, PairPoll, PairStart, Region, UploadResult } from "@wow-locker/shared";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
+import { accounts, characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
 import { addToAccountRoster } from "@/lib/accounts";
 import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/lib/addon";
-import { isGone } from "@/lib/diff";
+import { isGone, superseded, type OwnedList } from "@/lib/diff";
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { deliverEvent } from "@/lib/push";
@@ -116,16 +116,33 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
   const chars = (body && typeof body === "object" ? (body as { characters?: unknown }).characters : null) ?? {};
   const result: UploadResult = { characters: [] };
 
-  for (const [guid, raw] of Object.entries(chars as Record<string, unknown>).slice(0, 60)) {
-    const parsed = parseAddonCharacter(guid, raw);
+  // What Battle.net said the account had: at pairing, and at its last login on the site.
+  const lists: OwnedList[] = [{ at: link.createdAt, ids: link.ownedIds, unavailable: link.unavailable }];
+  if (link.accountId != null) {
+    const [acc] = await db.select({ owned: accounts.owned }).from(accounts).where(eq(accounts.id, link.accountId));
+    const fresh = acc?.owned.find((o) => o.region === link.region);
+    if (fresh?.at) lists.push({ at: new Date(fresh.at), ids: fresh.ids, unavailable: fresh.unavailable ?? null });
+  }
+  const entries = Object.entries(chars as Record<string, unknown>)
+    .slice(0, 60)
+    .map(([guid, raw]) => ({ guid, parsed: parseAddonCharacter(guid, raw) }));
+  const replaced = superseded(
+    entries.flatMap(({ guid, parsed }) => (parsed ? [{ guid, realmId: parsed.realmId, name: parsed.name, lastSeen: parsed.state.updatedAt }] : [])),
+  );
+
+  for (const { guid, parsed } of entries) {
     if (!parsed) {
       result.characters.push({ guid, name: "?", status: "invalid", events: 0 });
+      continue;
+    }
+    if (replaced.has(guid)) {
+      result.characters.push({ guid, name: parsed.name, status: "gone", events: 0 });
       continue;
     }
     // Only characters the Battle.net login proved to be this account's.
     const owned = link.owned.find((c) => c.id === parsed.characterId);
     if (!owned) {
-      const gone = isGone(link, false, parsed.state.updatedAt, false);
+      const gone = isGone(lists, parsed.characterId, false, parsed.state.updatedAt, false);
       result.characters.push({ guid, name: parsed.name, status: gone ? "gone" : "unknown", events: 0 });
       continue;
     }
@@ -134,7 +151,7 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
       result.characters.push({ guid, name: parsed.name, status: "unknown", events: 0 });
       continue;
     }
-    if (isGone(link, true, parsed.state.updatedAt, row.missingReportedAt != null)) {
+    if (isGone(lists, parsed.characterId, true, parsed.state.updatedAt, row.missingReportedAt != null)) {
       result.characters.push({ guid, name: parsed.name, status: "gone", events: 0, characterId: row.id });
       continue;
     }

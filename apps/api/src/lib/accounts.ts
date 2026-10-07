@@ -1,4 +1,4 @@
-import type { EventType, Lang, Me, Region } from "@wow-locker/shared";
+import type { EventType, Flavour, Lang, Me, Region } from "@wow-locker/shared";
 import { NOTIFIABLE_EVENTS } from "@wow-locker/shared";
 import { and, arrayOverlaps, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -27,9 +27,16 @@ async function sha256(s: string): Promise<string> {
 }
 
 /** After a Battle.net login: the account (created on first login), owning `owned` in `region`. */
-export async function loginAccount(login: { bnetId: number; battletag: string | null; region: Region; owned: number[] }): Promise<AccountRow> {
+export async function loginAccount(login: {
+  bnetId: number;
+  battletag: string | null;
+  region: Region;
+  owned: number[];
+  unavailable?: Flavour[];
+}): Promise<AccountRow> {
   const [found] = await db.select().from(accounts).where(eq(accounts.bnetId, login.bnetId));
-  const owned = [...(found?.owned ?? []).filter((o) => o.region !== login.region), { region: login.region, ids: login.owned }];
+  const fresh = { region: login.region, ids: login.owned, at: new Date().toISOString(), unavailable: login.unavailable ?? [] };
+  const owned = [...(found?.owned ?? []).filter((o) => o.region !== login.region), fresh];
   const [acc] = found
     ? await db.update(accounts).set({ battletag: login.battletag, owned, lastSeenAt: new Date() }).where(eq(accounts.id, found.id)).returning()
     : await db.insert(accounts).values({ bnetId: login.bnetId, battletag: login.battletag, owned }).returning();

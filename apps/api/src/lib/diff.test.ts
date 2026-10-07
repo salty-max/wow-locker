@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { EquippedItem } from "@wow-locker/shared";
-import { availabilityStep, diffSnapshots, isGone, type Snapshot } from "./diff";
+import { availabilityStep, diffSnapshots, isGone, superseded, type Snapshot } from "./diff";
 
 const item = (slot: string, itemId: number, name: string): EquippedItem => ({
   slot,
@@ -86,24 +86,46 @@ describe("availabilityStep", () => {
 });
 
 describe("isGone", () => {
-  const paired = { createdAt: new Date("2026-10-06T12:00:00Z"), unavailable: [] as string[] };
-  it("a character the pairing's list left out, last seen before it: deleted", () => {
-    expect(isGone(paired, false, "2026-09-01T10:00:00.000Z", false)).toBe(true);
+  const paired = { at: new Date("2026-10-02T20:00:00Z"), ids: [1, 2], unavailable: [] as string[] };
+  const login = { at: new Date("2026-10-07T18:00:00Z"), ids: [1, 2, 3], unavailable: [] as string[] };
+  it("left out of the pairing's list, last seen before it: deleted", () => {
+    expect(isGone([paired], 9, false, "2026-09-01T10:00:00.000Z", false)).toBe(true);
   });
-  it("one seen since the pairing (new, or played again): only not linked", () => {
-    expect(isGone(paired, false, "2026-10-07T10:00:00.000Z", false)).toBe(false);
+  it("seen after every list (new, or played again): only not linked", () => {
+    expect(isGone([paired, login], 9, false, "2026-10-07T19:00:00.000Z", false)).toBe(false);
   });
-  it("a flavour Battle.net didn't answer at pairing: can't tell", () => {
-    expect(isGone({ ...paired, unavailable: ["classicann"] }, false, "2026-09-01T10:00:00.000Z", false)).toBe(false);
+  it("created after pairing, deleted before the last login: the login's list tells", () => {
+    expect(isGone([paired, login], 9, false, "2026-10-05T10:00:00.000Z", false)).toBe(true);
   });
-  it("a link from before the flavours were kept: the list taken as complete", () => {
-    expect(isGone({ ...paired, unavailable: null }, false, "2026-09-01T10:00:00.000Z", false)).toBe(true);
+  it("on the freshest list: there", () => {
+    expect(isGone([paired, login], 3, false, "2026-10-05T10:00:00.000Z", false)).toBe(false);
+  });
+  it("a fresh list missing a flavour can't tell: the one before it does", () => {
+    const partial = { ...login, unavailable: ["classic1x"] };
+    expect(isGone([paired, partial], 9, false, "2026-10-05T10:00:00.000Z", false)).toBe(false);
+    expect(isGone([paired, partial], 9, false, "2026-09-01T10:00:00.000Z", false)).toBe(true);
+  });
+  it("a link from before the flavours were kept: its list taken as complete", () => {
+    expect(isGone([{ ...paired, unavailable: null }], 9, false, "2026-09-01T10:00:00.000Z", false)).toBe(true);
   });
   it("never seen by the addon: can't tell", () => {
-    expect(isGone(paired, false, null, false)).toBe(false);
+    expect(isGone([paired], 9, false, null, false)).toBe(false);
   });
-  it("an owned character: gone only once Battle.net reported it missing", () => {
-    expect(isGone(paired, true, "2026-09-01T10:00:00.000Z", false)).toBe(false);
-    expect(isGone(paired, true, "2026-09-01T10:00:00.000Z", true)).toBe(true);
+  it("a tracked character: gone only once Battle.net reported it missing", () => {
+    expect(isGone([paired], 1, true, "2026-09-01T10:00:00.000Z", false)).toBe(false);
+    expect(isGone([paired], 1, true, "2026-09-01T10:00:00.000Z", true)).toBe(true);
+  });
+});
+
+describe("superseded", () => {
+  it("a name played again on the same realm: the older ones are gone", () => {
+    const chars = [
+      { guid: "a", realmId: 5, name: "Testlore", lastSeen: "2026-10-03T10:00:00.000Z" },
+      { guid: "b", realmId: 5, name: "Testlore", lastSeen: "2026-10-06T10:00:00.000Z" },
+      { guid: "c", realmId: 5, name: "testlore", lastSeen: "2026-10-04T10:00:00.000Z" },
+      { guid: "d", realmId: 6, name: "Testlore", lastSeen: "2026-10-01T10:00:00.000Z" },
+      { guid: "e", realmId: 5, name: "Namzie", lastSeen: null },
+    ];
+    expect([...superseded(chars)].sort()).toEqual(["a", "c"]);
   });
 });
