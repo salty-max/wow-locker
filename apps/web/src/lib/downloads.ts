@@ -7,7 +7,7 @@
 export const RELEASES_URL = "https://github.com/salty-max/wow-locker/releases";
 export const RAVENPOST_RELEASES_URL = "https://github.com/salty-max/ravenpost/releases";
 export const ADDON_VERSION = "0.3.8";
-export const COMPANION_VERSION = "0.2.1";
+export const COMPANION_VERSION = "0.2.2";
 
 /** A file of the latest release: the addon's here, Ravenpost's there. */
 export const download = (file: string) =>
