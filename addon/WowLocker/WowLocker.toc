@@ -2,7 +2,7 @@
 ## Title: WoWLocker
 ## Notes: Your characters' journey on your phone: gear, levels, loot, dungeons, Hardcore deaths and close calls, recorded as you play for wow-locker.app.
 ## Author: salty-max
-## Version: 0.3.9
+## Version: 0.3.10
 ## SavedVariables: WowLockerDB, WowLockerSettings
 ## IconTexture: Interface\Icons\INV_Box_02
 ## X-Website: https://wow-locker.app
