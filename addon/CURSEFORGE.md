@@ -2,6 +2,9 @@
 
 <!-- Project description for curseforge.com (paste as the project's description). -->
 
+<!-- Summary (the project's summary on CurseForge and Wago, and the TOCs' Notes):
+Your characters' journey on your phone: gear, levels, loot, dungeons, Hardcore deaths and close calls, recorded as you play for wow-locker.app. -->
+
 **Your characters' journey, on your phone.** WoWLocker records what happens while you play and shows it on [wow-locker.app](https://wow-locker.app): a timeline in the game's own chat style, Hardcore deaths and close calls on the zone map, bags and bank, mail, rested XP, levelling pace, session summaries, and push notifications.
 
 For Classic Era, Hardcore, Season of Discovery and TBC Anniversary.

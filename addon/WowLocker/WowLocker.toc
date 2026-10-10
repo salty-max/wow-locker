@@ -1,6 +1,6 @@
 ## Interface: 11509, 20506
 ## Title: WoWLocker
-## Notes: Records your characters' journey (gear, levels, quests, loot, dungeons, Hardcore deaths and close calls) for wow-locker.app. /wowlocker for the event log and options.
+## Notes: Your characters' journey on your phone: gear, levels, loot, dungeons, Hardcore deaths and close calls, recorded as you play for wow-locker.app.
 ## Author: salty-max
 ## Version: 0.3.9
 ## SavedVariables: WowLockerDB, WowLockerSettings
