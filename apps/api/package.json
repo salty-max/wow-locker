@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.3",
-    "@vercel/functions": "^3.9.10",
+    "@vercel/functions": "^3.9.11",
     "@wow-locker/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.30",
+    "hono": "^4.13.13",
     "node-cron": "^4.6.0",
     "postgres": "^3.4.9"
   },
