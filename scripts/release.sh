@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # Cut a release: bump versions, check, commit, tag, push. GitHub Actions then
-# builds and publishes it (.github/workflows/release.yml → GitHub release +
-# CurseForge), and Vercel deploys main.
+# builds and publishes it (.github/workflows/release.yml: the GitHub release,
+# and CurseForge and Wago Addons when the addon changed), and Vercel deploys
+# main.
 #
 #   scripts/release.sh [options] NOTES.md
 #
 #   NOTES.md            release notes (markdown): the tag's message, then the
-#                       GitHub release's and CurseForge's changelog
+#                       changelog on GitHub, CurseForge and Wago
 #   --version X.Y.Z     the release (default: the latest tag's patch + 1)
 #   --addon X.Y.Z       new addon version (addon/WowLocker/WowLocker.toc)
+#   --hold              the GitHub release alone (repository variable
+#                       HOLD_STORES); the stores later, by hand:
+#                       gh workflow run release.yml -f tag=vX.Y.Z
 #   --skip-checks       don't run typecheck / lint / tests / addon sim
 #   --dry-run           show what would change, change nothing
 #
@@ -18,11 +22,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="" ADDON="" NOTES="" CHECKS=1 DRY=0
+VERSION="" ADDON="" NOTES="" CHECKS=1 DRY=0 HOLD=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --version) VERSION="$2"; shift 2 ;;
     --addon) ADDON="$2"; shift 2 ;;
+    --hold) HOLD=1; shift ;;
     --skip-checks) CHECKS=0; shift ;;
     --dry-run) DRY=1; shift ;;
     -*) echo "unknown option $1" >&2; exit 2 ;;
@@ -53,7 +58,7 @@ TOC=addon/WowLocker/WowLocker.toc
 cur_addon=$(sed -n 's/^## Version: *//p' "$TOC" | tr -d '\r')
 ADDON=${ADDON:-$cur_addon}
 
-echo "release $TAG: addon $cur_addon → $ADDON, site → $VERSION"
+echo "release $TAG: addon $cur_addon → $ADDON, site → $VERSION$([ "$HOLD" = 1 ] && echo ", GitHub only (stores held)")"
 [ "$DRY" = 1 ] && { echo "(dry run: nothing changed)"; exit 0; }
 
 perl -pi -e "s/^## Version: .*/## Version: $ADDON/" "$TOC"
@@ -72,5 +77,11 @@ fi
 git add -A
 git commit -q -m "chore(release): $TAG"
 git tag -a "$TAG" --cleanup=verbatim -F "$NOTES" # keep markdown headings
+# The stores held back or not: read by the release's workflow, so set first.
+if [ "$HOLD" = 1 ]; then
+  gh variable set HOLD_STORES --body true >/dev/null
+else
+  gh variable delete HOLD_STORES >/dev/null 2>&1 || true
+fi
 git push -q origin main "$TAG"
 echo "pushed $TAG: https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo salty-max/wow-locker)/actions"

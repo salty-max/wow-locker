@@ -153,18 +153,21 @@ would otherwise turn public.
   `vercel deploy --prod --scope jellycat --yes` (refresh the CLI token with
   `vercel whoami` first).
 - **Release** (addon / site version; Ravenpost releases from its own repo): write the notes (markdown,
-  for players: they become the GitHub release and the CurseForge changelog),
-  then `scripts/release.sh [--addon X.Y.Z] NOTES.md`
+  for players: they become the changelog on GitHub, CurseForge and Wago),
+  then `scripts/release.sh [--addon X.Y.Z] [--hold] NOTES.md`
   (`--dry-run` first). It bumps every version (TOC, downloads.ts,
   package.json), runs the checks, commits `chore(release): vX.Y.Z`, tags (the
   tag message = the notes) and pushes. `.github/workflows/release.yml` then
-  zips the addon, publishes the GitHub release and calls `curseforge.yml`,
-  which uploads the addon only if its version changed (project 1724925;
-  variable `CURSEFORGE_PROJECT_ID`, secret `CURSEFORGE_TOKEN`; game versions
-  from the TOC's Interface list via `scripts/curseforge-upload.sh`; project
-  page text in `addon/CURSEFORGE.md`).
+  runs the BigWigs packager (`.pkgmeta`): `WowLocker-addon.zip`, checked to be
+  the addon folder, on the GitHub release, and on CurseForge and Wago Addons
+  only if the addon's version changed (CurseForge 1724925, the TOC's
+  `X-Curse-Project-ID`, secret `CURSEFORGE_TOKEN`; Wago: the TOC's `X-Wago-ID`
+  once its project exists, secret `WAGO_API_TOKEN`; game versions from the
+  TOC's Interface list; project page text in `addon/CURSEFORGE.md`).
+  `--hold`: the GitHub release alone (variable `HOLD_STORES`); the stores
+  later: `gh workflow run release.yml -f tag=vX.Y.Z`.
 - **CI** (`ci.yml`) on every push and PR: typecheck, lint, tests, build,
-  addon sim. Dependabot opens weekly grouped PRs.
+  addon sim, the release's package (the packager, nothing published). Dependabot opens weekly grouped PRs.
 - **Monitoring** (`monitor.yml`, every 30 min): `/api/status` must answer 200
   (scheduler ran within 10 min); a failure emails the repo owner.
 - **Production database**: `scripts/prod-sql.sh "SQL"` (read only;

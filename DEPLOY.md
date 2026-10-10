@@ -67,8 +67,9 @@ external service instead (e.g. cron-job.org, with the
 ## 5. Addon (and Ravenpost)
 
 Addon releases are built by GitHub Actions (`.github/workflows/release.yml`, on
-a `v*` tag pushed by `scripts/release.sh`). CurseForge uploads need the
-repository variable `CURSEFORGE_PROJECT_ID` and secret `CURSEFORGE_TOKEN`.
+a `v*` tag pushed by `scripts/release.sh`, the BigWigs packager). CurseForge
+uploads need the TOC's `X-Curse-Project-ID` and the secret `CURSEFORGE_TOKEN`;
+Wago Addons, the TOC's `X-Wago-ID` and the secret `WAGO_API_TOKEN`.
 The companion app, Ravenpost, releases from salty-max/ravenpost with
 `https://wow-locker.app` built in (`WOWLOCKER_SERVER` in its build for another
 deployment).

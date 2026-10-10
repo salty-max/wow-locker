@@ -1,6 +1,7 @@
 # Every push to main and every pull request (Dependabot's included): the same
 # checks as "done" means locally — typecheck, lint, tests, build — plus the
-# addon simulation (the companion app is Ravenpost, in its own repo).
+# addon simulation and the release's package, made by the BigWigs packager as
+# release.yml makes it (the companion app is Ravenpost, in its own repo).
 name: CI
 
 on:
@@ -37,3 +38,11 @@ jobs:
       - uses: actions/checkout@v7
       - run: sudo apt-get install -y -qq luajit
       - run: luajit addon/test/sim.lua
+      # The release's package (release.yml), made without publishing: the
+      # addon's folder, nothing more or less.
+      - run: echo "(CI)" > .release-notes.md
+      - uses: BigWigsMods/packager@v2.6.1
+        with:
+          args: -d -u
+          pandoc: false
+      - run: diff -r addon/WowLocker .release/WowLocker

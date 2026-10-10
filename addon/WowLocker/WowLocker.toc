@@ -7,6 +7,7 @@
 ## IconTexture: Interface\Icons\INV_Box_02
 ## X-Website: https://wow-locker.app
 ## X-License: MIT
+## X-Curse-Project-ID: 1724925
 
 WowLocker.lua
 Options.lua

@@ -1,0 +1,36 @@
+# The BigWigs packager's settings (.github/workflows/release.yml). The addon
+# is addon/WowLocker, shipped as it is; the rest of the repository (the site,
+# the API) stays out (the release checks the package is the folder, nothing
+# more). The notes are the tag's message, written to .release-notes.md by the
+# workflow.
+package-as: WowLocker
+
+move-folders:
+  WowLocker/addon/WowLocker: WowLocker
+
+manual-changelog:
+  filename: .release-notes.md
+  markup-type: markdown
+
+ignore:
+  - addon/test
+  - addon/CURSEFORGE.md
+  - apps
+  - assets
+  - packages
+  - scripts
+  - spike
+  - AGENTS.md
+  - CLAUDE.md
+  - DEPLOY.md
+  - Dockerfile
+  - FOREVER.md
+  - LICENSE
+  - README.md
+  - bun.lock
+  - commitlint.config.mjs
+  - docker-compose.yml
+  - eslint.config.mjs
+  - package.json
+  - turbo.json
+  - vercel.json

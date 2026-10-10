@@ -1,40 +1,84 @@
-# Pushing a tag vX.Y.Z (scripts/release.sh does it) publishes a release:
-# zips the addon, creates the GitHub release with the tag's message as its notes,
-# then uploads the addon to CurseForge when its version changed. The site
-# itself deploys from main on Vercel.
+# Pushing a tag vX.Y.Z (scripts/release.sh does it) publishes a release: the
+# BigWigs packager (.pkgmeta) zips the addon (WowLocker-addon.zip) and makes
+# the GitHub release, the tag's message as its notes; when the addon's version
+# changed since the release before, it goes to CurseForge (the TOC's
+# X-Curse-Project-ID, secret CURSEFORGE_TOKEN) and Wago Addons (the TOC's
+# X-Wago-ID, secret WAGO_API_TOKEN; none without either) too. The site itself
+# deploys from main on Vercel.
+#
+# To hold the stores back (a test in the game first), repository variable
+# HOLD_STORES=true (scripts/release.sh --hold sets it): the GitHub release
+# alone. Then run this workflow by hand with the tag (Actions → Release → Run
+# workflow, or gh workflow run release.yml -f tag=vX.Y.Z): CurseForge and Wago
+# alone, the addon changed or not.
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: A release already on GitHub, for CurseForge and Wago (e.g. v0.1.13)
+        required: true
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.ref_name }}
-      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
       # checkout leaves the tag lightweight: fetch it again for its message.
       - run: git fetch --force --tags
-      # The companion app is Ravenpost (salty-max/ravenpost), released there.
-      - name: Build
-        run: mkdir -p dist && (cd addon && zip -qr ../dist/WowLocker-addon.zip WowLocker -x '*.DS_Store')
-      - name: Publish the release
+      - run: sudo apt-get install -y -qq luajit
+      - run: luajit addon/test/sim.lua
+      - name: The notes (the tag's message)
         run: |
-          git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP SIGNATURE-----/,$d' > notes.md
-          [ -s notes.md ] || { echo "::error::tag $TAG has no message (release notes)"; exit 1; }
-          gh release create "$TAG" --title "$TAG" --notes-file notes.md dist/*
-
-  curseforge:
-    needs: build
-    uses: ./.github/workflows/curseforge.yml
-    with:
-      tag: ${{ github.ref_name }}
-    secrets: inherit
+          git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP SIGNATURE-----/,$d' > .release-notes.md
+          [ -s .release-notes.md ] || { echo "::error::tag $TAG has no message (release notes)"; exit 1; }
+      # The addon's version (its label on the stores: vX.Y.Z, a label takes no
+      # spaces) and whether the stores get it: its version changed since the
+      # release before (a site-only release doesn't upload the same addon
+      # again) and they aren't held; by hand, always.
+      - name: The addon
+        id: addon
+        env:
+          EVENT: ${{ github.event_name }}
+          HOLD: ${{ vars.HOLD_STORES }}
+        run: |
+          version() { sed -n 's/^## Version: *//p' | tr -d '\r'; }
+          now=$(version < addon/WowLocker/WowLocker.toc)
+          prev_tag=$(git tag --sort=-creatordate | sed -n "/^$TAG\$/{n;p;q;}")
+          prev=
+          if [ -n "$prev_tag" ]; then prev=$(git show "$prev_tag:addon/WowLocker/WowLocker.toc" 2>/dev/null | version); fi
+          echo "addon $now (previous release $prev_tag: ${prev:-none})"
+          echo "label=v$now" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = workflow_dispatch ] || { [ "$now" != "$prev" ] && [ "$HOLD" != true ]; }; then
+            echo "stores=true" >> "$GITHUB_OUTPUT"
+          fi
+      # Made once without publishing: the package must be the addon's folder,
+      # nothing more or less, before anything goes out. (Unix line endings, as
+      # the folder has them; the zip keeps its name, the site links it.)
+      - name: The package, checked
+        uses: BigWigsMods/packager@v2.6.1
+        with:
+          args: -d -u -n "WowLocker-addon:${{ steps.addon.outputs.label }}"
+          pandoc: false
+      - run: diff -r addon/WowLocker .release/WowLocker
+      - name: Published
+        uses: BigWigsMods/packager@v2.6.1
+        with:
+          args: -u -n "WowLocker-addon:${{ steps.addon.outputs.label }}"
+          pandoc: false
+        env:
+          # A tag: GitHub, and the stores when the addon changed. By hand: the stores.
+          GITHUB_OAUTH: ${{ github.event_name == 'push' && github.token || '' }}
+          CF_API_KEY: ${{ steps.addon.outputs.stores == 'true' && secrets.CURSEFORGE_TOKEN || '' }}
+          WAGO_API_TOKEN: ${{ steps.addon.outputs.stores == 'true' && secrets.WAGO_API_TOKEN || '' }}

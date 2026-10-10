@@ -40,3 +40,7 @@ spike/out/
 # vercel build output
 .vercel
 
+
+# the BigWigs packager's output, and the notes it reads (.github/workflows/release.yml)
+.release/
+.release-notes.md

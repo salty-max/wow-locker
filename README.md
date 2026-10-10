@@ -109,7 +109,8 @@ Checks (also run by CI on every push and pull request):
   included). See [DEPLOY.md](DEPLOY.md).
 - **Addon**: `scripts/release.sh [--addon X.Y.Z] NOTES.md` bumps the
   versions, runs the checks, then tags and pushes. GitHub Actions publishes the
-  GitHub release and uploads the addon to CurseForge when its version changed.
+  GitHub release and uploads the addon to CurseForge and Wago Addons when its
+  version changed (`--hold`: GitHub alone, the stores later by hand).
   Ravenpost releases from its own repo.
 - **Monitoring**: an uptime check every 30 minutes (`/api/status`);
   Dependabot opens weekly update pull requests.
