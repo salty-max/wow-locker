@@ -161,8 +161,8 @@ would otherwise turn public.
   runs the BigWigs packager (`.pkgmeta`): `WowLocker-addon.zip`, checked to be
   the addon folder, on the GitHub release, and on CurseForge and Wago Addons
   only if the addon's version changed (CurseForge 1724925, the TOC's
-  `X-Curse-Project-ID`, secret `CURSEFORGE_TOKEN`; Wago: the TOC's `X-Wago-ID`
-  once its project exists, secret `WAGO_API_TOKEN`; game versions from the
+  `X-Curse-Project-ID`, secret `CURSEFORGE_TOKEN`; Wago: the TOC's `X-Wago-ID`,
+  secret `WAGO_API_TOKEN`; game versions from the
   TOC's Interface list; project page text in `addon/CURSEFORGE.md`).
   `--hold`: the GitHub release alone (variable `HOLD_STORES`); the stores
   later: `gh workflow run release.yml -f tag=vX.Y.Z`.

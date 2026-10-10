@@ -8,6 +8,7 @@
 ## X-Website: https://wow-locker.app
 ## X-License: MIT
 ## X-Curse-Project-ID: 1724925
+## X-Wago-ID: YK9x886L
 
 WowLocker.lua
 Options.lua
