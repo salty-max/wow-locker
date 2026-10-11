@@ -91,8 +91,10 @@ start carries the WoWLocker companion's link and settings over. This repo keeps
 the server side: pairing `POST /api/companion/pair/start` → browser on `/pair`
 → Battle.net login → poll for the token (`apps/api/src/lib/companion.ts`), and
 `/api/companion/upload`. Ravenpost releases ship from its own repo
-(`ravenpost-macos.zip`, `ravenpost-windows-{x64,arm64}.exe`); the download page
-links to them (`apps/web/src/lib/downloads.ts`: bump COMPANION_VERSION by hand).
+(`ravenpost-vX.Y.Z-macos.zip`, `ravenpost-vX.Y.Z-windows-{x64,arm64}.exe`); the
+download page asks GitHub for the latest releases and links their files, their
+versions shown (`apps/web/src/lib/downloads.ts`; ADDON_VERSION and
+COMPANION_VERSION only until GitHub answers).
 `addon/test/sim.lua` still writes `WL_SV`/`WL_DUMP` for Ravenpost's
 `testdata/sim.{lua,json}`: regenerate them there after changing the addon.
 
@@ -158,7 +160,8 @@ would otherwise turn public.
   (`--dry-run` first). It bumps every version (TOC, downloads.ts,
   package.json), runs the checks, commits `chore(release): vX.Y.Z`, tags (the
   tag message = the notes) and pushes. `.github/workflows/release.yml` then
-  runs the BigWigs packager (`.pkgmeta`): `WowLocker-addon.zip`, checked to be
+  runs the BigWigs packager (`.pkgmeta`): `WowLocker-addon-vX.Y.Z.zip` (the
+  addon's version), checked to be
   the addon folder, on the GitHub release, and on CurseForge and Wago Addons
   only if the addon's version changed (CurseForge 1724925, the TOC's
   `X-Curse-Project-ID`, secret `CURSEFORGE_TOKEN`; Wago: the TOC's `X-Wago-ID`,

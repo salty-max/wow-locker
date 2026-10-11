@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Download, Laptop, Monitor, Package } from "lucide-react";
 import type { ReactNode } from "react";
-import { ADDON_VERSION, COMPANION_VERSION, detectPlatform, download, FILES, RELEASES_URL } from "@/lib/downloads";
+import { detectPlatform, RELEASES_URL, useDownload } from "@/lib/downloads";
 import { useT } from "@/lib/i18n";
 import { useTitle } from "@/lib/useTitle";
 
@@ -11,6 +11,10 @@ export function Addon() {
   useTitle(t.nav.addon);
   const a = t.addon;
   const platform = detectPlatform();
+  const addon = useDownload("addon");
+  const windows = useDownload("windows");
+  const macos = useDownload("macos");
+  const windowsArm = useDownload("windowsArm");
 
   return (
     <div className="flex flex-col gap-10">
@@ -36,9 +40,9 @@ export function Addon() {
             icon={<Package className="size-5" />}
             kind={a.kindAddon}
             name="WoWLocker"
-            version={ADDON_VERSION}
+            version={addon.version}
             detail={a.addonDetail}
-            href={download(FILES.addon)}
+            href={addon.href}
             label={a.downloadZip}
             yours={a.yourSystem}
             mine={false}
@@ -47,9 +51,9 @@ export function Addon() {
             icon={<Monitor className="size-5" />}
             kind={a.kindCompanion}
             name="Windows"
-            version={COMPANION_VERSION}
+            version={windows.version}
             detail={a.windowsDetail}
-            href={download(FILES.windows)}
+            href={windows.href}
             label={a.downloadExe}
             yours={a.yourSystem}
             mine={platform === "windows"}
@@ -58,16 +62,16 @@ export function Addon() {
             icon={<Laptop className="size-5" />}
             kind={a.kindCompanion}
             name="macOS"
-            version={COMPANION_VERSION}
+            version={macos.version}
             detail={a.macDetail}
-            href={download(FILES.macos)}
+            href={macos.href}
             label={a.downloadZip}
             yours={a.yourSystem}
             mine={platform === "macos"}
           />
         </div>
         <p className="mt-4 text-xs text-ink-faint">
-          <a href={download(FILES.windowsArm)} className="underline hover:text-ink-dim">
+          <a href={windowsArm.href} className="underline hover:text-ink-dim">
             {a.windowsArm}
           </a>
           {" · "}

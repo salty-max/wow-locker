@@ -1,5 +1,6 @@
 # Pushing a tag vX.Y.Z (scripts/release.sh does it) publishes a release: the
-# BigWigs packager (.pkgmeta) zips the addon (WowLocker-addon.zip) and makes
+# BigWigs packager (.pkgmeta) zips the addon (WowLocker-addon-vX.Y.Z.zip, the
+# addon's version) and makes
 # the GitHub release, the tag's message as its notes; when the addon's version
 # changed since the release before, it goes to CurseForge (the TOC's
 # X-Curse-Project-ID, secret CURSEFORGE_TOKEN) and Wago Addons (the TOC's
@@ -65,17 +66,18 @@ jobs:
           fi
       # Made once without publishing: the package must be the addon's folder,
       # nothing more or less, before anything goes out. (Unix line endings, as
-      # the folder has them; the zip keeps its name, the site links it.)
+      # the folder has them; the zip named by the addon's version: the site finds it
+      # in the latest release.)
       - name: The package, checked
         uses: BigWigsMods/packager@v2.6.1
         with:
-          args: -d -u -n "WowLocker-addon:${{ steps.addon.outputs.label }}"
+          args: -d -u -n "WowLocker-addon-${{ steps.addon.outputs.label }}:${{ steps.addon.outputs.label }}"
           pandoc: false
       - run: diff -r addon/WowLocker .release/WowLocker
       - name: Published
         uses: BigWigsMods/packager@v2.6.1
         with:
-          args: -u -n "WowLocker-addon:${{ steps.addon.outputs.label }}"
+          args: -u -n "WowLocker-addon-${{ steps.addon.outputs.label }}:${{ steps.addon.outputs.label }}"
           pandoc: false
         env:
           # A tag: GitHub, and the stores when the addon changed. By hand: the stores.
