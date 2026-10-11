@@ -17,8 +17,9 @@
 #   --dry-run           show what would change, change nothing
 #
 # The site version (package.json, shown in Settings) follows the release.
-# The companion app is Ravenpost now, released from salty-max/ravenpost: bump
-# COMPANION_VERSION in apps/web/src/lib/downloads.ts by hand when it ships.
+# The companion app is Ravenpost now, released from salty-max/ravenpost: the
+# download page finds its latest release (COMPANION_VERSION in
+# apps/web/src/lib/downloads.ts is only shown until GitHub answers).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
