@@ -71,8 +71,8 @@ connect to the internet themselves.
 **Ravenpost** watches `SavedVariables/WowLocker.lua` and uploads it a few
 seconds after the game writes it. Linking through Battle.net identifies
 your characters, and the server only accepts uploads for those characters.
-The file is parsed as data and never executed. Upload status is available
-in the tray and on Ravenpost's local settings page. Ravenpost has its
+The file is parsed as data and never executed. Upload status is shown
+in Ravenpost's window and its tray menu. Ravenpost has its
 [own repository](https://github.com/salty-max/ravenpost) and also uploads
 Hearthtale journals.
 
@@ -90,8 +90,8 @@ and belong to Blizzard Entertainment.
 The repository uses Bun workspaces and Turborepo. The API uses Hono,
 Drizzle and Postgres. The web app uses React 19, Vite, Tailwind v4,
 TanStack Router and Query, and vite-plugin-pwa. Shared types live in
-`packages/shared`. The addon uses Lua 5.1. Ravenpost is written in Go and
-uses fyne.io/systray.
+`packages/shared`. The addon uses Lua 5.1. Ravenpost is written in Go with
+Wails.
 
 ```bash
 bun install
