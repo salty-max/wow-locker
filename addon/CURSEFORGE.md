@@ -3,45 +3,49 @@
 <!-- Project description for curseforge.com (paste as the project's description). -->
 
 <!-- Summary (the project's summary on CurseForge and Wago, and the TOCs' Notes):
-Your characters' journey on your phone: gear, levels, loot, dungeons, Hardcore deaths and close calls, recorded as you play for wow-locker.app. -->
+Record your WoW characters' gear, levels, loot, dungeon runs, deaths and close calls to view on wow-locker.app. -->
 
-**Your characters' journey, on your phone.** WoWLocker records what happens while you play and shows it on [wow-locker.app](https://wow-locker.app): a timeline in the game's own chat style, Hardcore deaths and close calls on the zone map, bags and bank, mail, rested XP, levelling pace, session summaries, and push notifications.
+WoWLocker lets you check your characters on your phone. The addon records your progress while you play, then sends it to [wow-locker.app](https://wow-locker.app) through the Ravenpost companion app when you log out or reload.
+
+Browse your gear, bags and bank, look back through a timeline of your sessions, or see where a Hardcore character died or nearly did. The site also shows rested XP and levelling pace, and offers push notifications.
 
 For Classic Era, Hardcore, Season of Discovery and TBC Anniversary.
 
 ## What it records
 
-- Every gear swap, level-up and talent point, timestamped
-- Hardcore deaths and close calls: who, where, at what health, with map coordinates
-- Quests, dungeon runs (group, duration, deaths), notable loot, skills, reputation
-- Bags, bank (when you visit it), mail (when you open a mailbox), gold, /played, position
-- Hunter pets and the stable
+- Gear changes, levels and talent points, with timestamps.
+- Deaths and close calls, including the enemy, location and health, with map coordinates.
+- Quests, dungeon runs, group members, run duration and deaths.
+- Notable loot, professions, skills and reputation.
+- Bags, bank, mail, gold, played time and position.
+- Hunter pets and the stable.
 
-## How it works
+Bank contents update when you visit the bank. Mail updates when you open a mailbox. The timeline uses the game's chat style, and deaths and close calls can be viewed on a zone map.
 
-Addons can't use the network, so the addon only writes the game's saved variables, when you log out or `/reload`. The free companion app, **[Ravenpost](https://github.com/salty-max/ravenpost)** (Windows and macOS, open source), picks the file up and uploads it, only for the characters of the Battle.net account you link it with. The same app carries [Hearthtale](https://hearthtale.app)'s journals too, if you use it.
+## Getting started
 
-1. Install this addon.
-2. Install Ravenpost from [wow-locker.app/addon](https://wow-locker.app/addon) and link it with your Battle.net account.
-3. Play. Log out or `/reload`, and your page on wow-locker.app updates seconds later.
+1. Install the addon.
+2. Get **[Ravenpost](https://github.com/salty-max/ravenpost)** from [wow-locker.app/addon](https://wow-locker.app/addon) and link it to your Battle.net account.
+3. Play, then log out or use `/reload`. Your character's page updates a few seconds later.
 
-Without Ravenpost the addon still works (`/wowlocker` shows the event log in game), but nothing reaches the site.
+Ravenpost is free, open source and available for Windows and macOS. Addons cannot connect to the internet themselves, so it uploads the saved file for characters belonging to the Battle.net account you linked. It also uploads [Hearthtale](https://hearthtale.app) journals if you use that addon.
+
+Without Ravenpost, you can still browse the event log in game with `/wowlocker`. Your records will not reach the website.
 
 ## In game
 
-- `/wowlocker`: the event log, filtered by combat, quests, gear, progress, dungeons or sessions
-- `/wowlocker options`: what to record, a login message, chat confirmations, close-call threshold
-- In English, and in French on a French client
+- `/wowlocker` opens the event log. Filter it by combat, quests, gear, progress, dungeons or sessions.
+- `/wowlocker options` lets you choose what to record, the close-call threshold, login messages and chat confirmations.
 
-The addon doesn't touch combat or the interface: it listens, and writes down.
+The addon records events in the background. It supports English, with French text on French clients.
 
 ## Privacy
 
-Bags, bank, mail, gold and position are visible only to you unless you share a character. Details: [wow-locker.app/privacy](https://wow-locker.app/privacy).
+Your bags, bank, mail, gold and position are visible only to you unless you share the character. Read more on the [privacy page](https://wow-locker.app/privacy).
 
 ## Support
 
-WoWLocker is free, and will stay free. If it keeps your characters close at hand, you can say thanks with a coffee on [Ko-fi](https://ko-fi.com/salty_max): it helps keep the site and the addon growing. Thank you.
+WoWLocker is free and will stay free. If you find it useful between sessions, you can help support the site and addon with a coffee on [Ko-fi](https://ko-fi.com/salty_max). Thank you.
 
 ## Source
 

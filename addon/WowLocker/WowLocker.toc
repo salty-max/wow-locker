@@ -1,6 +1,6 @@
 ## Interface: 11509, 20506
 ## Title: WoWLocker
-## Notes: Your characters' journey on your phone: gear, levels, loot, dungeons, Hardcore deaths and close calls, recorded as you play for wow-locker.app.
+## Notes: Record your WoW characters' gear, levels, loot, dungeon runs, deaths and close calls to view on wow-locker.app.
 ## Category: Data Export
 ## Author: salty-max
 ## Version: 0.3.10
