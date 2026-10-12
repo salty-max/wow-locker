@@ -39,6 +39,10 @@ The addon doesn't touch combat or the interface: it listens, and writes down.
 
 Bags, bank, mail, gold and position are visible only to you unless you share a character. Details: [wow-locker.app/privacy](https://wow-locker.app/privacy).
 
+## Support
+
+WoWLocker is free, and will stay free. If it keeps your characters close at hand, you can say thanks with a coffee on [Ko-fi](https://ko-fi.com/salty_max): it helps keep the site and the addon growing. Thank you.
+
 ## Source
 
 MIT licensed: [github.com/salty-max/wow-locker](https://github.com/salty-max/wow-locker). Not affiliated with Blizzard Entertainment.
