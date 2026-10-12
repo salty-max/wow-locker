@@ -82,7 +82,7 @@ and `<realmId>` is the API realm id (6113 = Soulseeker) — match uploads on
 that, not on names. By PLAYER_LOGOUT the client reads XP/money as 0: the
 final snapshot must not re-read them.
 
-## Companion: Ravenpost (salty-max/ravenpost, ~/code/ravenpost)
+## Companion: Ravenpost (salty-max/ravenpost, ~/code/wow-addons/ravenpost)
 
 The Go tray app that uploads the addon's file lived in `companion/` until
 6 October 2026; it moved, history kept, to its own repo and became
