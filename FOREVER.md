@@ -221,8 +221,11 @@ The addon (`addon/WowLocker`):
    what was fought (Hearthtale's way); deaths and close calls keep level,
    place and time, the killer when it was the target. The pet's death comes
    from `UNIT_HEALTH` on `pet`.
-4. **Secret values:** checked before use (`UnitHealth` for close calls:
-   skipped while secret).
+4. **Secret values:** the player's health is secret even out of combat
+   (Second Wind measured it, 11 October): close calls come from the game's
+   low-health warning, which addons see (below 35%, where Classic's are
+   below 15%), as Second Wind does; deaths' details from the death recap.
+   Anything else secret is checked before use.
 5. **Modern APIs:** `C_Item.GetItemInfo` (nil until loaded: quality from the
    link's colour; names read again until loaded), `C_Spell.GetSpellInfo`,
    `C_QuestLog` (numbered blanks; names possibly missing at first),
