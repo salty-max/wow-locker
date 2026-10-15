@@ -3,6 +3,7 @@ import { CalendarClock, Download, Package, Settings } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { CharacterWatcher, Toaster } from "@/components/Toaster";
 import { Logo } from "@/components/Logo";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
@@ -104,6 +105,7 @@ export function Layout() {
         </div>
       </nav>
 
+      <PullToRefresh />
       {import.meta.env.PROD && <UpdatePrompt />}
       <InstallPrompt />
       <CharacterWatcher />

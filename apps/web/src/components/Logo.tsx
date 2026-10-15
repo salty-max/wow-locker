@@ -1,7 +1,7 @@
 /**
- * The WoWLocker mark: the app icon itself (public/icon.svg), a lockbox drawn
- * like one of the game's item icons, in the bevel of a bag slot.
+ * The WoWLocker mark: the painted chest, the app icon itself (public/logo-192.png,
+ * rounded, from the repository's assets/logo-1024.png: scripts/icons.ts).
  */
 export function Logo({ size = 28 }: { size?: number }) {
-  return <img src="/icon.svg" width={size} height={size} alt="" aria-hidden className="shrink-0" draggable={false} />;
+  return <img src="/logo-192.png" width={size} height={size} alt="" aria-hidden className="shrink-0" draggable={false} />;
 }
