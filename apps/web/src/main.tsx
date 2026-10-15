@@ -7,12 +7,16 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { router } from "@/router";
+import { inject } from "@vercel/analytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: true },
   },
 });
+
+// Visits counted without cookies (Vercel Web Analytics): never who.
+inject();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

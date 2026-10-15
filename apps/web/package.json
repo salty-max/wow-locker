@@ -13,11 +13,12 @@
     "talents": "bun run scripts/talents.ts"
   },
   "dependencies": {
-    "@wow-locker/shared": "workspace:*",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/cinzel": "^5.2.8",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.18",
+    "@vercel/analytics": "^2.0.1",
+    "@wow-locker/shared": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^1.52.0",
     "react": "^19.2.7",

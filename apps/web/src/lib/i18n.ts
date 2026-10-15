@@ -305,7 +305,7 @@ const en = {
   privacy: {
     title: "Privacy",
     link: "Privacy",
-    updated: "Last updated: 3 October 2026",
+    updated: "Last updated: 15 October 2026",
     intro:
       "WoWLocker is a hobby project by salty-max, not affiliated with Blizzard Entertainment. This page says what it stores, why, for how long, and how to delete it.",
     sections: [
@@ -335,7 +335,7 @@ const en = {
       },
       {
         title: "Where",
-        body: "The site runs on Vercel and the database on Supabase, both in Ireland. Character data comes from the official Battle.net API. No advertising, no analytics, no tracking.",
+        body: "The site runs on Vercel and the database on Supabase, both in Ireland. Character data comes from the official Battle.net API. No advertising and no tracking: visits are counted without cookies (Vercel Web Analytics: the page, the country, the kind of device, never who you are).",
       },
       {
         title: "Your choices",
