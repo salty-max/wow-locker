@@ -82,20 +82,23 @@ export function Layout() {
         <Outlet />
       </main>
 
-      {/* Phones: navigation as the action bar — square bevelled slots. */}
-      <nav className="pb-safe bar-layer fixed inset-x-0 bottom-0 z-30 border-t border-black bg-[linear-gradient(180deg,#1c1c22,#09090c)] shadow-[0_-1px_0_#5c5c5c] sm:hidden">
-        <div className="mx-auto flex max-w-md justify-center gap-5 px-4 py-2">
+      {/* Phones: the tab bar as Ravenpost's inbox and Hearthtale draw it — the
+          night under a hairline, small labels, the page's tab in gold, the home
+          indicator's room below it. */}
+      <nav className="bar-layer fixed inset-x-0 bottom-0 z-30 border-t border-edge bg-night/90 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] backdrop-blur-md sm:hidden">
+        <div className="mx-auto flex max-w-md justify-around px-1.5">
           {tabs.map((tab) => (
-            <Link key={tab.to} to={tab.to} className="flex flex-col items-center gap-1">
-              <span
-                className={cn(
-                  "wow-slot flex items-center justify-center",
-                  tab.active && "shadow-[0_0_0_1px_#000,0_0_8px_rgb(255_209_0/0.5)] [border-color:#8a7330_#ffd100_#ffd100_#8a7330]",
-                )}
-              >
-                <tab.icon className={cn("size-5", tab.active ? "text-[#ffd100]" : "text-ink-dim")} />
-              </span>
-              <span className={cn("text-[10px] font-semibold", tab.active ? "text-[#ffd100]" : "text-ink-faint")}>{tab.label}</span>
+            <Link
+              key={tab.to}
+              to={tab.to}
+              aria-current={tab.active ? "page" : undefined}
+              className={cn(
+                "flex min-w-14 flex-col items-center gap-[3px] rounded-lg px-2 py-1 text-[10px] font-medium transition-colors",
+                tab.active ? "text-[#ffd100]" : "text-ink-faint",
+              )}
+            >
+              <tab.icon className="size-5" />
+              {tab.label}
             </Link>
           ))}
         </div>
