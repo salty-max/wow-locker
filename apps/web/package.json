@@ -15,12 +15,12 @@
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/cinzel": "^5.2.8",
-    "@tanstack/react-query": "^5.104.1",
-    "@tanstack/react-router": "^1.170.18",
+    "@tanstack/react-query": "^5.104.2",
+    "@tanstack/react-router": "^1.170.42",
     "@vercel/analytics": "^2.0.1",
     "@wow-locker/shared": "workspace:*",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.52.0",
+    "lucide-react": "^1.55.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "workbox-window": "^7.4.1"
@@ -37,7 +37,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "tailwindcss": "^4.3.2",
     "typescript": "^5.9.3",
-    "vite": "^8.3.3",
+    "vite": "^8.3.4",
     "vite-plugin-pwa": "^2.0.0"
   }
 }
