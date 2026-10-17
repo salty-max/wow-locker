@@ -387,6 +387,8 @@ export type StabledPet = { slot: number; name: string; family: string | null; le
 export type AddonState = {
   syncedAt: string; // ISO, last upload
   updatedAt: string | null; // ISO, last time the addon refreshed it in game
+  /** Complete equipped set. Absent on older addons or when gear recording is off. Empty: nothing equipped. */
+  equipment?: EquippedItem[];
   xp: number | null;
   xpMax: number | null;
   rested: number | null;

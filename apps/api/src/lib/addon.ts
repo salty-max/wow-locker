@@ -1,5 +1,5 @@
-import type { AddonState, Container, EventData, Flavour, Quality, ReminderKind, TalentTree, ClassKey, Faction } from "@wow-locker/shared";
-import { classKeyOfToken, factionOf } from "@/lib/classic";
+import type { AddonState, Container, EventData, Flavour, Quality, ReminderKind, TalentTree, ClassKey, Faction, EquippedItem } from "@wow-locker/shared";
+import { classKeyOfToken, factionOf, SLOT_ORDER } from "@/lib/classic";
 
 /**
  * The in-game addon's data (WowLockerDB, converted from Lua to JSON by the
@@ -19,6 +19,20 @@ const int = (v: unknown): number | null => {
 const bool = (v: unknown): boolean | null => (typeof v === "boolean" ? v : null);
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const obj = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+
+/** Undefined is unknown. An explicit empty Lua table means an empty loadout. */
+function equipment(v: unknown): EquippedItem[] | undefined {
+  if (!Array.isArray(v) && !(v != null && typeof v === "object" && Object.keys(v).length === 0)) return undefined;
+  const items: EquippedItem[] = [];
+  const slots = new Set<string>();
+  for (const raw of arr(v)) {
+    const i = obj(raw), slot = str(i.slot, 20), id = int(i.id), name = str(i.name);
+    if (!slot || !SLOT_ORDER.includes(slot) || slots.has(slot) || !id || id < 1 || id > 300000 || !name) return undefined;
+    slots.add(slot);
+    items.push({ slot, slotName: slot, itemId: id, name, quality: qualityOf(i.color), iconUrl: null, enchantments: [] });
+  }
+  return items.sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
+}
 
 /** "Player-6113-03D658B8" → realm 6113, character 64379064 (the Battle.net API ids). */
 export function parseGuid(guid: string): { realmId: number; characterId: number } | null {
@@ -310,6 +324,7 @@ export function parseAddonCharacter(guid: string, raw: unknown): AddonCharacter 
     events,
     state: {
       updatedAt: iso(int(s.updatedAt)),
+      equipment: equipment(s.equipment),
       xp: int(s.xp),
       xpMax: int(s.xpMax) || null, // 0 = not loaded yet in game: unknown
       rested: int(s.rested),

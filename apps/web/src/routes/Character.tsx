@@ -62,11 +62,22 @@ const SLOT_TEXTURE: Record<string, string> = {
 // Paladins, druids and shamans carry a relic (libram, idol, totem) there.
 const RELIC_CLASSES = new Set(["paladin", "druid", "shaman"]);
 
-function Slot({ slot, item, relic = false, small = false }: { slot: string; item?: EquippedItem; relic?: boolean; small?: boolean }) {
+function EquipmentTip({ item, c }: { item: EquippedItem; c: CharacterDetail }) {
+  const q = useQuery({
+    queryKey: ["tooltip", c.region, c.flavour, item.itemId],
+    queryFn: () => api.itemTooltip(c.region, c.flavour, item.itemId),
+    enabled: !item.tooltip,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  return <ItemTooltip item={{ ...item, tooltip: item.tooltip ?? q.data ?? undefined }} />;
+}
+
+function Slot({ slot, item, c, relic = false, small = false }: { slot: string; item?: EquippedItem; c: CharacterDetail; relic?: boolean; small?: boolean }) {
   const t = useT();
   const label = t.slots[slot as keyof typeof t.slots] ?? slot;
   const tip = useTooltip(() =>
-    item ? <ItemTooltip item={item} /> : <p className="text-ink-dim">{label}</p>,
+    item ? <EquipmentTip item={item} c={c} /> : <p className="text-ink-dim">{label}</p>,
   );
   const texture = slot === "RANGED" && relic ? "relic" : (SLOT_TEXTURE[slot] ?? "bag");
   // The slot is the game's texture (its own bevelled frame); an equipped
@@ -87,7 +98,7 @@ function Slot({ slot, item, relic = false, small = false }: { slot: string; item
         (item.iconUrl ? (
           <img src={item.iconUrl} alt="" loading="lazy" className="absolute inset-px size-[calc(100%-2px)] rounded-[3px]" />
         ) : (
-          <span className="absolute inset-px rounded-[3px] bg-stone-3" />
+          <span className="q absolute inset-px flex items-center justify-center rounded-[3px] bg-stone-3 p-0.5 text-center text-[9px] leading-tight" data-q={item.quality}>{item.name.slice(0, 12)}</span>
         ))}
       {item && <span className="qb pointer-events-none absolute inset-0 rounded-[4px] border" data-q={item.quality} />}
       {tip.node}
@@ -101,7 +112,7 @@ function PaperDoll({ c }: { c: CharacterDetail }) {
   const column = (slots: string[]) => (
     <div className="flex flex-col gap-1.5">
       {slots.map((s) => (
-        <Slot key={s} slot={s} item={bySlot.get(s)} />
+        <Slot key={s} slot={s} item={bySlot.get(s)} c={c} />
       ))}
     </div>
   );
@@ -115,10 +126,10 @@ function PaperDoll({ c }: { c: CharacterDetail }) {
         </div>
         <div className="mt-1 flex items-center gap-1.5">
           {BOTTOM.map((s) => (
-            <Slot key={s} slot={s} item={bySlot.get(s)} relic={relic} />
+            <Slot key={s} slot={s} item={bySlot.get(s)} c={c} relic={relic} />
           ))}
           {/* As in game: classes without a relic slot get a small ammo slot. */}
-          {!relic && <Slot slot="AMMO" item={bySlot.get("AMMO")} small />}
+          {!relic && <Slot slot="AMMO" item={bySlot.get("AMMO")} c={c} small />}
         </div>
       </div>
       {column(RIGHT)}

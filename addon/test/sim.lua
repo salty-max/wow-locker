@@ -7,7 +7,7 @@ local state = {
   level = 22, xp = 1542, xpMax = 27300, rested = 4000, money = 12345, guild = nil,
   hp = 380, hpMax = 380, dead = false,
   talents = { { "Arcane", 0 }, { "Fire", 2 }, { "Frost", 10 } },
-  slots = { [10] = "|cff1eff00|Hitem:9999:0|h[Gold-flecked Gloves]|h|r" },
+  slots = { [5] = "|cffffffff|Hitem:57:0|h[Acolyte's Robe]|h|r", [10] = "|cff1eff00|Hitem:9999:0|h[Gold-flecked Gloves]|h|r" },
   questLog = { { "Elwynn Forest", true }, { "The Defias Brotherhood", false, 155 } },
   completed = { [7] = true, [33] = true },
   skills = { { "Professions", true }, { "Cooking", false, 24, 75 }, { "Weapon Skills", true }, { "Staves", false, 98, 110 } },
@@ -69,6 +69,7 @@ ChatFrame1 = { UnregisterEvent = function() end, RegisterEvent = function() end 
 local playedAsked = 0
 function RequestTimePlayed() playedAsked = playedAsked + 1 end
 function GetInventoryItemLink(_, slot) return state.slots[slot] end
+function GetInventoryItemID(_, slot) return state.slots[slot] and tonumber(state.slots[slot]:match("|Hitem:(%d+)")) end
 local combat
 function CombatLogGetCurrentEventInfo() return unpack(combat) end
 -- resting, mail, cooldowns
@@ -227,6 +228,9 @@ local first, last = me.events[1], me.events[#me.events]
 check(first.type == "login" and first.money ~= nil and first.xp ~= nil, "login records XP and gold")
 check(last.type == "logout" and last.money == 12345 and last.xp == s.xp, "logout records the last good XP and gold")
 check(count.gear == 2, "both glove swaps recorded")
+check(#s.equipment == 2 and s.equipment[1].slot == "CHEST" and s.equipment[1].id == 57,
+  "full equipment includes an unchanged item worn before installing the addon")
+check(s.equipment[2].slot == "HANDS" and s.equipment[2].id == 9999, "equipment snapshot keeps the latest swap")
 check(count.loot == 1, "only your own green-or-better loot")
 check(count.close_call == 3, "three close calls (a recovery separates them)")
 check(count.quest == 1 and me.events[#me.events].type == "logout", "quest turn-in recorded")
@@ -482,3 +486,17 @@ before = #me.events
 tick(300); fire("PLAYER_LOGOUT"); tick(60); fire("PLAYER_LOGIN"); fire("PLAYER_ENTERING_WORLD")
 check(ofType(newEvents(), "dungeon_leave") == 0 and me.state.run and me.state.run.loggedOutAt == nil,
   "a reconnect within 30 minutes continues the run")
+
+-- Current equipment is independent of whether there was a previous change event.
+state.slots[5] = nil; fire("PLAYER_EQUIPMENT_CHANGED", 5)
+check(#me.state.equipment == 1 and me.state.equipment[1].slot == "HANDS", "unequipping removes the item from the current snapshot")
+local fullLink = GetInventoryItemLink
+GetInventoryItemLink = function(unit, slot) if slot ~= 10 then return fullLink(unit, slot) end end
+fire("PLAYER_MONEY")
+check(me.state.equipment == nil, "an equipped item still loading is not reported as an empty slot")
+GetInventoryItemLink = fullLink; fire("GET_ITEM_INFO_RECEIVED", 9999, true)
+check(#me.state.equipment == 1, "equipment completes once item data arrives")
+ns.settings().record.gear = false; fire("PLAYER_MONEY")
+check(me.state.equipment == nil, "turning off gear recording removes the equipment snapshot")
+ns.settings().record.gear = true; state.slots[10] = nil; fire("PLAYER_EQUIPMENT_CHANGED", 10)
+check(#me.state.equipment == 0, "an explicit empty snapshot means the character is wearing nothing")

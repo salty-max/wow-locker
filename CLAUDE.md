@@ -82,6 +82,16 @@ and `<realmId>` is the API realm id (6113 = Soulseeker) — match uploads on
 that, not on names. By PLAYER_LOGOUT the client reads XP/money as 0: the
 final snapshot must not re-read them.
 
+The addon also saves a complete `state.equipment` at login, on equipment
+changes and normal snapshots (slot, item id, name, quality colour). Gear
+recording off or item data still loading leaves it absent. An explicit empty
+table means nothing equipped. `GET_ITEM_INFO_RECEIVED` retries an incomplete
+snapshot. The site uses this full loadout when it is newer than the Armory,
+or no public profile exists (`lib/equipment.ts`), and keeps known API details
+for unchanged items. Icons use the item cache, and hovering fetches static
+item details just as bags do. Portraits and renders still require Blizzard's
+character media endpoint. Do not infer a full loadout from gear change events.
+
 ## Companion: Ravenpost (salty-max/ravenpost, ~/code/wow-addons/ravenpost)
 
 The Go tray app that uploads the addon's file lived in `companion/` until

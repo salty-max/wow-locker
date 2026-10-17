@@ -17,6 +17,7 @@
 --                    questsCompleted = { questId, ... }, skills = { … },
 --                    reputations = { … }, run = currentDungeonRun,
 --                    resting,                              -- in an inn/city (rested rate)
+--                    equipment = { { slot, id, name, color }, … }, -- full current loadout
 --                    mail = { readAt, hasNew, letters = { … } },   -- when the mailbox was last open
 --                    cooldowns = { { spellId|itemId, name, readyAt }, … } },
 --       },
@@ -251,6 +252,20 @@ local function parseItemLink(link)
   return id, name, color
 end
 
+-- A complete loadout, including gear worn before the addon was installed.
+-- Change events alone cannot establish which unmentioned slots are empty.
+local function readEquipment()
+  if settings.record.gear == false then me.state.equipment = nil; return end
+  local items = {}
+  for slot = 1, 19 do
+    local equipped = GetInventoryItemID("player", slot)
+    local id, name, color = parseItemLink(GetInventoryItemLink("player", slot))
+    if equipped and (not id or not name) then me.state.equipment = nil; return end -- item data still loading
+    if id and name then items[#items + 1] = { slot = SLOT_NAMES[slot], id = id, name = name, color = color } end
+  end
+  me.state.equipment = items
+end
+
 -- A global format string ("You receive loot: %s.") as a Lua pattern.
 local function formatToPattern(fmt)
   if not fmt then return nil end
@@ -301,6 +316,7 @@ local function snapshot(final)
     return
   end
   s.level = UnitLevel("player")
+  readEquipment()
   local xpMax = UnitXPMax("player")
   if xpMax and xpMax > 0 then
     s.xp = UnitXP("player")
@@ -782,9 +798,12 @@ local handlers = {}
 function handlers.PLAYER_EQUIPMENT_CHANGED(slot)
   local slotName = SLOT_NAMES[slot]
   if not slotName then return end
+  readEquipment()
   local id, name, color = parseItemLink(GetInventoryItemLink("player", slot))
   record({ type = "gear", slot = slotName, itemId = id, name = name, color = color })
 end
+
+handlers.GET_ITEM_INFO_RECEIVED = readEquipment
 
 function handlers.PLAYER_LEVEL_UP(level)
   pendingLevel = record({ type = "level", level = level })

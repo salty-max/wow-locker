@@ -3,11 +3,11 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { setDb, schema, type DB } from "@/db";
-import { accounts, characters, characterEvents, companionLinks } from "@/db/schema";
+import { accounts, characters, characterEvents, companionLinks, itemIcons } from "@/db/schema";
 import { loginAccount } from "./accounts";
 import { api, BnetError } from "./bnet";
 import { handleUpload } from "./companion";
-import { refreshCharacter, toSummary, SNAPSHOT_VERSION } from "./tracker";
+import { refreshCharacter, toSummary, getCharacter, SNAPSHOT_VERSION } from "./tracker";
 
 // CI supplies an isolated Postgres. Locally, opt in with TEST_DATABASE_URL.
 it.skipIf(!process.env.TEST_DATABASE_URL)("saves, deduplicates and enriches an owned character before its public profile exists", async () => {
@@ -33,10 +33,11 @@ it.skipIf(!process.env.TEST_DATABASE_URL)("saves, deduplicates and enriches an o
       const token = crypto.randomUUID();
       const tokenHash = Buffer.from(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))).toString("hex");
       await tx.insert(companionLinks).values({ tokenHash, region: "eu", accountId: account.id, owned: [], ownedIds: [] });
+      await tx.insert(itemIcons).values({ region: "eu", flavour: "classic1x", itemId: 57, url: "https://example.test/robe.jpg" }).onConflictDoNothing();
       const guid = `Player-6113-${character.id.toString(16)}`;
       const body = { characters: { [guid]: {
         name: "Uploadedname", realm: "Test realm", class: "MAGE", race: "Gnome", faction: "Alliance",
-        state: { level: 7, updatedAt: Math.floor(Date.now() / 1000), money: 123 },
+        state: { level: 7, updatedAt: Math.floor(Date.now() / 1000), money: 123, equipment: [{ slot: "CHEST", id: 57, name: "Acolyte's Robe", color: "ffffff" }] },
         events: [{ type: "quest_accept", questId: 1, title: "Test quest", t: Math.floor(Date.now() / 1000) - 10 }],
       } } };
       const first = await handleUpload(token, body);
@@ -46,6 +47,9 @@ it.skipIf(!process.env.TEST_DATABASE_URL)("saves, deduplicates and enriches an o
       let row = await read();
       expect(row).toMatchObject({ ownerId: account.id, shared: false, blizzardId: character.id, name: character.name, level: 7, classKey: "mage", snapshotVersion: 0 });
       expect(row.addon?.money).toBe(123);
+      const detail = await getCharacter(id, { touch: false, viewer: { accountId: account.id } });
+      expect(detail?.equipment).toHaveLength(1);
+      expect(detail?.equipment[0]).toMatchObject({ slot: "CHEST", itemId: 57, name: "Acolyte's Robe", iconUrl: expect.stringContaining("robe.jpg") });
       const [untouched] = await tx.select().from(characters).where(eq(characters.id, otherGame.id));
       expect(untouched.ownerId).toBeNull();
       expect(untouched.addon).toBeNull();

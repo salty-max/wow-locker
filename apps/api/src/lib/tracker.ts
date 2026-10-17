@@ -23,6 +23,7 @@ import { canSeePrivate, isMine, publicAddon, publicEvents, type Viewer } from "@
 import { realmCategory } from "@/lib/realms";
 import { RELOAD_GAP_MS, sessionRecaps } from "@/lib/sessions";
 import { todayInfo } from "@/lib/today";
+import { currentEquipment } from "@/lib/equipment";
 
 /** How often a tracked character is re-checked. Profiles only change on logout,
  *  and a check costs 1 request when nothing changed (summary only). */
@@ -157,7 +158,7 @@ export async function getCharacter(id: number, { touch = true, viewer = null }: 
   });
   return {
     ...toSummary(c, events[0]?.at ?? null, viewer),
-    equipment: c.equipment,
+    equipment: currentEquipment(c).map((item) => ({ ...item, iconUrl: icons.get(item.itemId) ?? item.iconUrl })),
     talents: c.talents,
     stats: c.stats,
     events: open ? withRecaps.map(toEvent) : publicEvents(withRecaps.map(toEvent)),
@@ -247,7 +248,7 @@ export async function searchItems(ids: number[], query: string, viewer: Viewer =
     for (const box of a?.bags ?? []) for (const it of box.items) add(c, it.itemId, it.name, it.quality, "bags", it.count);
     for (const box of a?.bank?.containers ?? []) for (const it of box.items) add(c, it.itemId, it.name, it.quality, "bank", it.count);
     for (const l of a?.mail?.letters ?? []) for (const it of l.items) if (it.itemId != null) add(c, it.itemId, it.name, it.quality, "mail", it.count);
-    for (const e of c.equipment) add(c, e.itemId, e.name, QUALITY[e.quality] ?? null, "equipped", 1);
+    for (const e of currentEquipment(c)) add(c, e.itemId, e.name, QUALITY[e.quality] ?? null, "equipped", 1);
   }
   const matches = [...found.values()].sort((x, y) => x.name.localeCompare(y.name) || x.characterId - y.characterId).slice(0, 60);
   // Icons from the cache, per character's region/flavour.
@@ -320,6 +321,7 @@ export async function cachedIcons(c: Pick<CharacterRow, "region" | "flavour">, i
 export function addonItemIds(a: AddonState | null): number[] {
   if (!a) return [];
   const ids = new Set<number>();
+  for (const item of a.equipment ?? []) ids.add(item.itemId);
   for (const c of [...(a.bags ?? []), ...(a.bank?.containers ?? [])]) for (const it of c.items) ids.add(it.itemId);
   for (const l of a.mail?.letters ?? []) for (const it of l.items) if (it.itemId != null) ids.add(it.itemId);
   return [...ids];

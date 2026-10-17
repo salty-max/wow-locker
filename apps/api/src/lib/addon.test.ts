@@ -28,6 +28,21 @@ describe("parseAddonCharacter", () => {
     expect(invalid?.profile).toMatchObject({ level: null, classKey: null, className: "", faction: "neutral" });
   });
 
+  it("keeps a complete equipment snapshot, including the initial loadout", () => {
+    expect(c.state.equipment?.map((i) => [i.slot, i.itemId])).toEqual([["CHEST", 57], ["HANDS", 9999]]);
+    expect(c.state.equipment?.[0]).toMatchObject({ name: "Acolyte's Robe", quality: "common" });
+  });
+
+  it("distinguishes older addons and invalid snapshots from explicitly empty equipment", () => {
+    const read = (equipment: unknown) => parseAddonCharacter(guid, { ...raw, state: { equipment } })?.state.equipment;
+    expect(read(undefined)).toBeUndefined();
+    expect(read([])).toEqual([]);
+    expect(read({})).toEqual([]); // empty Lua table as read by Ravenpost
+    expect(read([{ slot: "BAGS", id: 57, name: "Bad slot" }])).toBeUndefined();
+    expect(read([{ slot: "CHEST", id: -1, name: "Bad id" }])).toBeUndefined();
+    expect(read([{ slot: "CHEST", id: 57, name: "Robe" }, { slot: "CHEST", id: 58, name: "Duplicate slot" }])).toBeUndefined();
+  });
+
   it("maps every recorded event", () => {
     const types = c.events.map((e) => e.data.type);
     expect(types).toEqual([
