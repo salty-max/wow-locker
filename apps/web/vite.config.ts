@@ -26,7 +26,7 @@ export default defineConfig(() => ({
       // A new deploy's SW waits and UpdatePrompt offers the reload — an installed
       // PWA can't be hard-refreshed, so "prompt" is what keeps it from going stale.
       registerType: "prompt",
-      includeAssets: ["icon.svg", "favicon-32.png", "apple-touch-icon.png"],
+      includeAssets: ["logo-192.png", "favicon-16.png", "favicon-32.png", "apple-touch-icon.png"],
       manifest: {
         id: "/",
         name: "WoWLocker — WoW Classic characters",
