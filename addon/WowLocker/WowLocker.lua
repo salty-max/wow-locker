@@ -311,6 +311,7 @@ end
 local function snapshot(final)
   local s = me.state
   s.updatedAt = time()
+  if settings.record.gear == false then s.equipment = nil end
   if final then
     if GetRealZoneText() ~= "" then location() end
     return
