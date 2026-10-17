@@ -1,4 +1,5 @@
-import type { AddonState, Container, EventData, Flavour, Quality, ReminderKind, TalentTree } from "@wow-locker/shared";
+import type { AddonState, Container, EventData, Flavour, Quality, ReminderKind, TalentTree, ClassKey, Faction } from "@wow-locker/shared";
+import { classKeyOfToken, factionOf } from "@/lib/classic";
 
 /**
  * The in-game addon's data (WowLockerDB, converted from Lua to JSON by the
@@ -252,6 +253,7 @@ export type AddonCharacter = {
   characterId: number;
   name: string;
   realm: string;
+  profile: { level: number | null; classKey: ClassKey | null; className: string; race: string; faction: Faction };
   events: AddonEvent[];
   state: Omit<AddonState, "syncedAt">;
 };
@@ -289,11 +291,22 @@ export function parseAddonCharacter(guid: string, raw: unknown): AddonCharacter 
     if (/^\d{1,3}$/.test(lvl) && p != null) levelPlayed[lvl] = p;
   }
   const run = obj(s.run);
+  const classKey = classKeyOfToken(str(c.class, 30));
+  const className = classKey === "deathknight" ? "Death Knight" : classKey === "demonhunter" ? "Demon Hunter" : classKey ? classKey[0].toUpperCase() + classKey.slice(1) : "";
+  const race = str(c.race, 40) ?? "";
+  const level = int(s.level);
   return {
     guid,
     ...ids,
     name,
     realm: str(c.realm, 60) ?? "",
+    profile: {
+      level: level != null && level >= 1 && level <= 100 ? level : null,
+      classKey,
+      className,
+      race: race === "Scourge" ? "Undead" : race.replace(/([a-z])([A-Z])/g, "$1 $2"),
+      faction: factionOf(str(c.faction, 20) ?? undefined),
+    },
     events,
     state: {
       updatedAt: iso(int(s.updatedAt)),

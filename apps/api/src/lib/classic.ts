@@ -17,6 +17,7 @@ const CLASS_IDS: Record<number, ClassKey> = {
   13: "evoker",
 };
 export const classKeyOf = (id: number | undefined): ClassKey | null => (id != null ? (CLASS_IDS[id] ?? null) : null);
+export const classKeyOfToken = (token: string | null): ClassKey | null => Object.values(CLASS_IDS).find((key) => key === token?.toLowerCase()) ?? null;
 
 export function factionOf(type: string | undefined): Faction {
   const t = (type ?? "").toLowerCase();

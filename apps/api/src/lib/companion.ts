@@ -3,7 +3,6 @@ import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
 import { addToAccountRoster } from "@/lib/accounts";
-import { BnetError } from "@/lib/bnet";
 import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/lib/addon";
 import { isGone, superseded, type OwnedList } from "@/lib/diff";
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
@@ -149,7 +148,7 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
       result.characters.push({ guid, name: parsed.name, status: gone ? "gone" : "unknown", events: 0 });
       continue;
     }
-    const row = await characterFor(link.region, owned);
+    const row = await characterFor(link.region, owned, parsed, link.accountId);
     if (isGone(lists, parsed.characterId, true, parsed.state.updatedAt, row.missingReportedAt != null)) {
       result.characters.push({ guid, name: parsed.name, status: "gone", events: 0, characterId: row.id });
       continue;
@@ -171,23 +170,52 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
 async function characterFor(
   region: Region,
   owned: { id: number; flavour: Flavour; realmSlug: string; name: string },
+  parsed: AddonCharacter,
+  accountId: number | null,
 ): Promise<CharacterRow> {
   const [byId] = await db
     .select()
     .from(characters)
-    .where(and(eq(characters.region, region), eq(characters.blizzardId, owned.id)));
+    .where(and(eq(characters.region, region), eq(characters.flavour, owned.flavour), eq(characters.blizzardId, owned.id)));
   if (byId) return byId;
   try {
     const summary = await addCharacter({ region, flavour: owned.flavour, realm: owned.realmSlug, name: owned.name });
     const [row] = await db.select().from(characters).where(eq(characters.id, summary.id));
     if (!row) throw new Error("tracked character disappeared during upload");
+    if (row.blizzardId !== owned.id) throw new Error("tracked character does not match the verified Battle.net id");
     return row;
   } catch (err) {
-    log.warn("companion.track.failed", { name: owned.name, err: String(err) });
-    // Ownership was already proved. A profile that is not available yet is
-    // a retryable upload error, not evidence that this is someone else's character.
-    if (err instanceof NotFoundError) throw new BnetError("owned character profile", 404);
-    throw err;
+    if (!(err instanceof NotFoundError) || accountId == null) {
+      log.warn("companion.track.failed", { name: owned.name, err: String(err) });
+      throw err;
+    }
+    log.info("companion.profile.pending", { name: owned.name });
+    // The account list proves ownership even before Blizzard publishes an
+    // Armory profile. Create a private row and keep the addon data now.
+    const [created] = await db
+      .insert(characters)
+      .values({
+        region,
+        flavour: owned.flavour,
+        realmSlug: owned.realmSlug,
+        realmName: parsed.realm || owned.realmSlug,
+        name: owned.name,
+        nameKey: owned.name.toLowerCase(),
+        blizzardId: owned.id,
+        ownerId: accountId,
+        ...parsed.profile,
+        level: parsed.profile.level ?? 1,
+        fetchedAt: new Date(),
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (created) return created;
+    const [concurrent] = await db
+      .select()
+      .from(characters)
+      .where(and(eq(characters.region, region), eq(characters.flavour, owned.flavour), eq(characters.blizzardId, owned.id)));
+    if (!concurrent) throw new Error("character identity conflicts with another recorded life", { cause: err });
+    return concurrent;
   }
 }
 
@@ -223,7 +251,8 @@ async function applyAddon(c: CharacterRow, parsed: AddonCharacter): Promise<numb
   if (added) await capCharacter(c.id);
 
   const state = { ...parsed.state, syncedAt: now.toISOString() };
-  const [updated] = await db.update(characters).set({ addon: state }).where(eq(characters.id, c.id)).returning();
+  const profile = c.snapshotVersion === 0 ? { ...parsed.profile, level: parsed.profile.level ?? c.level } : {};
+  const [updated] = await db.update(characters).set({ ...profile, addon: state }).where(eq(characters.id, c.id)).returning();
 
   // Reminders: recomputed from scratch on every upload (stale ones disappear).
   const lastSession = [...parsed.events].reverse().find((e) => e.data.type === "session");

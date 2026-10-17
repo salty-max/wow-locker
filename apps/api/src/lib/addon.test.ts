@@ -21,6 +21,13 @@ describe("parseAddonCharacter", () => {
     expect(c).toMatchObject({ name: "Namzie", realm: "Soulseeker", realmId: 6113, characterId: 64379064 });
   });
 
+  it("validates the basic profile used before the Armory profile exists", () => {
+    const parsed = parseAddonCharacter(guid, { ...raw, class: "WARLOCK", race: "Scourge", faction: "Horde", state: { level: 7 } });
+    expect(parsed?.profile).toEqual({ level: 7, classKey: "warlock", className: "Warlock", race: "Undead", faction: "horde" });
+    const invalid = parseAddonCharacter(guid, { ...raw, class: "invalid", faction: "invalid", state: { level: -5 } });
+    expect(invalid?.profile).toMatchObject({ level: null, classKey: null, className: "", faction: "neutral" });
+  });
+
   it("maps every recorded event", () => {
     const types = c.events.map((e) => e.data.type);
     expect(types).toEqual([

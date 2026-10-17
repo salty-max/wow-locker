@@ -383,7 +383,10 @@ export async function refreshCharacter(c: CharacterRow, { force = false } = {}):
   try {
     s = await api.summary(c.flavour, c.region, c.realmSlug, c.nameKey);
   } catch (err) {
-    const answer = err instanceof BnetError && err.status === 404 ? "not_found" : "error";
+    // An addon-backed character with no API snapshot has never had a public
+    // profile. Its continued absence cannot establish that it was deleted.
+    const unpublished = c.snapshotVersion === 0 && c.addon != null;
+    const answer = err instanceof BnetError && err.status === 404 && !unpublished ? "not_found" : "error";
     if (answer === "error") log.warn("character.refresh.failed", { id: c.id, err: String(err) });
     const { next, event } = availabilityStep(prevAvail, answer);
     const [row] = await db
@@ -446,7 +449,7 @@ export async function refreshCharacter(c: CharacterRow, { force = false } = {}):
   // Events only once we have a previous snapshot to compare with. For
   // characters that run the addon, the addon's own (exact, timestamped) events
   // win: the diff only keeps what the addon can't see.
-  const diffed = c.fetchedAt && c.equipment.length + c.level > 0 ? diffSnapshots(c, next) : [];
+  const diffed = c.fetchedAt && c.snapshotVersion > 0 && c.equipment.length + c.level > 0 ? diffSnapshots(c, next) : [];
   const events: EventData[] = [
     ...(back ? [back] : []),
     ...(c.addon && Date.now() - Date.parse(c.addon.syncedAt) < ADDON_STALE_MS ? diffed.filter((e) => !ADDON_COVERS.has(e.type)) : diffed),
@@ -483,7 +486,7 @@ export async function refreshDue(limit = 60, deadline = Infinity): Promise<{ che
         gt(characters.requestedAt, new Date(now - DORMANT_AFTER_MS)),
         or(
           isNull(characters.fetchedAt),
-          sql`${characters.snapshotVersion} < ${SNAPSHOT_VERSION} and ${characters.status} = 'ok'`,
+          sql`${characters.snapshotVersion} > 0 and ${characters.snapshotVersion} < ${SNAPSHOT_VERSION} and ${characters.status} = 'ok'`,
           // Living characters, and ones with a first "not found" to confirm,
           // at the normal cadence; fallen and confirmed-missing ones daily.
           and(

@@ -135,9 +135,14 @@ Each login also keeps verified character names, realms and flavours in
 `accounts.owned[].characters`. Companion uploads use these newer proofs as
 well as the original pairing list, so characters created after pairing do
 not need a new companion link. Older account rows without this optional
-metadata still use the pairing list until the next login. A verified
-character whose public profile is unavailable causes a retryable upload
-error, never an ownership rejection.
+metadata still use the pairing list until the next login. When a verified
+character's public profile returns 404, an upload creates its private row
+from the verified identity and the addon's basic profile. Addon data is
+saved immediately. A row with addon data and snapshotVersion 0 has never
+had an API snapshot, so repeated 404s cannot mark it deleted. The first
+successful API response enriches that row without generating snapshot
+diff events. CI exercises this lifecycle against Postgres (locally,
+TEST_DATABASE_URL opts into the transactional integration test).
 
 ## Security and retention
 
