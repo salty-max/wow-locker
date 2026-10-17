@@ -107,14 +107,17 @@ export async function finishLogin(
   log.info("account.imported", { region: pending.region, characters: data.characters.length, unavailable });
   // The account, and a session for this browser (no id: Blizzard didn't say who, no account).
   // A flavour that didn't answer leaves its characters out of `owned` until the next login.
-  const acc = bnetId ? await loginAccount({ bnetId, battletag: battletag ?? null, region: pending.region, owned: found.map((c) => c.id), unavailable }) : null;
+  const ownedCharacters = found.map((c) => ({ id: c.id, flavour: c.flavour, realmSlug: c.realmSlug, name: c.name }));
+  const acc = bnetId
+    ? await loginAccount({ bnetId, battletag: battletag ?? null, region: pending.region, owned: found.map((c) => c.id), characters: ownedCharacters, unavailable })
+    : null;
   const session = acc ? await createSession(acc.id) : null;
   let pairCode = pending.pairCode;
   if (pairCode) {
     const paired = await completePairing(pairCode, {
       region: pending.region,
       battletag: battletag ?? null,
-      owned: found.map((c) => ({ id: c.id, flavour: c.flavour, realmSlug: c.realmSlug, name: c.name })),
+      owned: ownedCharacters,
       unavailable,
       accountId: acc?.id ?? null,
     });

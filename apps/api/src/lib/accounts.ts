@@ -2,7 +2,7 @@ import type { EventType, Flavour, Lang, Me, Region } from "@wow-locker/shared";
 import { NOTIFIABLE_EVENTS } from "@wow-locker/shared";
 import { and, arrayOverlaps, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { accounts, characters, characterEvents, companionLinks, pushSubscription, sessions, type AccountRow } from "@/db/schema";
+import { accounts, characters, characterEvents, companionLinks, pushSubscription, sessions, type AccountRow, type CompanionLinkRow } from "@/db/schema";
 import { log } from "@/lib/log";
 
 /**
@@ -32,10 +32,11 @@ export async function loginAccount(login: {
   battletag: string | null;
   region: Region;
   owned: number[];
+  characters: CompanionLinkRow["owned"];
   unavailable?: Flavour[];
 }): Promise<AccountRow> {
   const [found] = await db.select().from(accounts).where(eq(accounts.bnetId, login.bnetId));
-  const fresh = { region: login.region, ids: login.owned, at: new Date().toISOString(), unavailable: login.unavailable ?? [] };
+  const fresh = { region: login.region, ids: login.owned, characters: login.characters, at: new Date().toISOString(), unavailable: login.unavailable ?? [] };
   const owned = [...(found?.owned ?? []).filter((o) => o.region !== login.region), fresh];
   const [acc] = found
     ? await db.update(accounts).set({ battletag: login.battletag, owned, lastSeenAt: new Date() }).where(eq(accounts.id, found.id)).returning()

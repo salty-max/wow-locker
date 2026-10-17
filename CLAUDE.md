@@ -131,6 +131,14 @@ through it (summaries, detail, item search, memorial, pushes of personal
 events). Deleting an account wipes its characters' addon data, since they
 would otherwise turn public.
 
+Each login also keeps verified character names, realms and flavours in
+`accounts.owned[].characters`. Companion uploads use these newer proofs as
+well as the original pairing list, so characters created after pairing do
+not need a new companion link. Older account rows without this optional
+metadata still use the pairing list until the next login. A verified
+character whose public profile is unavailable causes a retryable upload
+error, never an ownership rejection.
+
 ## Security and retention
 
 - Supabase also serves `public` over its REST API: `db/migrate.ts` enables RLS

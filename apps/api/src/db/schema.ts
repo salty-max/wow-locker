@@ -143,7 +143,7 @@ export const accounts = pgTable("accounts", {
    * when (at, ISO) and the flavours that didn't answer (both since 0.2.2's "gone").
    */
   owned: jsonb("owned")
-    .$type<{ region: Region; ids: number[]; at?: string; unavailable?: Flavour[] }[]>()
+    .$type<{ region: Region; ids: number[]; at?: string; unavailable?: Flavour[]; characters?: { id: number; flavour: Flavour; realmSlug: string; name: string }[] }[]>()
     .notNull()
     .default(sql`'[]'::jsonb`),
   /** The locker: tracked character ids, in display order. */

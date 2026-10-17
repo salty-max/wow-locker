@@ -3,14 +3,16 @@ import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
 import { addToAccountRoster } from "@/lib/accounts";
+import { BnetError } from "@/lib/bnet";
 import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/lib/addon";
 import { isGone, superseded, type OwnedList } from "@/lib/diff";
 import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { deliverEvent } from "@/lib/push";
 import { capCharacter, withinRetention } from "@/lib/retention";
-import { addCharacter, addonItemIds, fillIcons } from "@/lib/tracker";
+import { addCharacter, addonItemIds, fillIcons, NotFoundError } from "@/lib/tracker";
 import { waitUntil } from "@vercel/functions";
+import { ownedCharacter } from "@/lib/ownership";
 
 /**
  * The companion app: pairing (device-code style, ownership proven by a
@@ -118,9 +120,10 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
 
   // What Battle.net said the account had: at pairing, and at its last login on the site.
   const lists: OwnedList[] = [{ at: link.createdAt, ids: link.ownedIds, unavailable: link.unavailable }];
+  let fresh: (typeof accounts.$inferSelect)["owned"][number] | undefined;
   if (link.accountId != null) {
     const [acc] = await db.select({ owned: accounts.owned }).from(accounts).where(eq(accounts.id, link.accountId));
-    const fresh = acc?.owned.find((o) => o.region === link.region);
+    fresh = acc?.owned.find((o) => o.region === link.region);
     if (fresh?.at) lists.push({ at: new Date(fresh.at), ids: fresh.ids, unavailable: fresh.unavailable ?? null });
   }
   const entries = Object.entries(chars as Record<string, unknown>)
@@ -140,17 +143,13 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
       continue;
     }
     // Only characters the Battle.net login proved to be this account's.
-    const owned = link.owned.find((c) => c.id === parsed.characterId);
+    const owned = ownedCharacter(link.region, parsed.characterId, link.owned, fresh);
     if (!owned) {
       const gone = isGone(lists, parsed.characterId, false, parsed.state.updatedAt, false);
       result.characters.push({ guid, name: parsed.name, status: gone ? "gone" : "unknown", events: 0 });
       continue;
     }
     const row = await characterFor(link.region, owned);
-    if (!row) {
-      result.characters.push({ guid, name: parsed.name, status: "unknown", events: 0 });
-      continue;
-    }
     if (isGone(lists, parsed.characterId, true, parsed.state.updatedAt, row.missingReportedAt != null)) {
       result.characters.push({ guid, name: parsed.name, status: "gone", events: 0, characterId: row.id });
       continue;
@@ -172,7 +171,7 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
 async function characterFor(
   region: Region,
   owned: { id: number; flavour: Flavour; realmSlug: string; name: string },
-): Promise<CharacterRow | null> {
+): Promise<CharacterRow> {
   const [byId] = await db
     .select()
     .from(characters)
@@ -181,10 +180,14 @@ async function characterFor(
   try {
     const summary = await addCharacter({ region, flavour: owned.flavour, realm: owned.realmSlug, name: owned.name });
     const [row] = await db.select().from(characters).where(eq(characters.id, summary.id));
-    return row ?? null;
+    if (!row) throw new Error("tracked character disappeared during upload");
+    return row;
   } catch (err) {
     log.warn("companion.track.failed", { name: owned.name, err: String(err) });
-    return null;
+    // Ownership was already proved. A profile that is not available yet is
+    // a retryable upload error, not evidence that this is someone else's character.
+    if (err instanceof NotFoundError) throw new BnetError("owned character profile", 404);
+    throw err;
   }
 }
 
