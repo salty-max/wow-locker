@@ -3,7 +3,7 @@
 ## Notes: Record your WoW characters' gear, levels, loot, dungeon runs, deaths and close calls to view on wow-locker.app.
 ## Category: Data Export
 ## Author: salty-max
-## Version: 0.3.10
+## Version: 0.3.11
 ## SavedVariables: WowLockerDB, WowLockerSettings
 ## IconTexture: Interface\Icons\INV_Box_02
 ## X-Website: https://wow-locker.app

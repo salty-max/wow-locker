@@ -15,7 +15,7 @@ export const RAVENPOST_REPO = "salty-max/ravenpost";
 export const RELEASES_URL = `https://github.com/${ADDON_REPO}/releases`;
 export const RAVENPOST_RELEASES_URL = `https://github.com/${RAVENPOST_REPO}/releases`;
 /** The versions shown until GitHub answers. */
-export const ADDON_VERSION = "0.3.10";
+export const ADDON_VERSION = "0.3.11";
 export const COMPANION_VERSION = "0.2.5";
 
 /** Each download: its repo, its file's name (with its version or without). */
