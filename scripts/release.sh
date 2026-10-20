@@ -69,10 +69,9 @@ for pkg in package.json apps/web/package.json; do
 done
 
 if [ "$CHECKS" = 1 ]; then
-  bun run typecheck
-  bun run lint
-  bun run test
-  if command -v luajit >/dev/null; then luajit addon/test/sim.lua >/dev/null; else echo "warning: no luajit, addon sim skipped" >&2; fi
+  # The whole check on the bumped tree, the one pushed: q stamps it, and the
+  # pre-push hook refuses a tree without a stamp.
+  bun "$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/q.ts" check -- bun run check
 fi
 
 git add -A

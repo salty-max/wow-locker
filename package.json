@@ -2,7 +2,7 @@
   "name": "wow-locker",
   "version": "0.1.15",
   "private": true,
-  "description": "WoW Classic character tracker (Hardcore-friendly) \u2014 PWA with push notifications",
+  "description": "WoW Classic character tracker (Hardcore-friendly) — PWA with push notifications",
   "license": "MIT",
   "workspaces": [
     "apps/*",
@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "turbo run test",
-    "prepare": "husky",
+    "check": "bun run typecheck && bun run lint && bun run test && luajit addon/test/sim.lua",
+    "prepare": "husky && (bun \"$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/hooks.ts\" install . >/dev/null 2>&1 || true)",
     "db": "bash scripts/db.sh",
     "db:generate": "bun run --filter @wow-locker/api db:generate",
     "db:migrate": "bun run --filter @wow-locker/api db:migrate"
