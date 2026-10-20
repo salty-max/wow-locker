@@ -1,10 +1,15 @@
 # Weekly dependency updates, grouped (one pull request per ecosystem); CI
 # checks each one. Majors come separately: they need reading.
+# Paused while WoWLocker is on hold (20 Oct 2026, until Forever's launch is
+# behind us): open-pull-requests-limit 0 stops the version updates, so no
+# dependency pull request comes (the repository's Dependabot alerts and
+# security updates are off too). Remove both limits to start them again.
 version: 2
 updates:
   - package-ecosystem: bun
     directory: /
     schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 0
     ignore:
       # TypeScript 7 (the native rewrite): typescript-eslint doesn't support it
       # yet (2026-10). Lift this once it does.
@@ -17,4 +22,5 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
+    open-pull-requests-limit: 0
     commit-message: { prefix: "ci(deps)" }
