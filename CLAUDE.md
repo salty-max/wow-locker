@@ -22,7 +22,7 @@ the family's CLAUDE.md (`../CLAUDE.md`) first.
 ```bash
 bun run dev | typecheck | lint | test | build
 bun run check         # typecheck, lint, test, the addon's sim
-bun ../addon-kit/q.ts check -- bun run check   # the same, quiet, stamping the tree for the push
+bun "$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/q.ts" check -- bun run check   # the same, quiet, stamping the tree for the push
 bun run db            # local Postgres :5434 (docker, container wow-locker-pg)
 bun run db:generate   # migration from apps/api/src/db/schema.ts
 bun run db:migrate

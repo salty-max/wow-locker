@@ -13,7 +13,6 @@
 #   --hold              the GitHub release alone (repository variable
 #                       HOLD_STORES); the stores later, by hand:
 #                       gh workflow run release.yml -f tag=vX.Y.Z
-#   --skip-checks       don't run typecheck / lint / tests / addon sim
 #   --dry-run           show what would change, change nothing
 #
 # The site version (package.json, shown in Settings) follows the release.
@@ -23,13 +22,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="" ADDON="" NOTES="" CHECKS=1 DRY=0 HOLD=0
+VERSION="" ADDON="" NOTES="" DRY=0 HOLD=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --version) VERSION="$2"; shift 2 ;;
     --addon) ADDON="$2"; shift 2 ;;
     --hold) HOLD=1; shift ;;
-    --skip-checks) CHECKS=0; shift ;;
     --dry-run) DRY=1; shift ;;
     -*) echo "unknown option $1" >&2; exit 2 ;;
     *) NOTES="$1"; shift ;;
@@ -68,11 +66,9 @@ for pkg in package.json apps/web/package.json; do
   perl -pi -e "s/^  \"version\": \".*\"/  \"version\": \"$VERSION\"/" "$pkg"
 done
 
-if [ "$CHECKS" = 1 ]; then
-  # The whole check on the bumped tree, the one pushed: q stamps it, and the
-  # pre-push hook refuses a tree without a stamp.
-  bun "$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/q.ts" check -- bun run check
-fi
+# The whole check on the bumped tree, the one pushed: q stamps it, and the
+# pre-push hook refuses a tree without a stamp (so no way to skip it).
+bun "$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/q.ts" check -- bun run check
 
 git add -A
 git commit -q -m "chore(release): $TAG"
