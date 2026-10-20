@@ -17,6 +17,7 @@ ignore:
   - addon/CURSEFORGE.md
   - apps
   - assets
+  - docs
   - packages
   - scripts
   - spike
