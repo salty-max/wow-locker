@@ -86,9 +86,11 @@ client tables).
   must keep each blank's argument number.
 - **At login the zone may not be known yet** (confirmed): `GetRealZoneText`
   is empty for a few seconds; what is recorded "at login" must wait for it.
-- **Game folder:** `_classic_beta_` during the beta (Ravenpost labels it
-  "World of Warcraft: Forever (beta)"); the live folder's name is only known
-  at launch. Under `WTF/Account/<account>/` the realm folder is a number
+- **Game folder:** `_forever_` for the live game (first seen at the
+  stress test, 23 October 2026; Ravenpost labels it "World of Warcraft:
+  Forever"), `_classic_beta_` for the beta ("World of Warcraft: Forever
+  (beta)"). The folder doesn't pick the TOC: the client is game type Camelot
+  (`_Camelot.toc`, interface 16001 on 1.60.1). Under `WTF/Account/<account>/` the realm folder is a number
   ("70"), the character folders are "First-Surname" ("Hellefie-Namzan").
   The game keeps a deleted character's folder.
 
@@ -239,8 +241,8 @@ The addon (`addon/WowLocker`):
 
 Ravenpost:
 
-7. Label Forever's live folder once its name is known at launch (the beta's
-   `_classic_beta_` is done).
+7. ✅ Label Forever's live folder: `_forever_` (23 October 2026), beside the
+   beta's `_classic_beta_`.
 
 The API and the site:
 
