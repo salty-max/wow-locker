@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix",
     "test": "turbo run test",
     "check": "bun run typecheck && bun run lint && bun run test && luajit addon/test/sim.lua",
-    "prepare": "husky && (bun \"$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/hooks.ts\" install . >/dev/null 2>&1 || true)",
+    "prepare": "husky && ([ -n \"$CI\" ] || bun \"$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/hooks.ts\" install . >/dev/null 2>&1 || echo \"prepare: the family's git hooks not installed (bun addon-kit/hooks.ts install wow-locker)\" >&2)",
     "db": "bash scripts/db.sh",
     "db:generate": "bun run --filter @wow-locker/api db:generate",
     "db:migrate": "bun run --filter @wow-locker/api db:migrate"
