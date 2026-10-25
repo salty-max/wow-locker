@@ -42,7 +42,8 @@ for v in "$ADDON" "$VERSION"; do [ -z "$v" ] || [[ "$v" =~ $semver ]] || die "no
 git fetch -q origin --tags
 [ "$(git rev-parse --abbrev-ref HEAD)" = main ] || die "not on main"
 [ -z "$(git status --porcelain)" ] || die "the working tree isn't clean"
-[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || die "main isn't in sync with origin/main"
+FETCHED=$(git rev-parse origin/main)
+[ "$(git rev-parse HEAD)" = "$FETCHED" ] || die "main isn't in sync with origin/main"
 
 if [ -z "$VERSION" ]; then
   last=$(git tag -l 'v*' --sort=-v:refname | head -1)
@@ -58,7 +59,27 @@ cur_addon=$(sed -n 's/^## Version: *//p' "$TOC" | tr -d '\r')
 ADDON=${ADDON:-$cur_addon}
 
 echo "release $TAG: addon $cur_addon → $ADDON, site → $VERSION$([ "$HOLD" = 1 ] && echo ", GitHub only (stores held)")"
+# HOLD_STORES as it is (gh must answer: a release can't guess it).
+held=$(gh variable list --json name,value -q '.[] | select(.name == "HOLD_STORES") | .value') ||
+  die "gh can't read the repository's variables (gh auth status)"
 [ "$DRY" = 1 ] && { echo "(dry run: nothing changed)"; exit 0; }
+
+# From here, a stop before the push puts everything back.
+pushed=0 touched=0
+restore() {
+  local code=$?
+  [ "$code" = 0 ] || [ "$pushed" = 1 ] && return
+  echo "release: stopped before the push, nothing published: putting the repository back" >&2
+  git tag -d "$TAG" >/dev/null 2>&1 || true
+  git reset -q --hard "$FETCHED"
+  if [ "$touched" = 1 ]; then
+    if [ "$held" = true ]; then gh variable set HOLD_STORES --body true >/dev/null || echo "release: put HOLD_STORES back by hand" >&2
+    else gh variable delete HOLD_STORES >/dev/null 2>&1 || echo "release: put HOLD_STORES back by hand" >&2; fi
+  fi
+  exit "$code"
+}
+trap restore EXIT
+
 
 perl -pi -e "s/^## Version: .*/## Version: $ADDON/" "$TOC"
 perl -pi -e "s/ADDON_VERSION = \".*\"/ADDON_VERSION = \"$ADDON\"/" apps/web/src/lib/downloads.ts
@@ -71,13 +92,19 @@ done
 bun "$(git rev-parse --path-format=absolute --git-common-dir)/../../addon-kit/q.ts" check -- bun run check
 
 git add -A
+stamps="$(git rev-parse --path-format=absolute --git-common-dir)/harness"
+[ -f "$stamps/check-$(git write-tree)" ] || die "the check didn't stamp the bumped tree (files changed while it ran?): run the release again"
 git commit -q -m "chore(release): $TAG"
+# origin's main still the one checked (an atomic push: main and the tag, or neither)
+[ "$(git ls-remote origin refs/heads/main | cut -f1)" = "$FETCHED" ] || die "origin/main moved while the check ran: run the release again"
 git tag -a "$TAG" --cleanup=verbatim -F "$NOTES" # keep markdown headings
 # The stores held back or not: read by the release's workflow, so set first.
 if [ "$HOLD" = 1 ]; then
-  gh variable set HOLD_STORES --body true >/dev/null
-else
-  gh variable delete HOLD_STORES >/dev/null 2>&1 || true
+  [ "$held" = true ] || { touched=1; gh variable set HOLD_STORES --body true >/dev/null; }
+elif [ -n "$held" ]; then
+  touched=1
+  gh variable delete HOLD_STORES >/dev/null
 fi
-git push -q origin main "$TAG"
+git push --atomic -q origin main "$TAG"
+pushed=1
 echo "pushed $TAG: https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo salty-max/wow-locker)/actions"
