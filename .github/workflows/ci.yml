@@ -37,8 +37,8 @@ jobs:
       HUSKY: "0"
       TEST_DATABASE_URL: postgres://wowlocker:wowlocker@localhost:5432/wowlocker
     steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: package.json
       - run: bun install --frozen-lockfile
@@ -51,13 +51,13 @@ jobs:
   addon:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: sudo apt-get install -y -qq luajit
       - run: luajit addon/test/sim.lua
       # The release's package (release.yml), made without publishing: the
       # addon's folder, nothing more or less.
       - run: echo "(CI)" > .release-notes.md
-      - uses: BigWigsMods/packager@v2.6.1
+      - uses: BigWigsMods/packager@e50a250f8705041e40f2fa1ddcb280a686d65aa0 # v2.6.1
         with:
           args: -d -u
           pandoc: false

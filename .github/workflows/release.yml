@@ -32,7 +32,7 @@ jobs:
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
@@ -69,13 +69,13 @@ jobs:
       # the folder has them; the zip named by the addon's version: the site finds it
       # in the latest release.)
       - name: The package, checked
-        uses: BigWigsMods/packager@v2.6.1
+        uses: BigWigsMods/packager@e50a250f8705041e40f2fa1ddcb280a686d65aa0 # v2.6.1
         with:
           args: -d -u -n "WowLocker-addon-${{ steps.addon.outputs.label }}:${{ steps.addon.outputs.label }}"
           pandoc: false
       - run: diff -r addon/WowLocker .release/WowLocker
       - name: Published
-        uses: BigWigsMods/packager@v2.6.1
+        uses: BigWigsMods/packager@e50a250f8705041e40f2fa1ddcb280a686d65aa0 # v2.6.1
         with:
           args: -u -n "WowLocker-addon-${{ steps.addon.outputs.label }}:${{ steps.addon.outputs.label }}"
           pandoc: false
