@@ -65,10 +65,16 @@ held=$(gh variable list --json name,value -q '.[] | select(.name == "HOLD_STORES
 [ "$DRY" = 1 ] && { echo "(dry run: nothing changed)"; exit 0; }
 
 # From here, a stop before the push puts everything back.
-pushed=0 touched=0
+pushed=0 pushing=0 touched=0
 restore() {
   local code=$?
   [ "$code" = 0 ] || [ "$pushed" = 1 ] && return
+  # (a push whose answer the client lost may have landed all the same: then
+  # it's out, and nothing is put back)
+  if [ "$pushing" = 1 ] && [ -n "$(git ls-remote origin "refs/tags/$TAG" 2>/dev/null)" ]; then
+    echo "release: the push failed on this side, but $TAG is on origin: published, nothing put back" >&2
+    exit "$code"
+  fi
   echo "release: stopped before the push, nothing published: putting the repository back" >&2
   git tag -d "$TAG" >/dev/null 2>&1 || true
   git reset -q --hard "$FETCHED"
@@ -105,6 +111,7 @@ elif [ -n "$held" ]; then
   touched=1
   gh variable delete HOLD_STORES >/dev/null
 fi
+pushing=1
 git push --atomic -q origin main "$TAG"
 pushed=1
 echo "pushed $TAG: https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo salty-max/wow-locker)/actions"

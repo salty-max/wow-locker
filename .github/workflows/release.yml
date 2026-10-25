@@ -34,6 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # (no token left in git's config for the build to read: the repository is public)
+          persist-credentials: false
           ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
       # checkout leaves the tag lightweight: fetch it again for its message.
