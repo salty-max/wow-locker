@@ -49,7 +49,7 @@ const en = {
       {
         title: "Install Ravenpost",
         body: [
-          "Windows: run the .exe. It isn't signed yet, so SmartScreen may warn you: More info → Run anyway. Its window opens; closed, Ravenpost stays in the tray (the ^ arrow next to the clock).",
+          "Windows: run the .exe. It isn't signed yet, so SmartScreen may warn you: More info → Run anyway. If Smart App Control on Windows 11 blocks it outright, turn that off in Windows Security (App & browser control). Its window opens; closed, Ravenpost stays in the tray (the ^ arrow next to the clock).",
           "macOS: unzip, move Ravenpost to Applications, then right-click it → Open the first time (it isn't notarized yet). Its window opens; closed, Ravenpost stays in the menu bar.",
         ],
       },
@@ -586,7 +586,7 @@ const fr: Messages = {
       {
         title: "Installer Ravenpost",
         body: [
-          "Windows : lancez le .exe. Il n'est pas encore signé, SmartScreen peut avertir : Informations complémentaires → Exécuter quand même. Sa fenêtre s'ouvre ; fermée, Ravenpost reste dans la zone de notification (la flèche ^ près de l'horloge).",
+          "Windows : lancez le .exe. Il n'est pas encore signé, SmartScreen peut avertir : Informations complémentaires → Exécuter quand même. Si le Contrôle intelligent des applications de Windows 11 le bloque complètement, désactivez-le dans Sécurité Windows (Contrôle des applications et du navigateur). Sa fenêtre s'ouvre ; fermée, Ravenpost reste dans la zone de notification (la flèche ^ près de l'horloge).",
           "macOS : décompressez, placez Ravenpost dans Applications, puis clic droit → Ouvrir la première fois (il n'est pas encore notarisé). Sa fenêtre s'ouvre ; fermée, Ravenpost reste dans la barre des menus.",
         ],
       },
