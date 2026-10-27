@@ -20,6 +20,8 @@ export const LIMITS = {
   push: { name: "push", max: 120, windowMs: 3600_000 },
   /** Item search across a roster. */
   items: { name: "items", max: 300, windowMs: 10 * 60_000 },
+  /** Ravenpost's sign-in handing its passport on (a few a day at most). */
+  refresh: { name: "refresh", max: 30, windowMs: 3600_000 },
   /** Companion uploads (normally one per logout or /reload). */
   upload: { name: "upload", max: 120, windowMs: 3600_000 },
 } satisfies Record<string, Limit>;

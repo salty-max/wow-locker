@@ -1,17 +1,18 @@
-import type { EventData, Flavour, PairPoll, PairStart, Region, UploadResult } from "@wow-locker/shared";
+import { REGIONS, type EventData, type Flavour, type PairPoll, type PairStart, type Region, type UploadResult } from "@wow-locker/shared";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, characterEvents, characters, companionLinks, reminders, type CharacterRow } from "@/db/schema";
 import { addToAccountRoster } from "@/lib/accounts";
 import { computeReminders, parseAddonCharacter, type AddonCharacter } from "@/lib/addon";
 import { isGone, superseded, type OwnedList } from "@/lib/diff";
-import { getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
+import { claimTemp, getTemp, putTemp, setTemp, takeTemp } from "@/lib/ephemeral";
 import { log } from "@/lib/log";
 import { deliverEvent } from "@/lib/push";
 import { capCharacter, withinRetention } from "@/lib/retention";
 import { addCharacter, addonItemIds, fillIcons, NotFoundError } from "@/lib/tracker";
 import { waitUntil } from "@vercel/functions";
-import { ownedCharacter } from "@/lib/ownership";
+import { ownedCharacter, refreshedOwned } from "@/lib/ownership";
+import { readPassport, type Passport } from "@/lib/passport";
 
 /**
  * The companion app: pairing (device-code style, ownership proven by a
@@ -316,3 +317,40 @@ export async function fireReminders(): Promise<{ fired: number }> {
   return { fired };
 }
 
+
+/**
+ * Ravenpost signed in with Battle.net (its passport): the account's proof of
+ * its Classic Era characters is renewed, so a character made since the last
+ * login on the site syncs without one. Only for a link that belongs to the
+ * same Battle.net account the passport names.
+ */
+export async function refreshWithPassport(token: string, passport: unknown): Promise<{ characters: number } | null> {
+  const link = await linkFor(token);
+  if (!link || link.accountId == null) return null;
+  const p = readPassport(passport);
+  return p ? renewOwned(link.accountId, p) : null;
+}
+
+/** The account's proof renewed from a passport that was checked: only if it names this account, and once. */
+export async function renewOwned(accountId: number, p: Passport): Promise<{ characters: number } | null> {
+  const [acc] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+  if (!acc || acc.bnetId !== p.bnetId) return null;
+  // (once: a passport seen before is refused)
+  if (!(await claimTemp("passport", p.jti, 15 * 60_000))) return null;
+  let owned = acc.owned;
+  let count = 0;
+  const now = new Date();
+  for (const o of p.owned) {
+    if (!REGIONS.includes(o.region as Region) || !Array.isArray(o.ids)) continue;
+    const ids = o.ids.filter((id) => Number.isSafeInteger(id));
+    const chars = (Array.isArray(o.characters) ? o.characters : []).filter(
+      (c): c is [number, string, string] => Array.isArray(c) && Number.isSafeInteger(c[0]) && typeof c[1] === "string" && typeof c[2] === "string" && ids.includes(c[0]),
+    );
+    const entry = refreshedOwned(owned.find((e) => e.region === o.region), o.region as Region, ids, chars, now);
+    owned = [...owned.filter((e) => e.region !== o.region), entry];
+    count += chars.length;
+  }
+  await db.update(accounts).set({ owned, lastSeenAt: now }).where(eq(accounts.id, acc.id));
+  log.info("companion.refreshed", { account: acc.id, characters: count });
+  return { characters: count };
+}

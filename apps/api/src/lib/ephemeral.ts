@@ -16,6 +16,16 @@ export async function putTemp(kind: string, key: string, data: unknown, ttlMs: n
     .onConflictDoUpdate({ target: [ephemeral.kind, ephemeral.key], set: { data, expiresAt } });
 }
 
+/** Claim a key once: true for the first caller (or after it expired), false for every other, even at the same moment. */
+export async function claimTemp(kind: string, key: string, ttlMs: number): Promise<boolean> {
+  const rows = await db
+    .insert(ephemeral)
+    .values({ kind, key, data: true, expiresAt: new Date(Date.now() + ttlMs) })
+    .onConflictDoUpdate({ target: [ephemeral.kind, ephemeral.key], set: { data: true, expiresAt: new Date(Date.now() + ttlMs) }, setWhere: lt(ephemeral.expiresAt, new Date()) })
+    .returning({ key: ephemeral.key });
+  return rows.length > 0;
+}
+
 export async function getTemp<T>(kind: string, key: string): Promise<T | null> {
   const [row] = await db
     .select({ data: ephemeral.data })

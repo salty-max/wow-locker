@@ -145,7 +145,14 @@ Each login also keeps verified character names, realms and flavours in
 `accounts.owned[].characters`. Companion uploads use these newer proofs as
 well as the original pairing list, so characters created after pairing do
 not need a new companion link. Older account rows without this optional
-metadata still use the pairing list until the next login. When a verified
+metadata still use the pairing list until the next login. Ravenpost's
+sign-in renews the same proof without a login on the site: its passport
+(`lib/passport.ts`, the inbox's public key) goes to `POST
+/api/companion/refresh` with the link's token, for the link's own account
+only (same Battle.net id, once per passport). `refreshedOwned` replaces just
+the `classic1x` characters (the passport lists Classic Era's profile only),
+keeps the other flavours' as they were and marks them unavailable, so none
+reads as gone. When a verified
 character's public profile returns 404, an upload creates its private row
 from the verified identity and the addon's basic profile. Addon data is
 saved immediately. A row with addon data and snapshotVersion 0 has never

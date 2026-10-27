@@ -20,7 +20,7 @@ import { appOrigin, finishLogin, getImport, startLogin } from "@/lib/account";
 import { authorizeCron } from "@/lib/auth";
 import { getState } from "@/lib/state";
 import { runTick } from "@/lib/tick";
-import { handleUpload, pairingExists, pollPairing, startPairing } from "@/lib/companion";
+import { handleUpload, pairingExists, pollPairing, refreshWithPassport, startPairing } from "@/lib/companion";
 import { BnetError } from "@/lib/bnet";
 import { itemTooltip } from "@/lib/items";
 import { clientIp, hit, LIMITS, type Limit } from "@/lib/rateLimit";
@@ -253,6 +253,16 @@ app.post("/api/companion/pair/poll", async (c) => {
   const b = (await c.req.json().catch(() => null)) as { code?: unknown; pollToken?: unknown } | null;
   if (typeof b?.code !== "string" || typeof b.pollToken !== "string") return c.json({ error: "bad request" }, 400);
   return c.json(await pollPairing(b.code, b.pollToken));
+});
+
+// Ravenpost signed in with Battle.net: its passport renews the account's proof of its characters.
+app.post("/api/companion/refresh", limited(LIMITS.refresh), bodyLimit({ maxSize: 200 * 1024, onError: (c) => c.json({ error: "too large" }, 413) }), async (c) => {
+  const auth = c.req.header("authorization") ?? "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  if (!token) return c.json({ error: "unauthorized" }, 401);
+  const body = (await c.req.json().catch(() => null)) as { passport?: unknown } | null;
+  const done = await refreshWithPassport(token, body?.passport);
+  return done ? c.json(done) : c.json({ error: "not accepted" }, 401);
 });
 
 app.post(
