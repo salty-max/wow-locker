@@ -1,12 +1,12 @@
-# Uptime check every 30 minutes: the site answers and the scheduler (Vercel
-# Cron, every 2 min) ran within the last 10. A failed run emails the repo
+# Uptime check once a day (the project is on hold): the site answers and the
+# scheduler (Vercel Cron, every 15 min) ran within the last 45. A failed run emails the repo
 # owner. Note: GitHub disables scheduled workflows after 60 days without
 # repository activity — re-enable it from the Actions tab if that happens.
 name: Monitor
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "17 6 * * *"
   workflow_dispatch:
 
 permissions: {}

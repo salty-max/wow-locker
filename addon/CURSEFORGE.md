@@ -9,7 +9,7 @@ WoWLocker lets you check your characters on your phone. The addon records your p
 
 Browse your gear, bags and bank, look back through a timeline of your sessions, or see where a Hardcore character died or nearly did. The site also shows rested XP and levelling pace, and offers push notifications.
 
-For Classic Era, Hardcore, Season of Discovery and TBC Anniversary.
+For Classic Era, Hardcore and Season of Discovery. World of Warcraft: Forever is not supported yet.
 
 ## What it records
 

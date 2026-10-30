@@ -1,5 +1,8 @@
 # WoWLocker on World of Warcraft: Forever
 
+> **Not started, held 20 Oct 2026.** This is the plan for when WoWLocker resumes.
+> `spike/forever-items/` is gone from the tree (git history, commit 04fe33f).
+
 > **Plan for launch (4 November 2026), revised 13 October 2026.** Two ways
 > in, decided at launch by one probe: if Battle.net opens a Forever
 > namespace, Forever characters come from the API like Classic ones; if it
@@ -108,7 +111,7 @@ Compared 13 October. Sources:
   tooltip/item/<id>`), which include the server's hotfixes: 70 picked
   items, and 300 random gear pieces of uncommon quality or better.
 
-The scripts are in `spike/forever-items/`.
+The scripts were in `spike/forever-items/` (removed 30 Oct 2026, the scripts are at commit 04fe33f).
 
 **Half the old gear isn't in Forever's static item table.** Of Classic's
 9,616 pieces of gear, 4,746 have a row in ItemSparse; 4,865 are in Item
@@ -214,7 +217,7 @@ What it means for WoWLocker:
 The addon (`addon/WowLocker`):
 
 1. **Two packages, one source** (as Hearthtale and Lorekeeper's Codex):
-   Classic TOC `11509, 20506`, Forever TOC `16001`; the code checks the game
+   Classic TOC `11509`, Forever TOC `16001`; the code checks the game
    (`GetBuildInfo`, interface 16xxx) only where the APIs disagree, and
    otherwise uses whichever API exists.
 2. **Names:** the full name for the character (`UnitName`'s second value is a
@@ -261,7 +264,7 @@ The API and the site:
 13. **Forever labels:** ruleset and flavour in the locker, character pages and
     add-character flow.
 14. **Item comparison again** on Era's own table when wago.tools is back
-    (`spike/forever-items/`), and on the launch build.
+    (scripts in git history, 04fe33f), and on the launch build.
 
 ### If Battle.net serves Forever
 

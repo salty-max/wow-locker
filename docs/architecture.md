@@ -10,7 +10,7 @@ CLAUDE.md on 20 October 2026; the map stays there). Hosting in detail:
   shared pacer, retries), `realms.ts` (realm search per flavour, cached 24 h),
   `normalize.ts` (raw profile → our shapes), `diff.ts` (snapshot → events,
   pure), `tracker.ts` (add / refresh / refreshDue / notifyPending),
-  `push.ts` + `webpush.ts` + `notify.ts`. `src/scheduler.ts`: tick every 2 min,
+  `push.ts` + `webpush.ts` + `notify.ts`. `src/scheduler.ts`: tick every 2 min on the Bun server (15 on Vercel),
   each character ≤ every 10 min (1 request when its last login didn't move),
   fallen / missing ones daily, dormant after 30 days unopened.
 - `apps/web` — React 19 + Vite + Tailwind v4 + TanStack Router/Query. Routes in
@@ -60,8 +60,8 @@ for pet families and warlock demons, since the addon only gets file ids.
 
 ## Addon (`addon/WowLocker`)
 
-Lua 5.1 addon for Classic Era/Hardcore + TBC Anniversary (TOC `## Interface:
-11509, 20506`). Writes `WowLockerDB` (SavedVariables, per character GUID:
+Lua 5.1 addon for Classic Era/Hardcore (TOC `## Interface: 11509`; TBC
+Anniversary dropped from the addon on 30 Oct 2026, the site still serves it). Writes `WowLockerDB` (SavedVariables, per character GUID:
 `events` + `state`) — addons have no network access; Ravenpost, the companion app, uploads
 the file (see Companion). Simulate a session with `luajit addon/test/sim.lua` (it
 asserts every recording). Event types: login, logout (both with level, xp, money: the
@@ -73,8 +73,8 @@ localized patterns), skill (learned / every 25 points), reputation (new
 standing). State also keeps levelPlayed, questsCompleted, skills, reputations,
 resting (inn/city: rested rate), mail (read while a mailbox is open: letters
 with items, expiresAt, onExpiry returned|deleted; hasNew from login) and
-cooldowns (known timed crafts — Mooncloth, transmutes, Salt Shaker, TBC
-cloths — with a real-clock readyAt converted from GetTime). These feed
+cooldowns (known timed crafts — Mooncloth, transmutes, Salt Shaker —
+with a real-clock readyAt converted from GetTime). These feed
 offline push notifications: mail expiring, fully rested, cooldown ready.
 Verified on a real session (2026-10-02): the GUID `Player-<realmId>-<hex>`
 decodes to the Battle.net API character id (`0x03D658B8` = 64379064 = Namzie)
@@ -201,8 +201,8 @@ TEST_DATABASE_URL opts into the transactional integration test).
   later: `gh workflow run release.yml -f tag=vX.Y.Z`.
 - **CI** (`ci.yml`) on every push and PR: typecheck, lint, tests, build,
   addon sim, the release's package (the packager, nothing published). Dependabot opens weekly grouped PRs.
-- **Monitoring** (`monitor.yml`, every 30 min): `/api/status` must answer 200
-  (scheduler ran within 10 min); a failure emails the repo owner.
+- **Monitoring** (`monitor.yml`, daily since the hold): `/api/status` must answer 200
+  (scheduler ran within 45 min); a failure emails the repo owner.
 - **Production database**: `scripts/prod-sql.sh "SQL"` (read only;
   `--write` to change data). Never put the database URL on a command line or
   in output: it contains the password.

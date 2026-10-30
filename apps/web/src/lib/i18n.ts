@@ -29,7 +29,7 @@ const en = {
     kindAddon: "Addon",
     kindCompanion: "Ravenpost",
     yourSystem: "Your system",
-    addonDetail: "Classic Era, Hardcore, Season of Discovery and TBC Anniversary.",
+    addonDetail: "Classic Era, Hardcore and Season of Discovery.",
     windowsDetail: "Windows 10 or 11. Lives in the system tray.",
     windowsArm: "Ravenpost for Windows on ARM",
     macDetail: "macOS 11 or later, Apple silicon and Intel. Lives in the menu bar.",
@@ -42,7 +42,7 @@ const en = {
       {
         title: "Install the addon",
         body: [
-          "Unzip it into the game's AddOns folder, e.g. `World of Warcraft/_anniversary_/Interface/AddOns` (or `_classic_era_`), so that you get `AddOns/WowLocker/WowLocker.toc`.",
+          "Unzip it into the game's AddOns folder, e.g. `World of Warcraft/_classic_era_/Interface/AddOns`, so that you get `AddOns/WowLocker/WowLocker.toc`.",
           "On the character select screen, open AddOns and make sure WoWLocker is enabled.",
         ],
       },
@@ -566,7 +566,7 @@ const fr: Messages = {
     kindAddon: "Addon",
     kindCompanion: "Ravenpost",
     yourSystem: "Votre système",
-    addonDetail: "Classic Era, Hardcore, Saison de la Découverte et TBC Anniversary.",
+    addonDetail: "Classic Era, Hardcore et Saison de la Découverte.",
     windowsDetail: "Windows 10 ou 11. Se loge dans la zone de notification.",
     windowsArm: "Ravenpost pour Windows sur ARM",
     macDetail: "macOS 11 ou plus récent, puces Apple et Intel. Se loge dans la barre des menus.",
@@ -579,7 +579,7 @@ const fr: Messages = {
       {
         title: "Installer l'addon",
         body: [
-          "Décompressez-le dans le dossier AddOns du jeu, par ex. `World of Warcraft/_anniversary_/Interface/AddOns` (ou `_classic_era_`), pour obtenir `AddOns/WowLocker/WowLocker.toc`.",
+          "Décompressez-le dans le dossier AddOns du jeu, par ex. `World of Warcraft/_classic_era_/Interface/AddOns`, pour obtenir `AddOns/WowLocker/WowLocker.toc`.",
           "À l'écran de sélection des personnages, ouvrez AddOns et vérifiez que WoWLocker est activé.",
         ],
       },

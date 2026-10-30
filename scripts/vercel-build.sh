@@ -34,7 +34,7 @@ bun -e '
 const headers = await Bun.file("apps/web/security-headers.json").json();
 const config = {
   version: 3,
-  crons: [{ path: "/api/admin/tick", schedule: "*/2 * * * *" }],
+  crons: [{ path: "/api/admin/tick", schedule: "*/15 * * * *" }],
   routes: [
     { src: "^/(.*)$", headers, continue: true },
     { src: "^/api(/.*)?$", dest: "/api" },

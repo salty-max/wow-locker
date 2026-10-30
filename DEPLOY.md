@@ -11,7 +11,7 @@ How it fits together:
   `/api/*` → the function, everything else → files, then `index.html`.
 - Production deploys apply database migrations during the build (`MIGRATE_URL`).
 - No process stays up on Vercel, so the scheduler is an HTTP call: Vercel Cron
-  calls `/api/admin/tick` every 2 minutes (declared in the build's
+  calls `/api/admin/tick` every 15 minutes (declared in the build's
   `config.json`; Vercel sends `Authorization: Bearer $CRON_SECRET`) (refresh due characters, retry pushes, fire
   reminders, sweep expired rows). A lease in the database stops overlapping
   ticks; each tick stops starting work after 45 s (functions get 60 s).
@@ -60,7 +60,7 @@ be set (step 2). Each run answers like
 previous tick was still running), visible in the function logs.
 
 On the Hobby plan, crons run at most once a day: remove `crons` from
-`scripts/vercel-build.sh` and call the same URL every 2 minutes from an
+`scripts/vercel-build.sh` and call the same URL every 15 minutes from an
 external service instead (e.g. cron-job.org, with the
 `Authorization: Bearer <CRON_SECRET>` header).
 

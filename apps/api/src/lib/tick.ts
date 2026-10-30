@@ -10,7 +10,8 @@ import { notifyPending, pushSessionRecaps, refreshDue } from "@/lib/tracker";
  * One scheduler tick: refresh the characters that are due (each at most every
  * 10 min), retry failed pushes, push session recaps, fire due reminders, drop expired temp rows.
  *
- * Called every 2 minutes, either by the in-process scheduler (Bun server) or
+ * Called every 2 minutes (every 15 on Vercel, since the hold: the caps below then cover
+ * 15 minutes, fine at hold-time volume), either by the in-process scheduler (Bun server) or
  * by an external cron hitting /api/admin/tick (serverless). The lease keeps
  * two ticks from running at once, wherever they come from; the time budget
  * keeps a tick inside a serverless function's time limit.

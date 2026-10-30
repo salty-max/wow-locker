@@ -7,8 +7,8 @@ It is an installable web app at **[wow-locker.app](https://wow-locker.app)**,
 with an interface based on the game.
 
 The website supports Classic Era, Hardcore, Season of Discovery, TBC
-Anniversary and MoP Classic. The addon supports Classic Era and TBC
-Anniversary, including Hardcore and Season of Discovery.
+Anniversary and MoP Classic. The addon supports Classic Era, including Hardcore and Season of Discovery.
+WoWLocker is on hold until World of Warcraft: Forever is supported.
 
 ## Getting started
 

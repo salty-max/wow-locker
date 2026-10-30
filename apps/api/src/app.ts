@@ -80,8 +80,8 @@ app.onError((err, c) => {
 app.get("/api/health", (c) => c.json({ ok: true }));
 
 // For the uptime check (.github/workflows/monitor.yml): the database answers
-// and the scheduler ran recently (every 2 min). 503 otherwise.
-const TICK_STALE_MS = 10 * 60_000;
+// and the scheduler ran recently (Vercel Cron every 15 min). 503 otherwise.
+const TICK_STALE_MS = 45 * 60_000; // three missed 15-minute ticks
 app.get("/api/status", async (c) => {
   c.header("Cache-Control", "no-store");
   const last = await getState("lastTickAt").catch(() => null);
@@ -321,5 +321,5 @@ app.use("/api/admin/*", async (c, next) => {
   await next();
 });
 app.post("/api/admin/refresh", async (c) => c.json(await refreshDue(200)));
-// The scheduler, for hosts without a long-lived process: call every 2 minutes.
+// The scheduler, for hosts without a long-lived process: call every 15 minutes (Vercel Cron).
 app.on(["GET", "POST"], "/api/admin/tick", async (c) => c.json(await runTick()));

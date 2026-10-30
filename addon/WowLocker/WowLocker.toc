@@ -1,4 +1,4 @@
-## Interface: 11509, 20506
+## Interface: 11509
 ## Title: WoWLocker
 ## Notes: Record your WoW characters' gear, levels, loot, dungeon runs, deaths and close calls to view on wow-locker.app.
 ## Category: Data Export

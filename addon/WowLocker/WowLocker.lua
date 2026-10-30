@@ -36,14 +36,12 @@ local MAX_EVENTS = 5000 -- per character; the companion uploads long before this
 local CLOSE_CALL_RESET = 0.5 -- …and has to be climbed back above before the next one
 local SKILL_STEP = 25 -- skill milestones (weapon skills rise constantly)
 -- Timed crafts worth a "ready" notification. Durations are read from the game
--- (they differ between Era and Anniversary); unknown ids are simply skipped.
+-- (they can differ by client); unknown ids are simply skipped.
 local COOLDOWN_SPELLS = {
   18560, -- Mooncloth
   17187, -- Transmute: Arcanite
   11479, 11480, -- Transmute: Iron to Gold, Mithril to Truesilver
   17559, 17560, 17561, 17562, 17563, 17564, 17565, 17566, -- elemental transmutes
-  26751, 31373, 36686, -- TBC: Primal Mooncloth, Spellcloth, Shadowcloth
-  29688, 32765, 32766, -- TBC: Primal Might, Earthstorm / Skyfire Diamond
 }
 local COOLDOWN_ITEMS = { 15846 } -- Salt Shaker
 local COOLDOWN_SPELL_SET = {}

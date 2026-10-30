@@ -3,15 +3,15 @@
 # Opens a Cloudflare quick tunnel to the dev server and prints the https URL,
 # with a QR code so a phone can reach it without typing a random hostname.
 #
-#   bash scripts/tunnel.sh          # the Vite dev server on :5173
-#   PORT=3000 bash scripts/tunnel.sh
+#   bash scripts/tunnel.sh          # the Vite dev server on :5174
+#   PORT=5173 bash scripts/tunnel.sh
 #
 # Why this exists: iOS refuses service workers, notifications and the installable
 # PWA over plain http, so the app cannot be tested on a phone against
-# http://<mac>:5173 — it needs https, and a quick tunnel is the shortest way to
+# http://<mac>:5174 — it needs https, and a quick tunnel is the shortest way to
 # get one without a certificate or a DNS record.
 #
-# It points at Vite rather than the API because Vite proxies /api to :3000, so
+# It points at Vite rather than the API because Vite proxies /api to :3001, so
 # one tunnel covers the app and its backend. vite.config.ts already allows
 # .trycloudflare.com as a host; without that the dev server refuses the request.
 #
