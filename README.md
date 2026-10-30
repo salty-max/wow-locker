@@ -16,7 +16,7 @@ Anniversary, including Hardcore and Season of Discovery.
    import your characters. You can also add a character by realm and name.
 2. For details Battle.net cannot provide, install the
    [WoWLocker addon](https://www.curseforge.com/projects/1724925) and
-   [Ravenpost](https://github.com/salty-max/ravenpost), the companion app for
+   [Ravenpost](https://ravenpost-site.vercel.app), the companion app for
    Windows and macOS. Both are available from
    [wow-locker.app/addon](https://wow-locker.app/addon).
 3. Add the website to your phone's Home Screen. Turn on notifications in
@@ -73,7 +73,7 @@ seconds after the game writes it. Linking through Battle.net identifies
 your characters, and the server only accepts uploads for those characters.
 The file is parsed as data and never executed. Upload status is shown
 in Ravenpost's window and its tray menu. Ravenpost has its
-[own repository](https://github.com/salty-max/ravenpost) and also uploads
+[own page](https://ravenpost-site.vercel.app) and [repository](https://github.com/salty-max/ravenpost), and also uploads
 Hearthtale journals.
 
 The **API**, in `apps/api`, checks Battle.net for changes and turns those

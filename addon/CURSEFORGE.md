@@ -25,7 +25,7 @@ Bank contents update when you visit the bank. Mail updates when you open a mailb
 ## Getting started
 
 1. Install the addon.
-2. Get **[Ravenpost](https://github.com/salty-max/ravenpost)** from [wow-locker.app/addon](https://wow-locker.app/addon) and link it to your Battle.net account.
+2. Get **[Ravenpost](https://ravenpost-site.vercel.app)** from [wow-locker.app/addon](https://wow-locker.app/addon) and link it to your Battle.net account.
 3. Play, then log out or use `/reload`. Your character's page updates a few seconds later.
 
 Ravenpost is free, open source and available for Windows and macOS. Addons cannot connect to the internet themselves, so it uploads the saved file for characters belonging to the Battle.net account you linked. It also uploads [Hearthtale](https://hearthtale.app) journals if you use that addon.
