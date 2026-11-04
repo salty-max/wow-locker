@@ -3,16 +3,16 @@
 > **Not started, held 20 Oct 2026.** This is the plan for when WoWLocker resumes.
 > `spike/forever-items/` is gone from the tree (git history, commit 04fe33f).
 
-> **Plan for launch (4 November 2026), revised 13 October 2026.** Two ways
-> in, decided at launch by one probe: if Battle.net opens a Forever
-> namespace, Forever characters come from the API like Classic ones; if it
-> doesn't, from the addon through Ravenpost, owned by a link code typed in
-> the game (Hearthtale's way). Most of the work serves both and comes first:
-> the addon's port (WoWLocker's addon feeds deaths, quests, sessions, bags
-> and mail on Classic too), the trait trees, Forever's stats and items. The
-> 13 October revision adds a comparison of Classic's items with Forever's
-> (below): a third of the old gear still in the game changed, and half of
-> the old gear isn't in the client's static tables at all.
+> **Revised 5 November 2026, the day after launch: Battle.net serves Forever's account
+> list.** The namespace `profile-forever-eu` exists and lists the account's
+> Forever characters, so ownership can come from the API like Classic's, with
+> no link code. The character endpoints (summary, equipment, talents, stats)
+> are **not** served yet: every path 404s. So: ownership and the roster from
+> the API now, the character's content from the addon through Ravenpost until
+> Blizzard opens the rest. The facts are in "Battle.net the day after launch" below,
+> the order of work in "Plan after the 5 November probe". The older plan (two
+> ways in, decided by one probe) stays under "Work for launch" for the addon
+> half, which it still serves in full.
 
 Forever (beta since 17 September 2026, launch 4 November 2026) is the original
 Azeroth on the modern Mainline client, with reworked talents and items.
@@ -24,12 +24,9 @@ with Hearthtale (Forever beta, realm "Classic Beta PvP"), and 13 October
 (Forever's UI source, Gethe/wow-ui-source branch `forever`; Wowhead; the
 client tables).
 
-- **No Battle.net API yet.** `spike/FINDINGS.md` (1 October): no Forever
-  namespace, every guess answers like a nonsense one. Blizzard has never
-  served an API for a beta or a PTR, and nothing is announced: the API
-  forum's thread on it (18 September) has no Blizzard answer, and the
-  third-party "Forever armories" wait for the same thing. So the API can't
-  be tested before launch, whichever way it goes.
+- **Battle.net: the account list only, from the day after launch** (5 November):
+  see "Battle.net the day after launch". (Before launch there was none: no
+  namespace in `spike/FINDINGS.md` of 1 October, nothing announced.)
 - **Realmless.** Forever has rulesets instead of realms (Normal, PvP,
   Roleplay at launch, Hardcore later) and a full name (first name and
   surname) unique in a region (Blizzard's names article). Collections are
@@ -96,6 +93,154 @@ client tables).
   (`_Camelot.toc`, interface 16001 on 1.60.1). Under `WTF/Account/<account>/` the realm folder is a number
   ("70"), the character folders are "First-Surname" ("Hellefie-Namzan").
   The game keeps a deleted character's folder.
+
+## Battle.net the day after launch (probed 5 November 2026)
+
+Signed in as the user (`wow.profile openid`, authorization code, EU), token
+in memory only. Raw answers: the dispatcher's scratchpad, not kept.
+
+| Call | Answer |
+|---|---|
+| `GET /profile/user/wow?namespace=profile-forever-eu` | **200**: the account (its id is the same as Classic's list gives) and its Forever characters. `profile-forever-us` answers 404 (nothing played there). |
+| `GET /profile/user/wow/collections/mounts` (same namespace) | **200**: the account-wide mounts (two on this account). Account-level calls work. |
+| `GET /profile/wow/character/<slug>` and every variant tried (`sealine-dion`, `sealine/dion`, `dion/sealine`, `6946/sealine-dion`, `6946-550204`, `550204`, capitalised, spaced, header namespace) | **404** (the header namespace form: 403). |
+| `GET /profile/user/wow/protected-character/6946-550204` (the list's own link) and its sub-paths | **404**. |
+| `dynamic-forever-eu`: `/data/wow/realm/6946`, realm index, connected-realm index | **404**. `/data/wow/search/realm` answers 200 with no results. |
+| `static-forever-eu` | **200**: playable classes (nine, no Death Knight) and races (ten: Human, Orc, Dwarf, Night Elf, Undead, Tauren, Gnome, Troll and **High Order Skyborne 95, Windshaper Skyborne 96**). The key in links is the build, `static-1.60.1_70399-forever-eu`. |
+| A nonsense namespace | 403, so the 404s above are real "not served yet", not "no such namespace". |
+
+What a listed character carries (Sealine, Oma, Jeanne, all level 1):
+
+```
+{ character:{href}, protected_character:{href}, name:"Sealine", surname:"Dion",
+  id:550204, playable_class:{id,name}, playable_race:{id,name},
+  gender:{type}, faction:{type}, level:1 }
+```
+
+- **No realm object.** The pseudo-realm is only inside the links: the
+  protected-character link is `.../protected-character/6946-550204`, i.e.
+  `<realm id>-<character id>`, and the same list on Classic gives
+  `5236-2393234`, `6113-88269365` (Soulseeker is 6113, which is also the GUID's
+  realm part: Namzie's GUID is `Player-6113-03D658B8`, 0x03D658B8 = 64379064).
+  The three Forever characters all show 6946: one id for these three, and
+  whether it is per region or per ruleset is not known. A second account would
+  tell.
+- **The character link is `character/<name>-<surname>`** (lowercase), not
+  `<realm>/<name>`. It 404s today, with or without the namespace, so the path
+  is *shaped* but not *served*.
+- **Hardcore and rulesets:** no field says. The list has no ruleset, no
+  `is_hardcore`, no `is_self_found`. The three characters share realm 6946,
+  but their rulesets are not recorded here, so whether a ruleset is in the id
+  is not known. The
+  Classic summary does carry `is_ghost` and `is_self_found`; whether
+  Forever's summary will is unknown until it is served. Alive-or-fallen and
+  Hardcore stay the addon's to say.
+- **What is NOT known and could not be probed:** (a) that the in-game GUID of
+  a Forever character is `Player-6946-<hex 550204>` (= `Player-6946-0008653C`):
+  there is no Forever install on the probing computer, and no Forever GUID in
+  the repositories. It is the obvious reading of the link and it held on
+  Classic, but until one real GUID is compared it is a **guess**. (b) Whether
+  a fallen or deleted character leaves the list (on Classic, deleted ones
+  go). (c) Whether other account endpoints (pets, toys, transmogs, heirlooms)
+  answer. (d) US and KR/TW lists, not played.
+
+### The key that proves ownership
+
+| Key | Verdict |
+|---|---|
+| **GUID realm + hex id** (`Player-6946-0008653C` against the link `6946-550204`) | The one to use, **once a real GUID confirms it**. Same shape as Classic, unique, no name handling. |
+| The API's character `id` alone | Enough inside one game, but a Forever id and a Classic id are different numbers from one counter we can't see: `owned` must carry the realm id (or the game) next to it, never ids alone. |
+| Full name `Name Surname` (list: `name` + `surname`) | A fallback only: the game says `Name Surname`, the API `name` and `surname` apart, and a renamed or transferred character drifts. Unique per region (Blizzard's names article), so no ambiguity inside a region. |
+
+## Plan after the 5 November probe
+
+The principle: **the API proves who owns a character, the addon says
+everything else.** Nothing here waits for Blizzard.
+
+1. **Confirm the GUID (the one unknown that decides the rest).** A Forever
+   character logs in with the Hearthtale or WoWLocker addon on, the saved
+   file's `Player-…` guid is compared with the list's `6946-<id>`. One
+   character is enough; three (the user's) settles it. Do this before
+   writing any matching code. If the GUID's number is not the id, the
+   fallback is the full name (below) and everything else stays.
+2. **Ravenpost's inbox: list Forever too** (`inbox/src/auth.ts` `account()`).
+   Today it asks `profile-classic1x-<region>` only. Add `profile-forever-<region>`
+   and put the result in the passport as a separate entry: `owned` gets a
+   `game` (`"classic1x" | "forever"`) next to `region`, `ids` stay character
+   ids, and for Forever each entry also carries `[id, realm id, "Name Surname"]`
+   in `characters`. Old passports (no `game`) mean `classic1x`, so Hearthtale
+   and WoWLocker keep working until they are updated. The passport's size
+   limit (20,000 characters, 100 detailed) already covers it.
+3. **WoWLocker: the account's Forever roster.** `accountProfile()` takes the
+   `forever` flavour (`FLAVOURS` in `@wow-locker/shared` stays `classic1x` for the
+   character endpoints). A signed-in account sees its Forever characters as
+   *owned*, listed from the API (name, surname, class, race, gender, faction,
+   level) and filled in by the addon's uploads as they arrive, keyed on the
+   GUID. `refreshCharacter` and the tracker **skip Forever** until the
+   summary answers (no API call to make); the add-by-name flow does not offer
+   Forever. The class/race/gender/level from the list refresh the roster
+   daily without the addon, which is more than the link-code plan gave.
+4. **Link codes stay as the fallback, not the way in.** Built only when step 1
+   says the GUID can't be matched, or for what the API can't list: a
+   character the account lost (deleted, transferred), another region's, or a
+   player who hasn't signed in with Battle.net through Ravenpost. They keep
+   the shape in "If it doesn't" below (items 19 to 26), and are the last item
+   of the work, not the first.
+5. **Wait for the character endpoints, probe weekly.** One cheap probe
+   (`character/<name>-<surname>` and the protected link, for any listed
+   character), run by hand or by the Watchtower's preflight. When it turns
+   200: the adapter of items 15 to 18 below comes back as planned (the slug
+   is `name-surname`, no realm), with the addon's snapshot (items 20, 24) as
+   the fallback for what it still lacks. Until then equipment, talents and
+   stats come from the addon only.
+6. **Hardcore:** from the addon (a Hardcore character is told in the game),
+   stored on the character row, shown on the site. The API's summary may add
+   `is_ghost` / a ruleset later; check it when it is served.
+7. **Static data:** `static-forever-eu` answers, so classes, races (Skyborne
+   95/96 included) and the item API for tooltips can be called with client
+   credentials today. The equipment endpoint is not needed to start item
+   tooltips: the static item API in `static-<build>-forever-eu`. Not probed
+   for items in this pass (the user's note says it serves items): probe it
+   when item tooltips are built.
+
+Order of writing: 1 (a probe by hand) → 2 (inbox + passport, backward
+compatible) → Hearthtale's side (below) → 3 → the addon's port (the "Both
+ways" list, unchanged) → 5 whenever → 4 only if 1 failed.
+
+### Hearthtale
+
+- `lib/ravenpost.ts` `signInWithPassport`: read the passport's `game`; an
+  entry without it is Classic (as now). For `forever`, call `loginAccount`
+  with `region`, the character ids and the realm id.
+- `accounts.owned` gets the game: `{ game, region, ids }`, `owns()` and
+  `sexOf()` take it, and the match against an uploaded GUID compares the
+  GUID's realm part too (`lib/guid.ts` already parses it). A migration
+  fills `game = "classic1x"` on the stored entries.
+- `lib/bnet.ts`: `FLAVOURS` gains `forever` only for the account list
+  (`accountProfile`), not for the characters Hearthtale refreshes (it has none
+  to refresh: its content comes from the addon). The Battle.net sign-in on
+  the site (`authorizeUrl`, `exchangeCode`) already has the scope it needs.
+- Link codes (`lib/link.ts`, `/ht link CODE`) stay as built and used for what
+  the API can't list; the "link your character" panel stays but is hidden for
+  an owned Forever character, and shown for the rest.
+- Order: after the inbox's change (it can't match what the passport doesn't
+  carry), and only after step 1 confirmed the GUID.
+
+### Ravenpost
+
+- **inbox:** the `forever` query in `auth.ts` `account()`, the `game` on
+  `Owned` in `passport.ts`, tests next to `auth.test.ts` (a Forever list
+  fixture from the shape above, a Classic-only passport unchanged). Deploys
+  by hand with the user's go.
+- **app:** nothing changes in the sign-in itself (`login.go` only carries
+  the passport on). It labels Forever's characters as owned when the site
+  says so, and drops the "unlinked, type /wl link or /ht link" hint for them.
+- `site/src/components/Sends.astro` and the README: say that the sign-in now
+  also asks Battle.net which Forever characters the account has (names only,
+  nothing else).
+- **If the GUID doesn't match:** the passport carries `[id, "Name Surname"]`
+  and the site matches an uploaded character by full name within the region;
+  anything that doesn't match stays "unlinked" and takes a link code.
 
 ## Items: Classic Era against Forever
 
@@ -202,9 +347,9 @@ What it means for WoWLocker:
 
 | Question | Decision |
 |---|---|
-| Data source | **Battle.net if a Forever namespace opens at launch** (one probe, not a polling loop): ownership, gear, stats and talents as for Classic. **The addon otherwise**, and an API adapter later if a namespace comes. |
-| Ownership (addon only) | **A link code, as Hearthtale.** Signed in on wow-locker.app, the player gets a six-letter code (one use, thirty minutes) and types `/wl link CODE` in the game; the addon keeps it in its saved file, and the upload that carries it attaches the character to that account. Without a code, a Forever character uploads as "unlinked", and Ravenpost says how to link it. |
-| Character identity | The GUID (realm id + character id), as today; shown with its full name, the realm from `GetRealmName()`. With the API, the GUID's match with the API's character id is checked again (it held for Classic, 2 October). |
+| Data source | **Both, split by what each can do (5 Nov).** Battle.net for the account's character list and so for ownership (`profile-forever-<region>`, served). The addon for everything about the character (gear, talents, stats, deaths, bags) until Blizzard serves the character endpoints, which 404 at launch. The adapter of items 15 to 18 comes back when they answer. |
+| Ownership | **From the API: the account's Forever list, matched by GUID (realm 6946 + character id), once a real GUID confirms it.** **Fallback: a link code, as Hearthtale** (the rest of this row is that fallback). Signed in on wow-locker.app, the player gets a six-letter code (one use, thirty minutes) and types `/wl link CODE` in the game; the addon keeps it in its saved file, and the upload that carries it attaches the character to that account. Without a code, a Forever character uploads as "unlinked", and Ravenpost says how to link it. |
+| Character identity | The GUID (realm id + character id), as today; shown with its full name, the realm from `GetRealmName()`. The GUID's match with the API's `<realm id>-<character id>` is checked against a real Forever GUID first (it held for Classic, 2 October; unverified on Forever, 5 November). |
 | Talents | **Full trait trees**, drawn from Forever's client data, filled from the API's loadout or the addon's talent snapshot. Since items come partly through hotfixes, talents may too: the addon's snapshot (node ids, entries) is checked against the tree data, and an unknown node is reported, not dropped. |
 | Item stats | **Tooltips from the API or the game** (see "Items"), never from client tables. |
 | First release | **Core first:** character, level, gear with tooltips and sets, talents, stats, deaths, quests, sessions. Bags, bank, mail, cooldowns, reputations, professions, pets and the new zones' maps follow. |
@@ -311,8 +456,10 @@ The API and the site:
     interface number (TOC), the rulesets, and a first session checking the
     simulation's assumptions in the real game (Hearthtale's first sessions
     each found a bug the tests couldn't).
-28. One probe for a Forever namespace: it picks "If Battle.net serves
-    Forever" or "If it doesn't".
+28. ✅ One probe for a Forever namespace (5 November): the account list is
+    served, the character endpoints are not: see "Battle.net the day after launch".
+    "If Battle.net serves Forever" applies to the list now, to the rest when
+    the endpoints answer.
 29. The talents and items checked again on the launch build: the trait
     tables, and whether the items missing from the beta came back.
 
