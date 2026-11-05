@@ -15,7 +15,8 @@ MCowBQYDK2VwAyEAgiDVP8BHwyQ9D6WYy8rla/Ih/n67iDY66l0WEMqCv1M=
 -----END PUBLIC KEY-----`;
 
 /** `characters`: [id, realm slug, name] of the same characters, when the inbox sent them. */
-export type PassportOwned = { region: string; ids: number[]; characters?: [number, string, string][] };
+/** `game`: absent means Classic Era. The inbox adds it for Forever (WoWLocker keeps Classic Era only for now). */
+export type PassportOwned = { region: string; game?: string; ids: number[]; characters?: [number, string, string][] };
 export type Passport = { aud: string; bnetId: number; battletag: string; owned: PassportOwned[]; iat: number; exp: number; jti: string };
 
 const keys = () => [PUBLIC_KEY, ...(process.env.VERCEL ? [] : [DEV_PUBLIC_KEY])].map((k) => createPublicKey(k));

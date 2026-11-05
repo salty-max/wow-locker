@@ -150,7 +150,7 @@ sign-in renews the same proof without a login on the site: its passport
 (`lib/passport.ts`, the inbox's public key) goes to `POST
 /api/companion/refresh` with the link's token, for the link's own account
 only (same Battle.net id, once per passport). `refreshedOwned` replaces just
-the `classic1x` characters (the passport lists Classic Era's profile only),
+the `classic1x` characters (the passport also carries Forever entries, `game: "forever"`, which `renewOwned` skips, so only Classic Era's list reaches here),
 keeps the other flavours' as they were and marks them unavailable, so none
 reads as gone. When a verified
 character's public profile returns 404, an upload creates its private row

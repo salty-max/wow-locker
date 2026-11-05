@@ -19,7 +19,8 @@ type OwnedEntry = AccountRow["owned"][number];
 
 /**
  * An account's proof for one region after Ravenpost's sign-in. The passport
- * lists Classic Era's profile only (`classic1x`), so it replaces just that
+ * also carries Forever entries (`game: "forever"`), which `renewOwned` skips,
+ * so only Classic Era's list (`classic1x`) reaches here and it replaces just that
  * flavour's characters and keeps the ids and characters of the others.
  * `at` and `unavailable` stay what the last login on the site made them: that
  * list is the one that can call a deleted character gone (a refresh dated now

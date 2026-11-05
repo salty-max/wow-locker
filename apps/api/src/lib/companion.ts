@@ -341,6 +341,8 @@ export async function renewOwned(accountId: number, p: Passport): Promise<{ char
   let count = 0;
   const now = new Date();
   for (const o of p.owned) {
+    // (the inbox adds `game` for Forever: no `game` means Classic Era, and WoWLocker keeps only that for now)
+    if (o.game !== undefined && o.game !== "classic1x") continue;
     if (!REGIONS.includes(o.region as Region) || !Array.isArray(o.ids)) continue;
     const ids = o.ids.filter((id) => Number.isSafeInteger(id));
     const chars = (Array.isArray(o.characters) ? o.characters : []).filter(
