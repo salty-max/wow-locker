@@ -32,6 +32,26 @@
 local _, ns = ...
 ns = ns or {}
 
+-- World of Warcraft: Forever is the modern client (interface 16xxx, WowLocker_Camelot.toc):
+-- no combat log for addons, secret values, the Classic globals gone. The code
+-- checks it only where the APIs disagree, and otherwise uses whichever exists.
+local TOC = select(4, GetBuildInfo()) or 0
+local FOREVER = TOC >= 16000 and TOC < 20000
+ns.forever = FOREVER
+local function secret(v) return issecretvalue ~= nil and issecretvalue(v) or false end
+-- A value fit to save: a number or text the game did not hide.
+local function plain(v)
+  if v == nil or secret(v) then return nil end
+  return v
+end
+-- Everything Forever-only that could differ from the documented API runs
+-- through this: a failure is nil, never an error that stops the recording.
+local function try(fn, ...)
+  local ok, a, b, c = pcall(fn, ...)
+  if ok then return a, b, c end
+  return nil
+end
+
 local MAX_EVENTS = 5000 -- per character; the companion uploads long before this matters
 local CLOSE_CALL_RESET = 0.5 -- …and has to be climbed back above before the next one
 local SKILL_STEP = 25 -- skill milestones (weapon skills rise constantly)
@@ -103,6 +123,7 @@ local L = FR and {
   learned = "Appris : %s", skillUp = "%s : %d/%d", reputation = "%s auprès de %s",
   petNew = "Nouveau familier : %s (%s)", petLevel = "%s atteint le niveau %d", petDeath = "%s (niveau %d) est mort",
   loaded = "%s · enregistre %s · %s pour le journal et les options",
+  failed = "%s a échoué : %s", tree = "Arbre %d",
 } or {
   login = "Logged in (level %d)", logout = "Logged out",
   equipped = "Equipped %s (%s)", unequipped = "Unequipped: %s",
@@ -118,6 +139,7 @@ local L = FR and {
   learned = "Learned %s", skillUp = "%s %d/%d", reputation = "%s with %s",
   petNew = "New pet: %s (%s)", petLevel = "%s reached level %d", petDeath = "%s (level %d) died",
   loaded = "%s · recording %s · %s for the event log and options",
+  failed = "%s failed: %s", tree = "Tree %d",
 }
 ns.L, ns.FR = L, FR
 
@@ -218,6 +240,7 @@ function ns.formatEvent(e)
   return color(MUTED, t or "?")
 end
 
+ns.failed = {}
 local f = CreateFrame("Frame")
 local me -- this character's record
 local playerGUID
@@ -241,25 +264,97 @@ local SLOT_NAMES = {
 
 -- ── helpers ──────────────────────────────────────────────────────────────────
 
+-- Forever has no GetItemInfo, GetSpellInfo, GetItemCount or GetItemCooldown globals.
+local function itemName(id)
+  local get = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+  if not get then return nil end
+  local name = get(id)
+  return plain(name)
+end
+
+local function spellName(id)
+  if C_Spell and C_Spell.GetSpellName then return plain(C_Spell.GetSpellName(id)) end
+  return GetSpellInfo and plain((GetSpellInfo(id))) or nil
+end
+
+local function itemCount(id)
+  if C_Item and C_Item.GetItemCount then return C_Item.GetItemCount(id) or 0 end
+  return GetItemCount and GetItemCount(id) or 0
+end
+
+local function itemCooldown(id)
+  if C_Container and C_Container.GetItemCooldown then return C_Container.GetItemCooldown(id) end
+  if C_Item and C_Item.GetItemCooldown then return C_Item.GetItemCooldown(id) end
+  if GetItemCooldown then return GetItemCooldown(id) end
+end
+
+-- A player's name: on Forever a first name and a surname (UnitName's second
+-- value; elsewhere it is a realm, left out). Never the surname as the realm.
+local function playerName(unit)
+  local first, second = UnitName(unit)
+  first, second = plain(first), plain(second)
+  if not first then return nil end
+  first = first:match("^([^-]+)") or first
+  if FOREVER and second and second ~= "" then return first .. " " .. second end
+  return first
+end
+
 -- "|cff1eff00|Hitem:4564:...|h[Spiked Club of the Boar]|h|r" → 4564, "Spiked Club of the Boar", "1eff00"
 local function parseItemLink(link)
   if not link then return nil end
   local color = link:match("|cff(%x%x%x%x%x%x)")
+  if not color then -- (Forever's links may carry the quality as a token: |cnIQ3:)
+    local q = tonumber(link:match("|cnIQ(%d):"))
+    color = q and ({ [0] = "9d9d9d", "ffffff", "1eff00", "0070dd", "a335ee", "ff8000", "e6cc80", "00ccff" })[q] or nil
+  end
   local id = tonumber(link:match("|Hitem:(%d+)"))
   local name = link:match("|h%[(.-)%]|h")
   return id, name, color
 end
 
+-- The lines of an equipped item's tooltip (name, stats, effects, set bonuses),
+-- as the game builds them, for the site to show. Nil where the client has no
+-- tooltip data; lines the game hides are left out.
+function ns.tooltipLines(slot)
+  if not (C_TooltipInfo and C_TooltipInfo.GetInventoryItem) then return nil end
+  local data = try(C_TooltipInfo.GetInventoryItem, "player", slot)
+  if type(data) ~= "table" or type(data.lines) ~= "table" then return nil end
+  local out = {}
+  for _, line in ipairs(data.lines) do
+    local left, right = plain(line.leftText), plain(line.rightText)
+    if type(left) == "string" and left ~= "" then
+      if type(right) == "string" and right ~= "" then left = left .. "\t" .. right end
+      out[#out + 1] = left:sub(1, 160)
+      if #out >= 40 then break end
+    end
+  end
+  return #out > 0 and out or nil
+end
+
 -- A complete loadout, including gear worn before the addon was installed.
 -- Change events alone cannot establish which unmentioned slots are empty.
-local function readEquipment()
+local function readEquipment(withTips)
   if settings.record.gear == false then me.state.equipment = nil; return end
   local items = {}
+  local before = {}
+  for _, e in ipairs(me.state.equipment or {}) do before[e.slot] = e end
   for slot = 1, 19 do
     local equipped = GetInventoryItemID("player", slot)
     local id, name, color = parseItemLink(GetInventoryItemLink("player", slot))
     if equipped and (not id or not name) then me.state.equipment = nil; return end -- item data still loading
-    if id and name then items[#items + 1] = { slot = SLOT_NAMES[slot], id = id, name = name, color = color } end
+    if id and name then
+      local entry = { slot = SLOT_NAMES[slot], id = id, name = name, color = color }
+      if FOREVER then
+        -- (items are re-statted on Forever and half of them come by hotfix: what the game itself shows, kept as it shows it)
+        local link = plain(GetInventoryItemLink("player", slot))
+        entry.link = link and #link <= 300 and link or nil
+        entry.icon = plain(GetInventoryItemTexture and GetInventoryItemTexture("player", slot))
+        -- (a tooltip costs: built when the sheet is read, kept while the item is the same)
+        local old = before[entry.slot]
+        entry.tip = withTips and ns.tooltipLines(slot) or (old and old.id == id and old.tip) or nil
+      end
+      items[#items + 1] = entry
+    end
   end
   me.state.equipment = items
 end
@@ -329,8 +424,112 @@ local function snapshot(final)
   location()
 end
 
+-- Forever's talents are Mainline-style trait trees (C_ClassTalents, C_Traits):
+-- every purchased node of the active loadout, per tree, as the site's tree view
+-- wants it (node id, chosen entry, rank). Nothing here is documented for this
+-- client yet: each call is guarded, and a failure leaves the field out.
+local function readTraits()
+  if not (C_ClassTalents and C_Traits) then return nil end
+  local config = try(C_ClassTalents.GetActiveConfigID)
+  if not config then return nil end
+  local info = try(C_Traits.GetConfigInfo, config)
+  if not info or type(info.treeIDs) ~= "table" then return nil end
+  local trees = {}
+  for _, treeId in ipairs(info.treeIDs) do
+    local nodes, points = {}, 0
+    for _, nodeId in ipairs(try(C_Traits.GetTreeNodes, treeId) or {}) do
+      local n = try(C_Traits.GetNodeInfo, config, nodeId)
+      local rank = n and plain(n.currentRank)
+      if type(rank) == "number" and rank > 0 then
+        local entry = n.activeEntry and plain(n.activeEntry.entryID) or nil
+        nodes[#nodes + 1] = { node = nodeId, entry = entry, rank = rank }
+        points = points + rank
+      end
+    end
+    trees[#trees + 1] = { tree = treeId, points = points, nodes = nodes }
+  end
+  return { config = config, trees = trees }
+end
+
+-- Forever's character sheet (PaperDollFrameConstants): what the site's stats
+-- panel shows. Each number comes from its own call, so one the client lacks or
+-- hides costs only itself. Rounded to a tenth.
+local function readStats()
+  local function num(fn, ...)
+    local v = plain(try(fn, ...))
+    return type(v) == "number" and math.floor(v * 10 + 0.5) / 10 or nil
+  end
+  local function second(fn, ...) -- the effective value of a (base, effective) pair
+    local _, v = try(fn, ...)
+    v = plain(v)
+    return type(v) == "number" and v or nil
+  end
+  local function sum3(fn, ...)
+    local a, b, c = try(fn, ...)
+    a, b, c = plain(a), plain(b), plain(c)
+    if type(a) ~= "number" then return nil end
+    return a + (type(b) == "number" and b or 0) + (type(c) == "number" and c or 0)
+  end
+  local function rating(cr, mod)
+    local r = num(GetCombatRatingBonus, cr)
+    if not r then return nil end
+    return r + (mod and num(mod) or 0)
+  end
+  local _, powerToken = UnitPowerType("player")
+  local speed = select(2, try(GetUnitSpeed, "player"))
+  local st = {
+    health = num(UnitHealthMax, "player"),
+    power = num(UnitPowerMax, "player"),
+    powerType = plain(powerToken),
+    strength = second(UnitStat, "player", 1),
+    agility = second(UnitStat, "player", 2),
+    stamina = second(UnitStat, "player", 3),
+    intellect = second(UnitStat, "player", 4),
+    spirit = second(UnitStat, "player", 5),
+    armor = second(UnitArmor, "player"),
+    attackPower = sum3(UnitAttackPower, "player"),
+    rangedAttackPower = sum3(UnitRangedAttackPower, "player"),
+    spellPower = num(GetSpellBonusDamage, 2),
+    bonusHealing = num(GetSpellBonusHealing),
+    meleeCrit = num(GetCritChance),
+    rangedCrit = num(GetRangedCritChance),
+    spellCrit = num(GetSpellCritChance, 2),
+    meleeHit = rating(CR_HIT_MELEE, GetHitModifier),
+    rangedHit = rating(CR_HIT_RANGED, GetHitModifier),
+    spellHit = rating(CR_HIT_SPELL, GetSpellHitModifier),
+    haste = num(GetHaste),
+    expertise = num(GetExpertise),
+    armorPenetration = num(GetArmorPenetration),
+    spellPenetration = num(GetSpellPenetration),
+    defense = rating(CR_DEFENSE_SKILL),
+    dodge = num(GetDodgeChance),
+    parry = num(GetParryChance),
+    block = num(GetBlockChance),
+    speed = type(plain(speed)) == "number" and math.floor(speed / 7 * 100 + 0.5) or nil,
+  }
+  return next(st) and st or nil
+end
+
+-- The parts of the sheet that cost something to read (every trait node): at
+-- login, a level, a talent or a gear change, never on a money or XP tick.
+local function readSheet()
+  if not (FOREVER and me) then return end
+  readEquipment(true)
+  me.state.stats = readStats()
+  me.state.traits = readTraits()
+  local avg = try(GetAverageItemLevel)
+  if type(plain(avg)) == "number" then me.state.itemLevel = math.floor(avg + 0.5) end
+end
+
 local function talentPoints()
   local points = {}
+  if FOREVER then
+    local traits = me and me.state.traits or readTraits() -- (readSheet just read it)
+    for i, t in ipairs(traits and traits.trees or {}) do
+      points[#points + 1] = { name = L.tree:format(i), points = t.points }
+    end
+    return points
+  end
   for tab = 1, GetNumTalentTabs() do
     local name, _, spent = GetTalentTabInfo(tab)
     points[#points + 1] = { name = name, points = spent or 0 }
@@ -343,6 +542,15 @@ end
 -- Titles come from the quest log (reliable on every client); remembered so a
 -- turn-in still has its name once the quest has left the log.
 local function learnQuestTitles()
+  if FOREVER then
+    if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return end
+    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
+      local q = C_QuestLog.GetInfo(i)
+      local title = q and plain(q.title)
+      if q and not q.isHeader and q.questID and title then questTitles[q.questID] = title end
+    end
+    return
+  end
   for i = 1, GetNumQuestLogEntries() do
     local title, _, _, isHeader, _, _, _, questId = GetQuestLogTitle(i)
     if not isHeader and questId and title then questTitles[questId] = title end
@@ -367,6 +575,16 @@ end
 -- Only expanded sections are visible to addons; we never expand the player's UI.
 local function readSkills()
   local skills, section = {}, nil
+  if FOREVER then
+    -- No skill lines: the professions' own list (primary, secondary), each by its index.
+    if not (GetProfessions and GetProfessionInfo) then return skills end
+    for _, index in pairs({ GetProfessions() }) do
+      local name, _, rank, maxRank = GetProfessionInfo(index)
+      name = plain(name)
+      if name then skills[name] = { section = TRADE_SKILLS or "Professions", rank = plain(rank) or 0, max = plain(maxRank) or 0 } end
+    end
+    return skills
+  end
   for i = 1, GetNumSkillLines() do
     local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
     if isHeader then
@@ -380,6 +598,18 @@ end
 
 local function readStandings()
   local reps = {}
+  if FOREVER then
+    if not (C_Reputation and C_Reputation.GetNumFactions and C_Reputation.GetFactionDataByIndex) then return reps end
+    for i = 1, C_Reputation.GetNumFactions() do
+      local d = C_Reputation.GetFactionDataByIndex(i)
+      local name = d and plain(d.name)
+      if name and (not d.isHeader or d.isHeaderWithRep) then
+        local min, max, value = plain(d.currentReactionThreshold), plain(d.nextReactionThreshold), plain(d.currentStanding)
+        if min and max and value then reps[name] = { standing = plain(d.reaction) or 4, value = value - min, max = max - min } end
+      end
+    end
+    return reps
+  end
   for i = 1, GetNumFactions() do
     local name, _, standingId, barMin, barMax, barValue, _, _, isHeader, _, hasRep = GetFactionInfo(i)
     if name and (not isHeader or hasRep) then
@@ -415,8 +645,8 @@ local function groupNames()
   local names = {}
   local prefix = IsInRaid and IsInRaid() and "raid" or "party"
   for i = 1, (GetNumGroupMembers and GetNumGroupMembers() or 0) do
-    local n = UnitName(prefix .. i)
-    if n and n ~= UnitName("player") then names[#names + 1] = n end
+    local n = playerName(prefix .. i)
+    if n and n ~= playerName("player") then names[#names + 1] = n end
   end
   return names
 end
@@ -584,7 +814,14 @@ local function petSpells()
     else
       name, rank = GetSpellBookItemName(i, book)
     end
-    if name and not (GetSpellBookItemInfo and select(1, GetSpellBookItemInfo(i, book)) == "PETACTION") then
+    local action
+    if C_SpellBook and C_SpellBook.GetSpellBookItemType and Enum and Enum.SpellBookItemType then
+      local kind = try(C_SpellBook.GetSpellBookItemType, i, Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Pet or book)
+      action = kind ~= nil and kind == Enum.SpellBookItemType.PetAction
+    else
+      action = GetSpellBookItemInfo and select(1, GetSpellBookItemInfo(i, book)) == "PETACTION"
+    end
+    if name and not action then
       list[#list + 1] = rank and rank ~= "" and (name .. " (" .. rank .. ")") or name
     end
   end
@@ -652,6 +889,7 @@ end
 
 -- GetSpellCooldown's start is on the GetTime() clock: convert to a real time.
 local function readyAt(start, duration)
+  if secret(start) or secret(duration) then return time() end
   if not start or start == 0 or not duration or duration == 0 then return time() end
   return time() + math.max(0, math.floor(start + duration - GetTime() + 0.5))
 end
@@ -677,12 +915,12 @@ local function readCooldowns()
   local list = {}
   for _, id in ipairs(COOLDOWN_SPELLS) do
     if knows(id) then
-      list[#list + 1] = { spellId = id, name = (GetSpellInfo(id)), readyAt = readyAt(spellCooldown(id)) }
+      list[#list + 1] = { spellId = id, name = spellName(id), readyAt = readyAt(spellCooldown(id)) }
     end
   end
   for _, id in ipairs(COOLDOWN_ITEMS) do
-    if GetItemCount(id) > 0 then
-      list[#list + 1] = { itemId = id, name = (GetItemInfo(id)), readyAt = readyAt(GetItemCooldown(id)) }
+    if itemCount(id) > 0 then
+      list[#list + 1] = { itemId = id, name = itemName(id), readyAt = readyAt(itemCooldown(id)) }
     end
   end
   me.state.cooldowns = list
@@ -749,13 +987,14 @@ local function init()
   db[playerGUID] = db[playerGUID] or { events = {}, state = {} }
   me = db[playerGUID]
   me.state.levelPlayed = me.state.levelPlayed or {}
-  me.name = UnitName("player")
+  me.name = playerName("player") or me.name or "?"
   me.realm = GetRealmName()
   me.class = select(2, UnitClass("player"))
   me.race = select(2, UnitRace("player"))
   me.faction = UnitFactionGroup("player")
 
   -- Baselines: changes are recorded against these, so logging in isn't an event.
+  readSheet()
   lastTalents = talentPoints()
   lastGuild = GetGuildInfo("player")
   guildKnown = lastGuild ~= nil or not IsInGuild()
@@ -798,19 +1037,23 @@ function handlers.PLAYER_EQUIPMENT_CHANGED(slot)
   local slotName = SLOT_NAMES[slot]
   if not slotName then return end
   readEquipment()
+  readSheet()
   local id, name, color = parseItemLink(GetInventoryItemLink("player", slot))
   record({ type = "gear", slot = slotName, itemId = id, name = name, color = color })
 end
 
-handlers.GET_ITEM_INFO_RECEIVED = readEquipment
+handlers.GET_ITEM_INFO_RECEIVED = function() readEquipment() end
 
 function handlers.PLAYER_LEVEL_UP(level)
+  readSheet()
   pendingLevel = record({ type = "level", level = level })
   requestPlayedQuietly() -- the answer stamps the event with /played at this level
 end
 
 function handlers.CHARACTER_POINTS_CHANGED()
+  readSheet()
   local now = talentPoints()
+  if #now ~= #lastTalents then lastTalents = now; return end -- trees appeared (the first loadout): the new baseline
   local lost, changed = false, false
   for i, tree in ipairs(lastTalents) do
     if now[i] and now[i].points ~= tree.points then changed = true end
@@ -820,6 +1063,8 @@ function handlers.CHARACTER_POINTS_CHANGED()
   record({ type = lost and "respec" or "talent", trees = now })
   lastTalents = now
 end
+
+handlers.TRAIT_CONFIG_UPDATED = handlers.CHARACTER_POINTS_CHANGED -- Forever's talents
 
 function handlers.PLAYER_GUILD_UPDATE()
   local guild = GetGuildInfo("player")
@@ -835,6 +1080,18 @@ function handlers.PLAYER_GUILD_UPDATE()
   end
 end
 
+-- Forever forbids the combat log to addons (registering it throws): the foe a
+-- close call or a death names is the target we were fighting, and a pet's death
+-- is read from the pet's own health event.
+local function noteFoe()
+  if not UnitExists("target") or UnitIsDeadOrGhost("target") then return end
+  local name = plain(UnitName("target"))
+  local hostile = plain(UnitCanAttack("player", "target"))
+  if name and hostile then lastAttacker = { name = name, t = time() } end
+end
+handlers.PLAYER_TARGET_CHANGED = function() if FOREVER then noteFoe() end end
+handlers.PLAYER_REGEN_DISABLED = function() if FOREVER then noteFoe() end end
+
 function handlers.COMBAT_LOG_EVENT_UNFILTERED()
   local _, sub, _, _, sourceName, _, _, destGUID, _, _, _, a12, a13 = CombatLogGetCurrentEventInfo()
   if sub == "UNIT_DIED" and ns.petDied and destGUID == ns.petGUID then return ns.petDied() end
@@ -848,11 +1105,54 @@ function handlers.COMBAT_LOG_EVENT_UNFILTERED()
   end
 end
 
+-- Forever: the player's health is secret even out of combat, so a close call is
+-- the game's own low-health warning (below 35%, where Classic's is 15%), which
+-- addons see; its depth is not known, so it is saved as the warning's threshold.
+local LOW_HEALTH_WARNING = 35
+local function warnedLow()
+  if not ready or closeCall or UnitIsDeadOrGhost("player") then return end
+  local shown = LowHealthFrame and LowHealthFrame:IsShown()
+  if secret(shown) then return end
+  -- (the game shows the same frame in a fight when a full-screen panel is up, the maximised map included, and a
+  -- player who turned the warning off never sees it: so no close call from either, noted in docs/architecture.md)
+  if GetUIPanel and GetUIPanel("fullscreen") then return end
+  noteFoe()
+  location()
+  local attacker = lastAttacker and time() - lastAttacker.t < 10 and lastAttacker or nil
+  closeCall = record({
+    type = "close_call",
+    pct = LOW_HEALTH_WARNING,
+    warned = true,
+    level = UnitLevel("player"),
+    attacker = attacker and attacker.name,
+    zone = me.state.zone,
+    subZone = me.state.subZone,
+    mapId = me.state.mapId,
+    x = me.state.x,
+    y = me.state.y,
+    instance = me.state.run and me.state.run.name,
+  })
+  if me.state.run then me.state.run.closeCalls = me.state.run.closeCalls + 1 end
+end
+if FOREVER and LowHealthFrame and LowHealthFrame.Show then
+  hooksecurefunc(LowHealthFrame, "Show", warnedLow)
+  if LowHealthFrame.Hide then hooksecurefunc(LowHealthFrame, "Hide", function() closeCall = nil end) end
+end
+
 function handlers.UNIT_HEALTH(unit)
+  if unit == "pet" then
+    -- (no combat log: a pet's death is the pet at 0 health, when the game lets us see it)
+    if FOREVER and ns.petDied and ns.petGUID and UnitExists("pet") and not secret(UnitIsDead("pet")) and UnitIsDead("pet") then
+      ns.petGUID = nil
+      ns.petDied()
+    end
+    return
+  end
   if unit ~= "player" or UnitIsDeadOrGhost("player") then return end
-  local max = UnitHealthMax("player")
+  local health, max = UnitHealth("player"), UnitHealthMax("player")
+  if secret(health) or secret(max) then return end -- close calls come from the warning
   if not max or max == 0 then return end
-  local frac = UnitHealth("player") / max
+  local frac = health / max
   local pct = math.floor(frac * 100 + 0.5)
   if closeCall then
     if frac >= CLOSE_CALL_RESET then
@@ -881,6 +1181,7 @@ function handlers.UNIT_HEALTH(unit)
 end
 
 function handlers.PLAYER_DEAD()
+  if FOREVER then noteFoe() end -- (still the target when we fall: a long fight's last note is old)
   location()
   closeCall = nil
   local killer = lastAttacker and time() - lastAttacker.t < 30 and lastAttacker or nil
@@ -925,6 +1226,9 @@ function handlers.QUEST_ACCEPTED(a, b)
     if not isHeader and (id == nil or id == questId) then title, level = t, l end
   end
   learnQuestTitles()
+  if not title and not questTitles[questId] and C_QuestLog and C_QuestLog.GetTitleForQuestID then
+    title = plain(C_QuestLog.GetTitleForQuestID(questId))
+  end
   record({ type = "quest_accept", questId = questId, title = title or questTitles[questId], level = level })
 end
 
@@ -984,6 +1288,7 @@ end
 
 function handlers.PLAYER_ENTERING_WORLD()
   snapshot()
+  readSheet()
   checkInstance()
   readCooldowns()
   readBags()
@@ -1049,18 +1354,32 @@ end
 
 f:SetScript("OnEvent", function(_, event, ...)
   if event == "PLAYER_LOGIN" then
-    init()
+    if not FOREVER then return init() end
+    local ok, err = pcall(init)
+    if not ok then print(PREFIX .. L.failed:format("PLAYER_LOGIN", tostring(err))) end
     return
   end
-  if ready and handlers[event] then handlers[event](...) end
+  if not (ready and handlers[event]) then return end
+  if not FOREVER then return handlers[event](...) end
+  -- (a handler that fails says so once, so the first sessions on a new client show what broke)
+  local ok, err = pcall(handlers[event], ...)
+  if not ok and not ns.failed[event] then
+    ns.failed[event] = true
+    print(PREFIX .. L.failed:format(event, tostring(err)))
+  end
 end)
 
 f:RegisterEvent("PLAYER_LOGIN")
 for event in pairs(handlers) do
-  if event == "UNIT_HEALTH" or event == "UNIT_SPELLCAST_SUCCEEDED" then
-    f:RegisterUnitEvent(event, "player") -- not every party member and target
+  -- (an event a client doesn't know, or forbids to addons like Forever's combat log, is skipped)
+  if event == "COMBAT_LOG_EVENT_UNFILTERED" and FOREVER then
+    -- not registered: it throws
+  elseif event == "UNIT_HEALTH" then
+    if FOREVER then pcall(f.RegisterUnitEvent, f, event, "player", "pet") else f:RegisterUnitEvent(event, "player") end -- not every party member and target
+  elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+    pcall(f.RegisterUnitEvent, f, event, "player")
   else
-    f:RegisterEvent(event)
+    pcall(f.RegisterEvent, f, event)
   end
 end
 

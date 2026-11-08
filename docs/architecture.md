@@ -60,8 +60,24 @@ for pet families and warlock demons, since the addon only gets file ids.
 
 ## Addon (`addon/WowLocker`)
 
-Lua 5.1 addon for Classic Era/Hardcore (TOC `## Interface: 11509`; TBC
-Anniversary dropped from the addon on 30 Oct 2026, the site still serves it). Writes `WowLockerDB` (SavedVariables, per character GUID:
+Lua 5.1 addon for Classic Era/Hardcore (TOC `## Interface: 11509`) and World
+of Warcraft: Forever (`WowLocker_Camelot.toc`, interface 16001, ported 8 Nov
+2026, not yet tested in the real client): one source, `ns.forever` where the
+APIs disagree. On Forever it saves the name as "First Surname" (`UnitName`'s
+second value), never registers the combat log (the foe is the target, a pet's
+death its own health event), reads close calls from the game's low-health
+warning (`LowHealthFrame`, saved at 35 with `warned = true`: health is secret),
+uses the C_ APIs (quests, reputation, professions, items, spells) and adds to
+the state `stats` (the character sheet), `traits` (purchased nodes per tree of
+the active loadout: node, entry, rank), `itemLevel`, and per equipped item
+`link`, `icon` and `tip` (the game's tooltip lines). The API does not read
+those new fields yet. `addon/test/forever.lua` is its strict client (no Classic
+globals, secret values, a surname, trait trees), run beside `sim.lua` by `bun
+run check` and CI; a handler that fails on Forever prints its event once in
+chat. No close call comes from the warning under a full-screen panel (the
+game shows it then too, the maximised map included), and a player who turned
+the warning off never gets one. TBC Anniversary was dropped from the addon on 30 Oct 2026, the site still
+serves it. Writes `WowLockerDB` (SavedVariables, per character GUID:
 `events` + `state`) — addons have no network access; Ravenpost, the companion app, uploads
 the file (see Companion). Simulate a session with `luajit addon/test/sim.lua` (it
 asserts every recording). Event types: login, logout (both with level, xp, money: the

@@ -53,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: sudo apt-get install -y -qq luajit
-      - run: luajit addon/test/sim.lua
+      - run: luajit addon/test/sim.lua && luajit addon/test/forever.lua
       # The release's package (release.yml), made without publishing: the
       # addon's folder, nothing more or less.
       - run: echo "(CI)" > .release-notes.md

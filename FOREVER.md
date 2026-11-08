@@ -161,6 +161,12 @@ transmogs) and `static-forever-eu` items and talent-tree index answer 200.
 The GUID match is confirmed by Hearthtale. Done in the API: the `forever`
 flavour, the roster from the passport's Forever entry, ownership by id and
 the GUID's realm, refresh skipped for Forever (items 2 and 3 below).
+The addon is ported (`WowLocker_Camelot.toc`, `addon/test/forever.lua`): what
+it writes for Forever beyond Classic's fields is `state.stats`, `state.traits`,
+`state.itemLevel` and per item `link`, `icon`, `tip`. The calls behind them
+(C_Traits, C_TooltipInfo, the sheet's getters) follow Mainline's documented
+shapes and are **not verified in the live client**: the first Forever session
+settles them, and the API still has to read them.
 
 ## Plan after the 5 November probe
 

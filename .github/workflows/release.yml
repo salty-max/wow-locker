@@ -41,7 +41,7 @@ jobs:
       # checkout leaves the tag lightweight: fetch it again for its message.
       - run: git fetch --force --tags
       - run: sudo apt-get install -y -qq luajit
-      - run: luajit addon/test/sim.lua
+      - run: luajit addon/test/sim.lua && luajit addon/test/forever.lua
       - name: The notes (the tag's message)
         run: |
           git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP SIGNATURE-----/,$d' > .release-notes.md

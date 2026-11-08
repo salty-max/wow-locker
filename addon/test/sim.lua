@@ -25,6 +25,7 @@ end
 local function fire(e, ...) assert(frame.events[e], "not registered: " .. e); frame.handler(frame, e, ...) end
 local function tick(s) clock = clock + s end
 
+function GetBuildInfo() return "1.15.9", "70000", "Jan 1 2026", 11509 end
 function UnitGUID() return "Player-6113-03D658B8" end
 function UnitName(u) if u == "player" then return "Namzie" end; return ({ party1 = "Namzan", party2 = "Thorgrim" })[u] end
 function GetRealmName() return "Soulseeker" end

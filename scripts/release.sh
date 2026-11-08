@@ -9,7 +9,7 @@
 #   NOTES.md            release notes (markdown): the tag's message, then the
 #                       changelog on GitHub, CurseForge and Wago
 #   --version X.Y.Z     the release (default: the latest tag's patch + 1)
-#   --addon X.Y.Z       new addon version (addon/WowLocker/WowLocker.toc)
+#   --addon X.Y.Z       new addon version (addon/WowLocker/WowLocker.toc and WowLocker_Camelot.toc)
 #   --hold              the GitHub release alone (repository variable
 #                       HOLD_STORES); the stores later, by hand:
 #                       gh workflow run release.yml -f tag=vX.Y.Z
@@ -94,7 +94,7 @@ restore() {
 trap restore EXIT
 
 
-perl -pi -e "s/^## Version: .*/## Version: $ADDON/" "$TOC"
+perl -pi -e "s/^## Version: .*/## Version: $ADDON/" "$TOC" addon/WowLocker/WowLocker_Camelot.toc
 perl -pi -e "s/ADDON_VERSION = \".*\"/ADDON_VERSION = \"$ADDON\"/" apps/web/src/lib/downloads.ts
 for pkg in package.json apps/web/package.json; do
   perl -pi -e "s/^  \"version\": \".*\"/  \"version\": \"$VERSION\"/" "$pkg"
