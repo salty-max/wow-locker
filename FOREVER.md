@@ -152,6 +152,16 @@ What a listed character carries (Sealine, Oma, Jeanne, all level 1):
 | The API's character `id` alone | Enough inside one game, but a Forever id and a Classic id are different numbers from one counter we can't see: `owned` must carry the realm id (or the game) next to it, never ids alone. |
 | Full name `Name Surname` (list: `name` + `surname`) | A fallback only: the game says `Name Surname`, the API `name` and `surname` apart, and a renamed or transferred character drifts. Unique per region (Blizzard's names article), so no ambiguity inside a region. |
 
+## Progress (8 November 2026)
+
+Probed again on 8 November: the list now holds four characters, the
+character endpoints still 404 (`protected-character/<id>/profile-summary`
+answers 403), the account collections (mounts, pets, toys, heirlooms,
+transmogs) and `static-forever-eu` items and talent-tree index answer 200.
+The GUID match is confirmed by Hearthtale. Done in the API: the `forever`
+flavour, the roster from the passport's Forever entry, ownership by id and
+the GUID's realm, refresh skipped for Forever (items 2 and 3 below).
+
 ## Plan after the 5 November probe
 
 The principle: **the API proves who owns a character, the addon says

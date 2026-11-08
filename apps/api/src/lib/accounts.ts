@@ -36,7 +36,9 @@ export async function loginAccount(login: {
   unavailable?: Flavour[];
 }): Promise<AccountRow> {
   const [found] = await db.select().from(accounts).where(eq(accounts.bnetId, login.bnetId));
-  const fresh = { region: login.region, ids: login.owned, characters: login.characters, at: new Date().toISOString(), unavailable: login.unavailable ?? [] };
+  // (the site's login lists Classic only: Forever's characters, renewed from Ravenpost's passport, stay)
+  const foreverKept = (found?.owned.find((o) => o.region === login.region)?.characters ?? []).filter((c) => c.flavour === "forever");
+  const fresh = { region: login.region, ids: login.owned, characters: [...login.characters, ...foreverKept], at: new Date().toISOString(), unavailable: login.unavailable ?? [] };
   const owned = [...(found?.owned ?? []).filter((o) => o.region !== login.region), fresh];
   const [acc] = found
     ? await db.update(accounts).set({ battletag: login.battletag, owned, lastSeenAt: new Date() }).where(eq(accounts.id, found.id)).returning()

@@ -81,3 +81,39 @@ describe("refreshedOwned (Ravenpost's passport)", () => {
     expect(ownedCharacter("eu", hardcore.id, [], r)?.name).toBe("Ghurdil");
   });
 });
+
+describe("Forever characters (the passport's second entry)", () => {
+  const oma = { id: 672976, flavour: "forever" as const, realmSlug: "6946", name: "Oma Dessala" };
+  const now = new Date("2026-11-08T20:00:00Z");
+  const withForever = { region: "eu" as const, ids: [hardcore.id], characters: [hardcore, oma], at: "2026-10-12T00:00:00.000Z", unavailable: [] as ("classic")[] };
+
+  it("matches on the id and the GUID's realm, never on the id alone", () => {
+    expect(ownedCharacter("eu", oma.id, [], withForever, 6946)).toEqual(oma);
+    expect(ownedCharacter("eu", oma.id, [], withForever, 6113)).toBeUndefined();
+    expect(ownedCharacter("eu", oma.id, [], withForever)).toBeUndefined();
+  });
+
+  it("never lets a Classic GUID match a Forever entry with the same id", () => {
+    const clash = { ...withForever, ids: [oma.id], characters: [oma] };
+    expect(ownedCharacter("eu", oma.id, [], clash, 6113)).toBeUndefined();
+  });
+
+  it("keeps Forever's ids out of the Classic list, and replaces only Forever's characters", () => {
+    const r = refreshedOwned(withForever, "eu", [oma.id, 9], [[oma.id, "6946", "Oma Dessala"], [9, "6946", "New Hero"]], now, "forever");
+    expect(r.ids).toEqual([hardcore.id]);
+    expect(r.characters).toEqual([hardcore, oma, { id: 9, flavour: "forever", realmSlug: "6946", name: "New Hero" }]);
+    expect(r.at).toBe(withForever.at);
+  });
+
+  it("drops a Forever character the list no longer has, keeping Classic's", () => {
+    const r = refreshedOwned(withForever, "eu", [], [], now, "forever");
+    expect(r.characters).toEqual([hardcore]);
+  });
+
+  it("starts a region it has never seen unable to call anything gone", () => {
+    const r = refreshedOwned(undefined, "eu", [oma.id], [[oma.id, "6946", "Oma Dessala"]], now, "forever");
+    expect(r.ids).toEqual([]);
+    expect(r.unavailable).toEqual(expect.arrayContaining(["classic1x", "classicann", "classic"]));
+    expect(isGone([{ at: new Date(r.at!), ids: r.ids, unavailable: r.unavailable ?? null }], 5, false, "2026-10-01T00:00:00Z", false)).toBe(false);
+  });
+});

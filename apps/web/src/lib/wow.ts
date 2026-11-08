@@ -3,8 +3,8 @@ import { isHardcoreRealm, type Flavour, type Region } from "@wow-locker/shared";
 export { isHardcoreRealm };
 
 /** The game version a realm belongs to, as players name them. */
-export type Version = "hardcore" | "era" | "sod" | "anniversary" | "mop";
-export const VERSIONS: Version[] = ["hardcore", "era", "sod", "anniversary", "mop"];
+export type Version = "hardcore" | "era" | "sod" | "anniversary" | "mop" | "forever";
+export const VERSIONS: Version[] = ["hardcore", "era", "sod", "anniversary", "mop", "forever"];
 
 export const VERSION_LABEL: Record<Version, string> = {
   hardcore: "Hardcore",
@@ -12,12 +12,14 @@ export const VERSION_LABEL: Record<Version, string> = {
   sod: "Season of Discovery",
   anniversary: "TBC Anniversary",
   mop: "MoP Classic",
+  forever: "Forever",
 };
 
 export function versionOf(r: { region: Region; slug: string; flavour: Flavour; category: string }): Version {
   if (isHardcoreRealm(r)) return "hardcore";
   if (r.flavour === "classicann") return "anniversary";
   if (r.flavour === "classic") return "mop";
+  if (r.flavour === "forever") return "forever";
   if (r.category === "Seasonal") return "sod";
   return "era";
 }
@@ -29,4 +31,5 @@ export const flavourLabel: Record<Flavour, string> = {
   classic1x: "Classic Era",
   classicann: "TBC Anniversary",
   classic: "MoP Classic",
+  forever: "World of Warcraft: Forever",
 };

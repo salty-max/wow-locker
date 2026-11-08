@@ -11,9 +11,14 @@ export const REGIONS: Region[] = ["eu", "us"];
  *   classic1x  — Classic Era, Hardcore (incl. Anniversary Hardcore, e.g. Soulseeker), Season of Discovery
  *   classicann — TBC Anniversary (Thunderstrike, Spineshatter…)
  *   classic    — progression Classic (MoP Classic)
+ *   forever    — World of Warcraft: Forever (profile-forever-<region>: the account's list only,
+ *                no character endpoints yet; its "realm" is a pseudo-realm id, 6946 in EU)
  */
-export type Flavour = "classic1x" | "classicann" | "classic";
+export type Flavour = "classic1x" | "classicann" | "classic" | "forever";
+/** The flavours Battle.net serves characters for (realms, adding by name, refreshing). Forever is not one of them yet. */
 export const FLAVOURS: Flavour[] = ["classic1x", "classicann", "classic"];
+/** Forever has no character endpoints: its characters come from the account's list and the addon. */
+export const hasCharacterApi = (f: Flavour) => FLAVOURS.includes(f);
 
 /**
  * Hardcore realms. The API files them under plain "Classic Era", so we label

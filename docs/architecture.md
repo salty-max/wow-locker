@@ -150,9 +150,14 @@ sign-in renews the same proof without a login on the site: its passport
 (`lib/passport.ts`, the inbox's public key) goes to `POST
 /api/companion/refresh` with the link's token, for the link's own account
 only (same Battle.net id, once per passport). `refreshedOwned` replaces just
-the `classic1x` characters (the passport also carries Forever entries, `game: "forever"`, which `renewOwned` skips, so only Classic Era's list reaches here),
-keeps the other flavours' as they were and marks them unavailable, so none
-reads as gone. When a verified
+one game's characters: the `classic1x` list, or Forever's (`game: "forever"`,
+flavour `forever`, `realmSlug` the pseudo-realm id "6946", `name` "Name Surname";
+its ids stay out of `ids`, which is Classic's and what "gone" is read from).
+The other flavours' are kept as they were and marked unavailable, so none
+reads as gone. Forever has no character endpoints yet: `hasCharacterApi` is
+false for it, so `refreshCharacter` and `refreshDue` skip it, and its row
+(`nameKey` "name-surname") is made at the first upload from a GUID whose
+realm part and id match the list (`ownedCharacter`), never from Battle.net. When a verified
 character's public profile returns 404, an upload creates its private row
 from the verified identity and the addon's basic profile. Addon data is
 saved immediately. A row with addon data and snapshotVersion 0 has never

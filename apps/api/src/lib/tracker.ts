@@ -8,7 +8,7 @@ import type {
   ItemMatch,
   Memorial,
 } from "@wow-locker/shared";
-import { FLAVOURS, REGIONS } from "@wow-locker/shared";
+import { FLAVOURS, hasCharacterApi, REGIONS } from "@wow-locker/shared";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { characterEvents, characters, itemIcons, type CharacterRow, type EventRow } from "@/db/schema";
@@ -380,6 +380,8 @@ async function recordEvents(row: CharacterRow, events: EventData[]): Promise<voi
 }
 
 export async function refreshCharacter(c: CharacterRow, { force = false } = {}): Promise<CharacterRow> {
+  // Forever has no character endpoints yet (every path 404s): nothing to ask, and a 404 must never read as "deleted".
+  if (!hasCharacterApi(c.flavour)) return c;
   const prevAvail = { status: c.status, missingReported: c.missingReportedAt != null };
   let s;
   try {
@@ -486,6 +488,7 @@ export async function refreshDue(limit = 60, deadline = Infinity): Promise<{ che
     .where(
       and(
         gt(characters.requestedAt, new Date(now - DORMANT_AFTER_MS)),
+        inArray(characters.flavour, FLAVOURS),
         or(
           isNull(characters.fetchedAt),
           sql`${characters.snapshotVersion} > 0 and ${characters.snapshotVersion} < ${SNAPSHOT_VERSION} and ${characters.status} = 'ok'`,

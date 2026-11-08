@@ -143,9 +143,11 @@ export async function handleUpload(token: string, body: unknown): Promise<Upload
       continue;
     }
     // Only characters the Battle.net login proved to be this account's.
-    const owned = ownedCharacter(link.region, parsed.characterId, link.owned, fresh);
+    const owned = ownedCharacter(link.region, parsed.characterId, link.owned, fresh, parsed.realmId);
     if (!owned) {
-      const gone = isGone(lists, parsed.characterId, false, parsed.state.updatedAt, false);
+      // (a Forever realm's character is never judged by Classic's lists: it stays "unknown" until a passport lists it)
+      const foreverRealm = fresh?.characters?.some((c) => c.flavour === "forever" && c.realmSlug === String(parsed.realmId));
+      const gone = !foreverRealm && isGone(lists, parsed.characterId, false, parsed.state.updatedAt, false);
       result.characters.push({ guid, name: parsed.name, status: gone ? "gone" : "unknown", events: 0 });
       continue;
     }
@@ -178,7 +180,17 @@ async function characterFor(
     .select()
     .from(characters)
     .where(and(eq(characters.region, region), eq(characters.flavour, owned.flavour), eq(characters.blizzardId, owned.id)));
-  if (byId) return byId;
+  if (byId) {
+    // (Forever's rows are never refreshed from Battle.net: the list's name is the one that renews it)
+    if (owned.flavour === "forever" && byId.name !== owned.name) {
+      const nameKey = owned.name.toLowerCase().replace(/\s+/g, "-");
+      const [renamed] = await db.update(characters).set({ name: owned.name, nameKey }).where(eq(characters.id, byId.id)).returning();
+      return renamed ?? byId;
+    }
+    return byId;
+  }
+  // Forever has no character endpoints yet: its row comes from the account's list and the addon.
+  if (owned.flavour === "forever") return foreverRow(region, owned, parsed, accountId);
   try {
     const summary = await addCharacter({ region, flavour: owned.flavour, realm: owned.realmSlug, name: owned.name });
     const [row] = await db.select().from(characters).where(eq(characters.id, summary.id));
@@ -218,6 +230,39 @@ async function characterFor(
     if (!concurrent) throw new Error("character identity conflicts with another recorded life", { cause: err });
     return concurrent;
   }
+}
+
+/** A private row for a Forever character, made from the verified list entry and what the addon says. */
+async function foreverRow(
+  region: Region,
+  owned: { id: number; flavour: Flavour; realmSlug: string; name: string },
+  parsed: AddonCharacter,
+  accountId: number | null,
+): Promise<CharacterRow> {
+  const [created] = await db
+    .insert(characters)
+    .values({
+      region,
+      flavour: "forever",
+      realmSlug: owned.realmSlug,
+      realmName: parsed.realm || "Forever",
+      name: owned.name,
+      nameKey: owned.name.toLowerCase().replace(/\s+/g, "-"), // the API's own shape: name-surname
+      blizzardId: owned.id,
+      ownerId: accountId,
+      ...parsed.profile,
+      level: parsed.profile.level ?? 1,
+      fetchedAt: new Date(),
+    })
+    .onConflictDoNothing()
+    .returning();
+  if (created) return created;
+  const [existing] = await db
+    .select()
+    .from(characters)
+    .where(and(eq(characters.region, region), eq(characters.flavour, "forever"), eq(characters.blizzardId, owned.id)));
+  if (!existing) throw new Error("character identity conflicts with another recorded life");
+  return existing;
 }
 
 async function applyAddon(c: CharacterRow, parsed: AddonCharacter): Promise<number> {
@@ -341,14 +386,23 @@ export async function renewOwned(accountId: number, p: Passport): Promise<{ char
   let count = 0;
   const now = new Date();
   for (const o of p.owned) {
-    // (the inbox adds `game` for Forever: no `game` means Classic Era, and WoWLocker keeps only that for now)
-    if (o.game !== undefined && o.game !== "classic1x") continue;
+    // (the inbox adds `game` for Forever: no `game` means Classic Era)
+    const game = o.game ?? "classic1x";
+    if (game !== "classic1x" && game !== "forever") continue;
     if (!REGIONS.includes(o.region as Region) || !Array.isArray(o.ids)) continue;
     const ids = o.ids.filter((id) => Number.isSafeInteger(id));
     const chars = (Array.isArray(o.characters) ? o.characters : []).filter(
-      (c): c is [number, string, string] => Array.isArray(c) && Number.isSafeInteger(c[0]) && typeof c[1] === "string" && typeof c[2] === "string" && ids.includes(c[0]),
+      (c): c is [number, string, string] =>
+        Array.isArray(c) &&
+        Number.isSafeInteger(c[0]) &&
+        typeof c[1] === "string" &&
+        typeof c[2] === "string" &&
+        c[2].length <= 40 &&
+        ids.includes(c[0]) &&
+        // (Forever's slot is the pseudo-realm id, digits only)
+        (game !== "forever" || /^\d{1,9}$/.test(c[1])),
     );
-    const entry = refreshedOwned(owned.find((e) => e.region === o.region), o.region as Region, ids, chars, now);
+    const entry = refreshedOwned(owned.find((e) => e.region === o.region), o.region as Region, ids, chars, now, game);
     owned = [...owned.filter((e) => e.region !== o.region), entry];
     count += chars.length;
   }

@@ -6,7 +6,7 @@ import { setDb, schema, type DB } from "@/db";
 import { accounts, characters, characterEvents, companionLinks, itemIcons } from "@/db/schema";
 import { loginAccount } from "./accounts";
 import { api, BnetError } from "./bnet";
-import { handleUpload } from "./companion";
+import { handleUpload, renewOwned } from "./companion";
 import { refreshCharacter, toSummary, getCharacter, SNAPSHOT_VERSION } from "./tracker";
 
 // CI supplies an isolated Postgres. Locally, opt in with TEST_DATABASE_URL.
@@ -83,6 +83,57 @@ it.skipIf(!process.env.TEST_DATABASE_URL)("saves, deduplicates and enriches an o
     if (err !== rollback) throw err;
   } finally {
     for (const spy of [summary, equipment, specs, stats, media, realms]) spy.mockRestore();
+    await client.end();
+  }
+});
+
+it.skipIf(!process.env.TEST_DATABASE_URL)("tracks a Forever character from the account's list and the addon, never asking Battle.net for it", async () => {
+  const client = postgres(process.env.TEST_DATABASE_URL!, { max: 1 });
+  const db = drizzle(client, { schema });
+  const rollback = new Error("roll back integration fixture");
+  const summary = spyOn(api, "summary").mockRejectedValue(new BnetError("character profile", 404));
+  try {
+    await db.transaction(async (tx) => {
+      setDb(tx as unknown as DB);
+      const bnetId = Date.now();
+      const account = await loginAccount({ bnetId, battletag: null, region: "eu", owned: [], characters: [] });
+      const oma = { id: 672976, name: "Oma Dessala" };
+      const passport = { aud: "sites", bnetId, battletag: "T#1", iat: 0, exp: 9_999_999_999, jti: `f-${bnetId}`, owned: [{ region: "eu", game: "forever", ids: [oma.id], characters: [[oma.id, "6946", oma.name]] as [number, string, string][] }] };
+      expect(await renewOwned(account.id, passport)).toEqual({ characters: 1 });
+      const token = crypto.randomUUID();
+      const tokenHash = Buffer.from(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))).toString("hex");
+      await tx.insert(companionLinks).values({ tokenHash, region: "eu", accountId: account.id, owned: [], ownedIds: [] });
+      const now = Math.floor(Date.now() / 1000);
+      const sheet = { name: oma.name, realm: "Classic Beta PvP", class: "SHAMAN", race: "Dwarf", faction: "Alliance", state: { level: 4, updatedAt: now }, events: [] };
+      // The same id under another realm is not the account's character.
+      const wrong = await handleUpload(token, { characters: { [`Player-6113-${oma.id.toString(16)}`]: sheet } });
+      expect(wrong?.characters[0].status).not.toBe("synced");
+      const up = await handleUpload(token, { characters: { [`Player-6946-${oma.id.toString(16)}`]: sheet } });
+      expect(up?.characters[0]).toMatchObject({ status: "synced", name: oma.name });
+      const id = up!.characters[0].characterId!;
+      // A later login on the site (Classic's list, complete) keeps the Forever characters.
+      await loginAccount({ bnetId, battletag: null, region: "eu", owned: [], characters: [] });
+      const old = { characters: { [`Player-6946-${oma.id.toString(16)}`]: { ...sheet, state: { ...sheet.state, updatedAt: now - 3600 } } } };
+      expect((await handleUpload(token, old))?.characters[0].status).toBe("synced");
+      // A renamed character takes the list's new name.
+      const renamedPassport = { ...passport, jti: `g-${bnetId}`, owned: [{ ...passport.owned[0], characters: [[oma.id, "6946", "Oma Skye"]] as [number, string, string][] }] };
+      expect(await renewOwned(account.id, renamedPassport)).toEqual({ characters: 1 });
+      expect((await handleUpload(token, { characters: { [`Player-6946-${oma.id.toString(16)}`]: sheet } }))?.characters[0].status).toBe("synced");
+      expect((await tx.select().from(characters).where(eq(characters.id, id)))[0]).toMatchObject({ name: "Oma Skye", nameKey: "oma-skye" });
+      await tx.update(characters).set({ name: oma.name, nameKey: "oma-dessala" }).where(eq(characters.id, id));
+      const [row] = await tx.select().from(characters).where(eq(characters.id, id));
+      expect(row).toMatchObject({ flavour: "forever", realmSlug: "6946", name: oma.name, nameKey: "oma-dessala", blizzardId: oma.id, ownerId: account.id, level: 4, classKey: "shaman" });
+      expect((await tx.select().from(accounts).where(eq(accounts.id, account.id)))[0].roster).toContain(id);
+      // No character endpoint to ask: a refresh does nothing, and the 404s never read as deleted.
+      await refreshCharacter(row);
+      expect(summary).not.toHaveBeenCalled();
+      expect((await tx.select().from(characters).where(eq(characters.id, id)))[0].status).toBe("ok");
+      throw rollback;
+    });
+  } catch (err) {
+    if (err !== rollback) throw err;
+  } finally {
+    summary.mockRestore();
     await client.end();
   }
 });

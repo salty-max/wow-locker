@@ -6,7 +6,7 @@ import type { AddonState, CharacterDetail, Flavour, Lang } from "@wow-locker/sha
  * /reload); Battle.net's are refreshed at logout too. Whichever is newer wins.
  */
 
-const MAX_LEVEL: Record<Flavour, number> = { classic1x: 60, classicann: 70, classic: 90 };
+const MAX_LEVEL: Record<Flavour, number> = { classic1x: 60, classicann: 70, classic: 90, forever: 60 };
 
 export type XpView = { xp: number; max: number; rested: number | null; resting: boolean | null };
 

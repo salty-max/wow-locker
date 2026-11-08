@@ -35,10 +35,13 @@ it.skipIf(!process.env.TEST_DATABASE_URL)("renews the account's Classic Era proo
       expect(eu.characters).toContainEqual({ id: 64379064, flavour: "classic1x", realmSlug: "soulseeker", name: "Ghurdil" });
       expect(eu.characters).toContainEqual(tbc);
 
-      // A Forever entry in a later passport is skipped: its ids are not Classic's.
-      const withForever = passport(bnetId, `${jti}-f`, [{ region: "eu", game: "forever", ids: [672976], characters: [[672976, "6946", "Oma Dion"]] }]);
-      expect(await renewOwned(account.id, withForever)).toEqual({ characters: 0 });
-      expect((await read()).ids.sort()).toEqual([tbc.id, 64379064]);
+      // A Forever entry in a later passport joins the characters, never the Classic ids.
+      const withForever = passport(bnetId, `${jti}-f`, [{ region: "eu", game: "forever", ids: [672976], characters: [[672976, "6946", "Oma Dessala"]] }]);
+      expect(await renewOwned(account.id, withForever)).toEqual({ characters: 1 });
+      const after = await read();
+      expect(after.ids.sort()).toEqual([tbc.id, 64379064]);
+      expect(after.characters).toContainEqual({ id: 672976, flavour: "forever", realmSlug: "6946", name: "Oma Dessala" });
+      expect(after.characters).toContainEqual({ id: 64379064, flavour: "classic1x", realmSlug: "soulseeker", name: "Ghurdil" });
 
       // The same passport again: refused.
       expect(await renewOwned(account.id, mine)).toBeNull();

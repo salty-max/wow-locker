@@ -278,7 +278,7 @@ const iso = (unix: number | null) => (unix != null ? new Date(unix * 1000).toISO
 export function parseAddonCharacter(guid: string, raw: unknown): AddonCharacter | null {
   const ids = parseGuid(guid);
   const c = obj(raw);
-  const name = str(c.name, 12);
+  const name = str(c.name, 40); // (Forever: "Name Surname")
   if (!ids || !name) return null;
 
   const events: AddonEvent[] = [];
@@ -419,7 +419,7 @@ export function parseAddonCharacter(guid: string, raw: unknown): AddonCharacter 
 export type Reminder = { kind: ReminderKind; key: string; fireAt: Date; data: EventData };
 
 export const MAIL_LEAD_MS = 24 * 3600_000;
-const MAX_LEVEL: Record<Flavour, number> = { classic1x: 60, classicann: 70, classic: 90 };
+const MAX_LEVEL: Record<Flavour, number> = { classic1x: 60, classicann: 70, classic: 90, forever: 60 };
 
 /**
  * Classic rested XP: +5% of the current level's bar every 8 hours while
