@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { isGone } from "./diff";
 import { ownedCharacter, refreshedOwned } from "./ownership";
+import { parseGuid, parseAddonCharacter } from "./addon";
 
 const old = { id: 100, flavour: "classic" as const, realmSlug: "gehennas", name: "Aster" };
 const hardcore = { id: 200, flavour: "classic1x" as const, realmSlug: "soulseeker", name: "Aster" };
@@ -115,5 +116,22 @@ describe("Forever characters (the passport's second entry)", () => {
     expect(r.ids).toEqual([]);
     expect(r.unavailable).toEqual(expect.arrayContaining(["classic1x", "classicann", "classic"]));
     expect(isGone([{ at: new Date(r.at!), ids: r.ids, unavailable: r.unavailable ?? null }], 5, false, "2026-10-01T00:00:00Z", false)).toBe(false);
+  });
+});
+
+describe("a real Forever GUID (saved file of 13 Nov 2026)", () => {
+  // Player-6946-007EE824 in WowLocker.lua; the list's protected link is 6946-8316964.
+  const guid = "Player-6946-007EE824";
+  const calya = { id: 8316964, flavour: "forever" as const, realmSlug: "6946", name: "Test Mage" };
+  const list = { region: "eu" as const, ids: [], characters: [calya], at: "2026-11-13T00:00:00.000Z" };
+
+  it("reads the hex id with its leading zeros as the list's decimal id", () => {
+    expect(parseGuid(guid)).toEqual({ realmId: 6946, characterId: 8316964 });
+  });
+
+  it("matches the saved character to the account's Forever entry", () => {
+    const parsed = parseAddonCharacter(guid, { name: "Test Mage", realm: "Classic Beta PvP", class: "MAGE", race: "Skyborne", faction: "Alliance", state: { level: 2 }, events: [] });
+    expect(parsed).toMatchObject({ realmId: 6946, characterId: 8316964, name: "Test Mage" });
+    expect(ownedCharacter("eu", parsed!.characterId, [], list, parsed!.realmId)).toEqual(calya);
   });
 });
